@@ -1,0 +1,8 @@
+# Downloaded by install.sh — large, machine-specific
+bin/
+models/
+.run/
+
+# scratch
+*.wav
+tmp/
