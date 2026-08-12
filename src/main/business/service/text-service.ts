@@ -71,7 +71,7 @@ function tidyWhitespace(s: string): string {
   return collapsed.replace(/\n{3,}/g, '\n\n')
 }
 
-export const cleanService = {
+export const textService = {
   cleanText(params: { input: string; stripBrackets?: boolean }): string {
     const { input, stripBrackets = false } = params
     const steps = [

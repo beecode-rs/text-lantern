@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { pathsService } from '@src/main/util/paths-service'
-import { cleanService } from '@src/main/util/clean-service'
+import { textService } from '@src/main/business/service/text-service'
 import { langService } from '@src/main/util/lang-service'
 import { selectionService } from '@src/main/business/service/selection-service'
 import type { Lang, Settings, TtsStatus } from '@src/shared/types'
@@ -45,7 +45,7 @@ async function _resolveInputText(params: { text?: string }): Promise<string> {
 
 function _cleanTextIfEnabled(params: { text: string; settings: Settings }): string {
   if (params.settings.cleanText) {
-    return cleanService.cleanText({
+    return textService.cleanText({
       input: params.text,
       stripBrackets: params.settings.stripBrackets
     })
