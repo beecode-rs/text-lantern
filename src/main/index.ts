@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { settingsService } from '@src/main/settings'
 import { shortcutsService } from '@src/main/shortcuts'
 import { trayService } from '@src/main/tray'
-import { registerIpc } from '@src/main/ipc'
+import { ipcService } from '@src/main/ipc'
 import { ttsService } from '@src/main/tts'
 import type { TtsStatus } from '@src/shared/types'
 
@@ -76,7 +76,7 @@ app.whenReady().then(() => {
     trayService.create(mainWindow)
   }
   shortcutsService.registerAll()
-  registerIpc(() => mainWindow)
+  ipcService.register(() => mainWindow)
 
   ttsService.events.on('status', statusToReading)
 

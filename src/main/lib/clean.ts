@@ -71,21 +71,23 @@ function tidyWhitespace(s: string): string {
   return collapsed.replace(/\n{3,}/g, '\n\n')
 }
 
-export function cleanText(params: { input: string; stripBrackets?: boolean }): string {
-  const { input, stripBrackets = false } = params
-  const steps = [
-    stripCodeBlocks,
-    stripInlineCode,
-    stripImages,
-    unwrapLinks,
-    stripHtmlTags,
-    stripEmails,
-    stripUrls,
-    stripCitations,
-    stripListMarkers,
-    resolveBracketStep(stripBrackets),
-    decorationToSpace,
-    tidyWhitespace
-  ]
-  return steps.reduce((acc, step) => step(acc), input).trim()
+export const cleanService = {
+  cleanText(params: { input: string; stripBrackets?: boolean }): string {
+    const { input, stripBrackets = false } = params
+    const steps = [
+      stripCodeBlocks,
+      stripInlineCode,
+      stripImages,
+      unwrapLinks,
+      stripHtmlTags,
+      stripEmails,
+      stripUrls,
+      stripCitations,
+      stripListMarkers,
+      resolveBracketStep(stripBrackets),
+      decorationToSpace,
+      tidyWhitespace
+    ]
+    return steps.reduce((acc, step) => step(acc), input).trim()
+  }
 }

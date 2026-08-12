@@ -4,9 +4,9 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { pathsService } from '@src/main/paths'
-import { cleanText } from '@src/main/lib/clean'
+import { cleanService } from '@src/main/lib/clean'
 import { langService } from '@src/main/lib/lang'
-import { grabSelection } from '@src/main/selection'
+import { selectionService } from '@src/main/selection'
 import type { Lang, Settings, TtsStatus } from '@src/shared/types'
 
 const ttsEvents = new EventEmitter()
@@ -26,7 +26,7 @@ export const ttsService = {
 
     let text = opts.text ?? ''
     if (!text) {
-      text = await grabSelection()
+      text = await selectionService.grab()
     }
     if (!text) {
       emit({ state: 'idle' })
@@ -35,7 +35,7 @@ export const ttsService = {
 
     let cleaned: string
     if (opts.settings.cleanText) {
-      cleaned = cleanText({ input: text, stripBrackets: opts.settings.stripBrackets })
+      cleaned = cleanService.cleanText({ input: text, stripBrackets: opts.settings.stripBrackets })
     } else {
       cleaned = text.trim()
     }

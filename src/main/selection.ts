@@ -10,23 +10,25 @@ const delay = (ms: number): Promise<void> => {
   })
 }
 
-export async function grabSelection(): Promise<string> {
-  const saved = clipboard.readText()
+export const selectionService = {
+  async grab(): Promise<string> {
+    const saved = clipboard.readText()
 
-  if (process.platform === 'darwin') {
-    try {
-      await pexec(
-        `osascript -e 'tell application "System Events" to keystroke "c" using command down'`
-      )
-      await delay(180)
-    } catch {
-      // TODO: Remove when Linux/Windows selection grab lands — fall through with the existing clipboard.
+    if (process.platform === 'darwin') {
+      try {
+        await pexec(
+          `osascript -e 'tell application "System Events" to keystroke "c" using command down'`
+        )
+        await delay(180)
+      } catch {
+        // TODO: Remove when Linux/Windows selection grab lands — fall through with the existing clipboard.
+      }
     }
-  }
 
-  const selection = clipboard.readText()
-  if (saved) {
-    clipboard.writeText(saved)
+    const selection = clipboard.readText()
+    if (saved) {
+      clipboard.writeText(saved)
+    }
+    return selection.trim()
   }
-  return selection.trim()
 }
