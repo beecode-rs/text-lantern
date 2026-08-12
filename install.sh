@@ -3,29 +3,29 @@
 # install.sh — set up the Piper Serbian + English TTS tool.
 # Cross-platform: macOS (arm64 / x86_64) and Linux (x86_64 / aarch64 / armv7l).
 #
-# It creates a private Python virtualenv, installs the official `piper-tts`
-# package into it, and downloads the default Serbian and English voice models.
-# (The prebuilt C++ binaries from rhasspy/piper ship incomplete on macOS, so we
-# use the Python package, which bundles espeak-ng and works everywhere.)
+# Creates a private Python virtualenv, installs the official `piper-tts` package,
+# and downloads the default Serbian and English voice models. (The prebuilt C++
+# binaries from rhasspy/piper ship incomplete on macOS, so we use the Python
+# package, which bundles espeak-ng and works everywhere.)
 #
 # Usage:
-#   ./install.sh                         # install venv + Serbian + English voices
-#   ./install.sh --force                 # recreate the venv and re-download voices
-#   ./install.sh --add-voice en_US-ryan-high   # add any Piper voice by name
+#   ./install.sh                              # venv + Serbian + English voices
+#   ./install.sh --force                      # recreate venv and re-download voices
+#   ./install.sh --add-voice en_US-ryan-high  # add any Piper voice by name
 #
 set -euo pipefail
 
+# ── Paths & voice registry (keep in sync with speak.sh) ──────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BIN_DIR="$SCRIPT_DIR/bin"
-VENV_DIR="$BIN_DIR/venv"
+VENV_DIR="$SCRIPT_DIR/bin/venv"
 MODELS_DIR="$SCRIPT_DIR/models"
 
-# ── Voice registry (keep in sync with speak.sh) ─────────────────────────────
 SR_VOICE="${TTS_VOICE_SR:-sr_Marko_medium}"        # Serbian (Cyrillic + Latin)
 EN_VOICE="${TTS_VOICE_EN:-en_US-lessac-medium}"    # English (natural, US)
 SR_REPO="https://huggingface.co/phantom9623/piper-serbian-tts/resolve/main"
 VOICES_BASE="https://huggingface.co/rhasspy/piper-voices/resolve/main"
 
+# ── Args ─────────────────────────────────────────────────────────────────────
 FORCE=0
 ADD_VOICE=""
 while [[ $# -gt 0 ]]; do
@@ -33,7 +33,7 @@ while [[ $# -gt 0 ]]; do
     --force) FORCE=1; shift ;;
     --add-voice) ADD_VOICE="$2"; shift 2 ;;
     --add-voice=*) ADD_VOICE="${1#*=}"; shift ;;
-    -h|--help) sed -n '3,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '3,14p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 1 ;;
   esac
 done
@@ -42,40 +42,43 @@ log()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!!\033[0m %s\n' "$*"; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
-if ! have curl; then
-  echo "error: 'curl' is required." >&2; exit 1
-fi
-
+have curl || { echo "error: 'curl' is required." >&2; exit 1; }
 mkdir -p "$MODELS_DIR"
 
-# ── Download a Piper voice from rhasspy/piper-voices by its name ────────────
-# name = <lang>_<region>-<voice>-<quality>  (voice part uses underscores)
+# ── Voice download helpers ───────────────────────────────────────────────────
+# Download <url_prefix>/<name>.onnx(.json) into models/, skipping files already
+# present unless --force.
+download_voice_files() {
+  local name="$1" prefix="$2" ext dest
+  for ext in onnx onnx.json; do
+    dest="$MODELS_DIR/$name.$ext"
+    if [[ -s "$dest" && $FORCE -eq 0 ]]; then
+      log "  present: $name.$ext"
+      continue
+    fi
+    curl -fL --progress-bar -o "$dest" "$prefix/$name.$ext"
+  done
+}
+
+# Serbian voice lives in its own custom repo.
+download_serbian() {
+  log "Voice: $SR_VOICE (Serbian)"
+  download_voice_files "$SR_VOICE" "$SR_REPO"
+}
+
+# Generic Piper voice from rhasspy/piper-voices.
+# name = <lang>_<region>-<voice>-<quality>  (the voice part uses underscores)
 download_piper_voice() {
-  local name="$1" lang_region rest quality voice lang path dest ext
+  local name="$1" lang_region rest quality voice lang prefix
   lang_region="${name%%-*}"; rest="${name#*-}"
   quality="${rest##*-}"; voice="${rest%-*}"
   lang="${lang_region%%_*}"
-  path="$lang/$lang_region/$voice/$quality/$name"
+  prefix="$VOICES_BASE/$lang/$lang_region/$voice/$quality"
   log "Voice: $name"
-  for ext in onnx onnx.json; do
-    dest="$MODELS_DIR/$name.$ext"
-    if [[ -s "$dest" && $FORCE -eq 0 ]]; then log "  present: $name.$ext"; continue; fi
-    curl -fL --progress-bar -o "$dest" "$VOICES_BASE/$path.$ext"
-  done
+  download_voice_files "$name" "$prefix"
 }
 
-# Download the Serbian voice from its custom repo.
-download_serbian() {
-  local ext dest
-  log "Voice: $SR_VOICE (Serbian)"
-  for ext in onnx onnx.json; do
-    dest="$MODELS_DIR/$SR_VOICE.$ext"
-    if [[ -s "$dest" && $FORCE -eq 0 ]]; then log "  present: $SR_VOICE.$ext"; continue; fi
-    curl -fL --progress-bar -o "$dest" "$SR_REPO/$SR_VOICE.$ext"
-  done
-}
-
-# ── --add-voice: download one extra voice and exit ──────────────────────────
+# ── --add-voice: fetch one voice and exit ────────────────────────────────────
 if [[ -n "$ADD_VOICE" ]]; then
   if [[ "$ADD_VOICE" == "$SR_VOICE" ]]; then
     download_serbian
@@ -87,28 +90,24 @@ if [[ -n "$ADD_VOICE" ]]; then
   exit 0
 fi
 
-# ── Full install needs python3 ──────────────────────────────────────────────
-if ! have python3; then
-  echo "error: 'python3' is required (3.9+)." >&2; exit 1
-fi
-PY_VER="$(python3 -c 'import sys;print("%d.%d"%sys.version_info[:2])')"
-PY_MAJ="$(python3 -c 'import sys;print(sys.version_info[0])')"
-PY_MIN="$(python3 -c 'import sys;print(sys.version_info[1])')"
+# ── Python check ─────────────────────────────────────────────────────────────
+have python3 || { echo "error: 'python3' is required (3.9+)." >&2; exit 1; }
+IFS=' ' read -r PY_MAJ PY_MIN < <(python3 -c 'import sys;print(sys.version_info[0],sys.version_info[1])')
 if (( PY_MAJ < 3 || (PY_MAJ == 3 && PY_MIN < 9) )); then
-  echo "error: Python 3.9+ required, found $PY_VER." >&2; exit 1
+  echo "error: Python 3.9+ required, found ${PY_MAJ}.${PY_MIN}." >&2; exit 1
 fi
 
-# ── 1. Python virtualenv + piper-tts ───────────────────────────────────────
+# ── 1. Python virtualenv + piper-tts ─────────────────────────────────────────
 PIPER_BIN="$VENV_DIR/bin/piper"
 if [[ -x "$PIPER_BIN" && $FORCE -eq 0 ]]; then
   log "piper-tts already installed in $VENV_DIR"
 else
   log "Creating Python virtualenv in $VENV_DIR"
   rm -rf "$VENV_DIR"
-  if ! python3 -m venv "$VENV_DIR"; then
+  python3 -m venv "$VENV_DIR" || {
     warn "python3 -m venv failed. On Debian/Ubuntu you may need: sudo apt install python3-venv"
     exit 1
-  fi
+  }
 
   log "Installing piper-tts (one-time, ~1 min)…"
   "$VENV_DIR/bin/pip" install -q --upgrade pip
@@ -125,23 +124,23 @@ else
   log "piper-tts installed → $PIPER_BIN"
 fi
 
-# ── 2. Voice models ────────────────────────────────────────────────────────
+# ── 2. Voice models ──────────────────────────────────────────────────────────
 download_serbian
 download_piper_voice "$EN_VOICE"
 
-# ── 3. Verify ──────────────────────────────────────────────────────────────
+# ── 3. Verify ────────────────────────────────────────────────────────────────
 log "Verifying synthesis…"
-ok=1
-for v in "$SR_VOICE" "$EN_VOICE"; do
-  if echo "test." | "$PIPER_BIN" -m "$MODELS_DIR/$v.onnx" -c "$MODELS_DIR/$v.onnx.json" -f /tmp/__tts_verify.wav >/dev/null 2>&1; then
-    log "  ok: $v"
+verify_ok=1
+for voice in "$SR_VOICE" "$EN_VOICE"; do
+  if echo "test." | "$PIPER_BIN" -m "$MODELS_DIR/$voice.onnx" -c "$MODELS_DIR/$voice.onnx.json" -f /tmp/__tts_verify.wav >/dev/null 2>&1; then
+    log "  ok: $voice"
   else
-    warn "  verify failed for $v (the tool may still work)."; ok=0
+    warn "  verify failed for $voice (the tool may still work)."
+    verify_ok=0
   fi
 done
 rm -f /tmp/__tts_verify.wav
-
-if [[ $ok -eq 1 ]]; then printf '\033[1;32m==>\033[0m All set.\n\n'; fi
+[[ $verify_ok -eq 1 ]] && printf '\033[1;32m==>\033[0m All set.\n\n'
 
 cat <<EOF
   Piper       : $PIPER_BIN

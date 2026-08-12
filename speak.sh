@@ -20,31 +20,47 @@
 #   ./speak.sh --raw                # skip text cleaning
 #   ./speak.sh --output out.wav "…" # write WAV instead of playing
 #   ./speak.sh -h                   # full help
-#
+
 set -uo pipefail
 
+# ── Paths & config ───────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BIN_DIR="$SCRIPT_DIR/bin"
 MODELS_DIR="$SCRIPT_DIR/models"
-PIPER_BIN="$BIN_DIR/venv/bin/piper"        # installed by install.sh (piper-tts)
+PIPER_BIN="$SCRIPT_DIR/bin/venv/bin/piper"   # installed by install.sh (piper-tts)
+CLEAN_PL="$SCRIPT_DIR/lib/clean.pl"
 
-# ── Voice registry ──────────────────────────────────────────────────────────
-# Maps a language tag to a default voice (basename of the *.onnx in models/).
-# Override with env: TTS_VOICE_SR / TTS_VOICE_EN
+# Default voice per language (basename of the *.onnx in models/).
+# Override via env: TTS_VOICE_SR / TTS_VOICE_EN
 VOICE_SR_DEFAULT="${TTS_VOICE_SR:-sr_Marko_medium}"
 VOICE_EN_DEFAULT="${TTS_VOICE_EN:-en_US-lessac-medium}"
-MODEL_NAME=""          # resolved later from --lang / --voice / auto-detection
-MODEL_ONNX=""          # set after resolution
+
+# Voice chosen at runtime by resolve_voice().
+MODEL_NAME=""
+MODEL_ONNX=""
 MODEL_JSON=""
 
-# Runtime dir for the instance lock / temp audio
+OS="$(uname -s)"
+
 RUN_DIR="${TTS_RUN_DIR:-${TMPDIR:-/tmp}}/tts-script-${USER:-$(id -un)}"
 LOCK_FILE="$RUN_DIR/speak.lock"
 mkdir -p "$RUN_DIR"
 
-# Kill a previous instance (and its children: piper / player) and take the lock.
+# ── Tiny helpers ─────────────────────────────────────────────────────────────
+have() { command -v "$1" >/dev/null 2>&1; }
+die()  { printf '\033[1;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
+
+# Trim leading/trailing whitespace from a whole string.
+trim_string() {
+  local s="$1"
+  s="${s#"${s%%[![:space:]]*}"}"
+  s="${s%"${s##*[![:space:]]}"}"
+  printf '%s' "$s"
+}
+
+# ── Instance lock: only one speak runs; re-trigger / --stop kills the rest ──
 lock_take() {
   if [[ -f "$LOCK_FILE" ]]; then
+    local old
     old="$(cat "$LOCK_FILE" 2>/dev/null || true)"
     if [[ -n "${old:-}" ]] && kill -0 "$old" 2>/dev/null; then
       pkill -P "$old" 2>/dev/null || true   # reap children (piper, player)
@@ -56,12 +72,134 @@ lock_take() {
 }
 lock_release() { rm -f "$LOCK_FILE"; }
 
-have() { command -v "$1" >/dev/null 2>&1; }
-die()  { printf '\033[1;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
+# ── Locale: best-effort UTF-8 so espeak-ng phonemises Cyrillic/Latin ─────────
+ensure_utf8_locale() {
+  local loc
+  for loc in "${LC_ALL-}" "${LANG-}" "C.UTF-8" "en_US.UTF-8" "UTF-8"; do
+    [[ -z "$loc" ]] && continue
+    if locale -a 2>/dev/null | grep -Fixq "$loc"; then
+      export LC_ALL="$loc" LANG="$loc"
+      return 0
+    fi
+  done
+}
+ensure_utf8_locale
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Defaults / option parsing
-# ─────────────────────────────────────────────────────────────────────────────
+# ── Clipboard (cross-platform) ───────────────────────────────────────────────
+# Echo the available backend name, or fail.
+clipboard_backend() {
+  case "$OS" in
+    Darwin) echo pb ;;
+    *)
+      if have wl-paste && [[ -n "${WAYLAND_DISPLAY-}" ]]; then echo wl
+      elif have xclip; then echo xclip
+      elif have xsel; then echo xsel
+      else return 1; fi ;;
+  esac
+}
+clipboard_get() {
+  case "$(clipboard_backend)" in
+    pb)    pbpaste 2>/dev/null ;;
+    wl)    wl-paste 2>/dev/null ;;
+    xclip) xclip -o -selection clipboard 2>/dev/null ;;
+    xsel)  xsel -ob 2>/dev/null ;;
+    *)     return 1 ;;
+  esac
+}
+clipboard_set() {
+  case "$(clipboard_backend)" in
+    pb)    pbcopy 2>/dev/null ;;
+    wl)    wl-copy 2>/dev/null ;;
+    xclip) xclip -i -selection clipboard 2>/dev/null ;;
+    xsel)  xsel -bi 2>/dev/null ;;
+    *)     return 1 ;;
+  esac
+}
+
+# Send Ctrl/Cmd+C so the active selection lands in the clipboard.
+send_copy_keystroke() {
+  case "$OS" in
+    Darwin)
+      osascript -e 'tell application "System Events" to keystroke "c" using command down' >/dev/null 2>&1 ;;
+    *)
+      if [[ -n "${WAYLAND_DISPLAY-}" ]]; then
+        if have wtype;     then wtype -M ctrl -k c >/dev/null 2>&1
+        elif have ydotool; then ydotool key ctrl+c >/dev/null 2>&1
+        else return 1; fi
+      elif have xdotool; then xdotool key --clearmodifiers ctrl+c >/dev/null 2>&1
+      else return 1; fi ;;
+  esac
+}
+
+# Grab the current selection. Saves & restores the clipboard around the copy.
+grab_selection() {
+  local saved sel
+  saved="$(clipboard_get 2>/dev/null || true)"
+  send_copy_keystroke || die "Cannot grab selection: need 'osascript' (macOS), 'xdotool' (X11), or 'wtype'/'ydotool' (Wayland)."
+  sleep 0.18   # let the copy reach the clipboard
+  sel="$(clipboard_get 2>/dev/null || true)"
+  printf '%s' "$saved" | clipboard_set 2>/dev/null || true   # restore clipboard
+  printf '%s' "$sel"
+}
+
+# ── Language detection ───────────────────────────────────────────────────────
+# True (0) if the text has Cyrillic or a Serbian diacritic (č ć ž š đ).
+# Code points (not literals) keep the perl source ASCII-clean.
+looks_like_serbian() {
+  printf '%s' "$1" \
+    | perl -CSD -0777 -ne 'exit( /[\x{0400}-\x{04FF}\x{0106}\x{0107}\x{010C}\x{010D}\x{0110}\x{0111}\x{0160}\x{0161}\x{017D}\x{017E}]/ ? 0 : 1 )'
+}
+
+# Resolve MODEL_NAME / paths from: --voice > --lang {sr,en} > auto-detect.
+resolve_voice() {
+  local text="$1"
+  if [[ -n "$MODEL_OVERRIDE" ]]; then
+    MODEL_NAME="$MODEL_OVERRIDE"
+  else
+    case "$LANG_SEL" in
+      sr)   MODEL_NAME="$VOICE_SR_DEFAULT" ;;
+      en)   MODEL_NAME="$VOICE_EN_DEFAULT" ;;
+      auto) if looks_like_serbian "$text"; then MODEL_NAME="$VOICE_SR_DEFAULT"
+            else MODEL_NAME="$VOICE_EN_DEFAULT"; fi ;;
+      *) die "unknown --lang '$LANG_SEL' (use sr, en, or auto)." ;;
+    esac
+  fi
+  MODEL_ONNX="$MODELS_DIR/${MODEL_NAME}.onnx"
+  MODEL_JSON="$MODELS_DIR/${MODEL_NAME}.onnx.json"
+  [[ -s "$MODEL_ONNX" ]] || die "Voice '$MODEL_NAME' not found ($MODEL_ONNX).
+  Install it with: $SCRIPT_DIR/install.sh --add-voice $MODEL_NAME"
+  [[ -s "$MODEL_JSON" ]] || die "Voice config not found ($MODEL_JSON). Re-run $SCRIPT_DIR/install.sh."
+}
+
+# ── Text cleaning ────────────────────────────────────────────────────────────
+clean_text() {
+  if have perl; then
+    STRIP="$STRIP_BRACKETS" perl -0777 -CSD "$CLEAN_PL"
+  else
+    # Minimal fallback when perl is unavailable.
+    sed -E -e 's#https?://[^ ]+##g' -e 's#www\.[^ ]+##g' -e 's/[][(){}]//g' -e 's/[ \t]+/ /g'
+  fi
+}
+
+# ── Audio playback (picks the first available player) ────────────────────────
+play_audio() {
+  local wav="$1" p
+  for p in afplay paplay aplay ffplay mpv play; do
+    have "$p" || continue
+    case "$p" in
+      afplay) afplay "$wav" ;;
+      paplay) paplay "$wav" ;;
+      aplay)  aplay -q "$wav" ;;
+      ffplay) ffplay -nodisp -autoexit -loglevel quiet "$wav" ;;
+      mpv)    mpv --no-video --really-quiet "$wav" ;;
+      play)   play -q "$wav" ;;
+    esac
+    return 0
+  done
+  return 1
+}
+
+# ── Options ──────────────────────────────────────────────────────────────────
 RATE=1.0            # piper length-scale: higher = slower
 NOISE_SCALE=""      # leave model default unless set
 NOISE_W=""
@@ -102,30 +240,28 @@ OPT
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --stop)            ACTION="stop"; shift ;;
-    --lang)            LANG_SEL="$2"; shift 2 ;;
-    --lang=*)          LANG_SEL="${1#*=}"; shift ;;
-    --voice|--model)   MODEL_OVERRIDE="$2"; shift 2 ;;
+    --stop)              ACTION="stop"; shift ;;
+    --lang)              LANG_SEL="$2"; shift 2 ;;
+    --lang=*)            LANG_SEL="${1#*=}"; shift ;;
+    --voice|--model)     MODEL_OVERRIDE="$2"; shift 2 ;;
     --voice=*|--model=*) MODEL_OVERRIDE="${1#*=}"; shift ;;
-    --list-voices)     ACTION="list"; shift ;;
-    --rate)            RATE="$2"; shift 2 ;;
-    --rate=*)          RATE="${1#*=}"; shift ;;
-    --noise)           NOISE_SCALE="$2"; shift 2 ;;
-    --noise-w)         NOISE_W="$2"; shift 2 ;;
-    --raw)             CLEAN=0; shift ;;
-    --strip-brackets)  STRIP_BRACKETS=1; shift ;;
-    --max-chars)       MAX_CHARS="$2"; shift 2 ;;
-    --output)          OUTPUT_WAV="$2"; shift 2 ;;
-    -h|--help)         usage; exit 0 ;;
-    --)                shift; while [[ $# -gt 0 ]]; do TEXT_ARGS+=("$1"); shift; done ;;
-    -*)                die "unknown option: $1 (try --help)" ;;
-    *)                 TEXT_ARGS+=("$1"); shift ;;
+    --list-voices)       ACTION="list"; shift ;;
+    --rate)              RATE="$2"; shift 2 ;;
+    --rate=*)            RATE="${1#*=}"; shift ;;
+    --noise)             NOISE_SCALE="$2"; shift 2 ;;
+    --noise-w)           NOISE_W="$2"; shift 2 ;;
+    --raw)               CLEAN=0; shift ;;
+    --strip-brackets)    STRIP_BRACKETS=1; shift ;;
+    --max-chars)         MAX_CHARS="$2"; shift 2 ;;
+    --output)            OUTPUT_WAV="$2"; shift 2 ;;
+    -h|--help)           usage; exit 0 ;;
+    --) shift; while [[ $# -gt 0 ]]; do TEXT_ARGS+=("$1"); shift; done ;;
+    -*)                  die "unknown option: $1 (try --help)" ;;
+    *)                   TEXT_ARGS+=("$1"); shift ;;
   esac
 done
 
-# ─────────────────────────────────────────────────────────────────────────────
-# LIST-VOICES action
-# ─────────────────────────────────────────────────────────────────────────────
+# ── Action: list voices ──────────────────────────────────────────────────────
 if [[ "$ACTION" == "list" ]]; then
   printf 'Installed voices in %s:\n\n' "$MODELS_DIR"
   found=0
@@ -147,9 +283,7 @@ if [[ "$ACTION" == "list" ]]; then
   exit 0
 fi
 
-# ─────────────────────────────────────────────────────────────────────────────
-# STOP action: kill whatever is currently playing
-# ─────────────────────────────────────────────────────────────────────────────
+# ── Action: stop ─────────────────────────────────────────────────────────────
 if [[ "$ACTION" == "stop" ]]; then
   if [[ -f "$LOCK_FILE" ]]; then
     pid="$(cat "$LOCK_FILE" 2>/dev/null || true)"
@@ -165,108 +299,10 @@ if [[ "$ACTION" == "stop" ]]; then
   exit 0
 fi
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Sanity checks
-# ─────────────────────────────────────────────────────────────────────────────
+# ── Sanity check ─────────────────────────────────────────────────────────────
 [[ -x "$PIPER_BIN" ]] || die "Piper not found. Run: $SCRIPT_DIR/install.sh"
 
-# Resolve which voice to use: --voice/--model > --lang {sr,en} > auto-detect.
-# Auto = Serbian if the text has Cyrillic letters or the diacritics č ć ž š đ.
-resolve_voice() {
-  local text="$1"
-  if [[ -n "$MODEL_OVERRIDE" ]]; then
-    MODEL_NAME="$MODEL_OVERRIDE"
-  else
-    case "$LANG_SEL" in
-      sr) MODEL_NAME="$VOICE_SR_DEFAULT" ;;
-      en) MODEL_NAME="$VOICE_EN_DEFAULT" ;;
-      auto)
-        # SR if any Cyrillic letter or a Serbian diacritic (č ć ž š đ) is present.
-        # Code points used (not literals) so the -e source stays ASCII-clean.
-        if printf '%s' "$text" | perl -CSD -0777 -ne 'exit( /[\x{0400}-\x{04FF}\x{0106}\x{0107}\x{010C}\x{010D}\x{0110}\x{0111}\x{0160}\x{0161}\x{017D}\x{017E}]/ ? 0 : 1 )'; then
-          MODEL_NAME="$VOICE_SR_DEFAULT"
-        else
-          MODEL_NAME="$VOICE_EN_DEFAULT"
-        fi ;;
-      *) die "unknown --lang '$LANG_SEL' (use sr, en, or auto)." ;;
-    esac
-  fi
-  MODEL_ONNX="$MODELS_DIR/${MODEL_NAME}.onnx"
-  MODEL_JSON="$MODELS_DIR/${MODEL_NAME}.onnx.json"
-  [[ -s "$MODEL_ONNX" ]] || die "Voice '$MODEL_NAME' not found ($MODEL_ONNX).
-  Install it with: $SCRIPT_DIR/install.sh --add-voice $MODEL_NAME"
-  [[ -s "$MODEL_JSON" ]] || die "Voice config not found ($MODEL_JSON). Re-run $SCRIPT_DIR/install.sh."
-}
-
-# Best-effort: switch to a UTF-8 locale so espeak-ng phonemises Cyrillic/Latin.
-ensure_utf8_locale() {
-  local loc
-  for loc in "${LC_ALL-}" "${LANG-}" "C.UTF-8" "en_US.UTF-8" "UTF-8"; do
-    [[ -z "$loc" ]] && continue
-    if locale -a 2>/dev/null | grep -Fixq "$loc"; then export LC_ALL="$loc" LANG="$loc"; return 0; fi
-  done
-  return 0
-}
-ensure_utf8_locale
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Clipboard helpers (cross-platform)
-# ─────────────────────────────────────────────────────────────────────────────
-clipboard_get() {
-  case "$(uname -s)" in
-    Darwin) pbpaste 2>/dev/null ;;
-    *)
-      if have wl-paste && [[ -n "${WAYLAND_DISPLAY-}" ]]; then wl-paste 2>/dev/null
-      elif have xclip;  then xclip -o -selection clipboard 2>/dev/null
-      elif have xsel;   then xsel -ob 2>/dev/null
-      else return 1; fi ;;
-  esac
-}
-clipboard_set() {
-  case "$(uname -s)" in
-    Darwin) pbcopy 2>/dev/null ;;
-    *)
-      if have wl-copy && [[ -n "${WAYLAND_DISPLAY-}" ]]; then wl-copy 2>/dev/null
-      elif have xclip;  then xclip -i -selection clipboard 2>/dev/null
-      elif have xsel;   then xsel -bi 2>/dev/null
-      else return 1; fi ;;
-  esac
-}
-
-# Send the OS "copy" keystroke (Ctrl/Cmd+C) so the active selection lands in the
-# clipboard. Returns non-zero if it can't (missing tooling).
-send_copy_keystroke() {
-  case "$(uname -s)" in
-    Darwin)
-      osascript -e 'tell application "System Events" to keystroke "c" using command down' >/dev/null 2>&1 ;;
-    *)
-      if [[ -n "${WAYLAND_DISPLAY-}" ]]; then
-        if have wtype;        then wtype -M ctrl -k c >/dev/null 2>&1
-        elif have ydotool;    then ydotool key ctrl+c >/dev/null 2>&1
-        else return 1; fi
-      elif have xdotool; then xdotool key --clearmodifiers ctrl+c >/dev/null 2>&1
-      else return 1; fi ;;
-  esac
-}
-
-# Grab the currently-selected text. Saves & restores the clipboard so the user
-# doesn't lose what they had copied.
-grab_selection() {
-  local saved sel
-  saved="$(clipboard_get 2>/dev/null || true)"
-  if ! send_copy_keystroke; then
-    die "Cannot grab selection: need 'osascript' (macOS), 'xdotool' (X11), or 'wtype'/'ydotool' (Wayland)."
-  fi
-  sleep 0.18   # let the copy land in the clipboard
-  sel="$(clipboard_get 2>/dev/null || true)"
-  # restore the user's clipboard
-  printf '%s' "$saved" | clipboard_set 2>/dev/null || true
-  printf '%s' "$sel"
-}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Acquire raw text: args > stdin (if piped) > selection
-# ─────────────────────────────────────────────────────────────────────────────
+# ── Acquire text: args > stdin (if piped) > selection ────────────────────────
 if [[ ${#TEXT_ARGS[@]} -gt 0 ]]; then
   RAW_TEXT="${TEXT_ARGS[*]}"
 elif [[ ! -t 0 ]]; then
@@ -274,99 +310,32 @@ elif [[ ! -t 0 ]]; then
 else
   RAW_TEXT="$(grab_selection)"
 fi
-
 [[ -n "$RAW_TEXT" ]] || { echo "No text to speak."; exit 0; }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Preprocessing — remove links, markdown, code, citation markers; drop bracket
-# characters so the synth never reads "bracket" / "slash" etc.
-# ─────────────────────────────────────────────────────────────────────────────
-clean_text() {
-  if ! have perl; then
-    # Fallback: no perl — just normalise whitespace and strip a few things.
-    sed -E -e 's/https?:\/\/[^ ]+//g' \
-           -e 's/www\.[^ ]+//g' \
-           -e 's/[][(){}]//g' \
-           -e 's/[ \t]+/ /g' \
-           -e 's/^ | $//g'
-    return
-  fi
-  STRIP="${STRIP_BRACKETS}" perl -0777 -CSD -pe '
-    # fenced code blocks ```...```
-    s/```.*?```//gs;
-    # inline code `...`
-    s/`[^`\n]*`//g;
-    # markdown images  ![alt](url)
-    s/!\[[^\]]*\]\([^)]*\)//g;
-    # markdown links  [text](url) -> text
-    s/\[([^\]]+)\]\(([^)]*)\)/$1/g;
-    # html tags
-    s/<[^>]+>//g;
-    # e-mail addresses
-    s/\b[\w.+-]+\@[\w.-]+\.\w+\b//g;
-    # http(s) and www urls
-    s{\bhttps?://\S+}{}g;
-    s{\bwww\.\S+}{}g;
-    # bare domain/path links like example.com/foo
-    s{\b[a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*)+(?:/\S*)?}{}gi;
-    # citation / reference markers  [1] [12] [1a] [2, p. 4]
-    s/\[\s*\d+(?:\s*[,\-–.]?\s*[A-Za-z0-9.]*)*\s*\]//g;
-    # common wiki annotations
-    s/\[(?:citation\s+needed|edit|sic|ref|fn\s+\d+|note\s+\d+|nb\s+\d+)\]//gi;
-    # leading list markers / heading hashes / blockquote
-    s/^[ \t]*([-*+]|\d+[.)]|#{1,6}|>)[ \t]*//gm;
-    if ($ENV{STRIP}) {
-      s/\([^)]*\)//g; s/\[[^\]]*\]//g; s/\{[^}]*\}//g;
-    } else {
-      # keep inner text, just drop the bracket characters
-      tr/[](){}//d;
-    }
-    # leftover markdown decoration
-    s/[*_~|>#]/ /g;
-    # collapse whitespace
-    s/[ \t]+/ /g;
-    # fix "word ." -> "word." left by removed markers
-    s/[ \t]+([.,;:!?])/$1/g;
-    s/\n[ \t]+/\n/g;
-    s/[ \t]+\n/\n/g;
-    s/\n{3,}/\n\n/g;
-    s/^\s+|\s+$//g;
-  '
-}
-
+# ── Clean & trim ─────────────────────────────────────────────────────────────
 if [[ "$CLEAN" -eq 1 ]]; then
   TEXT="$(printf '%s' "$RAW_TEXT" | clean_text)"
 else
-  TEXT="$RAW_TEXT"
+  TEXT="$(trim_string "$RAW_TEXT")"
 fi
-
-TEXT="${TEXT#"${TEXT%%[![:space:]]*}"}"   # trim leading
-TEXT="${TEXT%"${TEXT##*[![:space:]]}"}"   # trim trailing
 [[ -n "$TEXT" ]] || { echo "Nothing left to speak after cleaning."; exit 0; }
 
-# Pick the voice (auto-detect unless --lang/--voice given), then verify files.
+# ── Resolve voice, then cap length ───────────────────────────────────────────
 resolve_voice "$TEXT"
-echo "[voice: $MODEL_NAME]" >&2
-
-# safety cap
+printf 'voice: %s\n' "$MODEL_NAME" >&2
 if [[ "$MAX_CHARS" -gt 0 && ${#TEXT} -gt "$MAX_CHARS" ]]; then
   TEXT="${TEXT:0:$MAX_CHARS} …"
 fi
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Synthesise with Piper
-# ─────────────────────────────────────────────────────────────────────────────
-# Take over the lock: if a previous speak is running (synth or play), stop it
-# first — so re-triggering the hotkey restarts cleanly.
+# ── Synthesise ───────────────────────────────────────────────────────────────
+# Take the lock: a previous run (synth or play) is stopped first, so re-trigger
+# of the hotkey restarts cleanly.
 lock_take
 WORK="$(mktemp -d)"
-cleanup() { rm -rf "$WORK"; lock_release; }
-trap 'cleanup' EXIT INT TERM
+trap 'rm -rf "$WORK"; lock_release' EXIT INT TERM
 WAV="${OUTPUT_WAV:-$WORK/out.wav}"
 
-# piper-tts (Python) bundles espeak-ng data, so no -d / data-dir is needed.
-piper_args=( -m "$MODEL_ONNX" -c "$MODEL_JSON" -f "$WAV"
-             --length-scale "$RATE" )
+piper_args=( -m "$MODEL_ONNX" -c "$MODEL_JSON" -f "$WAV" --length-scale "$RATE" )
 [[ -n "$NOISE_SCALE" ]] && piper_args+=( --noise-scale "$NOISE_SCALE" )
 [[ -n "$NOISE_W" ]]     && piper_args+=( --noise-w-scale "$NOISE_W" )
 
@@ -375,34 +344,9 @@ if ! printf '%s\n' "$TEXT" | "$PIPER_BIN" "${piper_args[@]}" 2>"$WORK/piper.err"
   die "Piper synthesis failed."
 fi
 
-# If only writing a file, we're done.
-if [[ -n "$OUTPUT_WAV" ]]; then
-  echo "wrote $OUTPUT_WAV"
-  exit 0
-fi
-
+[[ -n "$OUTPUT_WAV" ]] && { echo "wrote $OUTPUT_WAV"; exit 0; }
 [[ -s "$WAV" ]] || die "Piper produced no audio."
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Play (cross-platform). The player runs as a child of this process ($$), so
-# --stop / re-trigger (which kill our PID + children) interrupt it cleanly.
-# ─────────────────────────────────────────────────────────────────────────────
-pick_player() {
-  for c in afplay paplay aplay ffplay mpv play; do
-    have "$c" && { printf '%s\n' "$c"; return; }
-  done
-  return 1
-}
-
-PLAYER="$(pick_player)" || die "No audio player found (afplay/paplay/aplay/ffplay/mpv/sox)."
-
-case "$PLAYER" in
-  afplay) afplay "$WAV" ;;
-  paplay) paplay "$WAV" ;;
-  aplay)  aplay -q "$WAV" ;;
-  ffplay) ffplay -nodisp -autoexit -loglevel quiet "$WAV" ;;
-  mpv)    mpv --no-video --really-quiet "$WAV" ;;
-  play)   play -q "$WAV" ;;
-esac
-
+# ── Play (runs as a child of this PID, so --stop / re-trigger interrupt it) ──
+play_audio "$WAV" || die "No audio player found (afplay/paplay/aplay/ffplay/mpv/sox)."
 lock_release
