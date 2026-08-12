@@ -88,6 +88,10 @@ export const cleanService = {
       decorationToSpace,
       tidyWhitespace
     ]
-    return steps.reduce((acc, step) => step(acc), input).trim()
+    return steps
+      .reduce((acc, step) => {
+        return step(acc)
+      }, input)
+      .trim()
   }
 }

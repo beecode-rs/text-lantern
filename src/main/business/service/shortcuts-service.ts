@@ -1,7 +1,14 @@
 import { app, globalShortcut } from 'electron'
-import { ttsService } from '@src/main/tts'
-import { settingsService } from '@src/main/settings'
+import { ttsService } from '@src/main/business/service/tts-service'
+import { settingsService } from '@src/main/business/service/settings-service'
 import type { Lang } from '@src/shared/types'
+
+function _unregisterGlobalShortcutsIfAppReady(): void {
+  if (!app.isReady()) {
+    return
+  }
+  globalShortcut.unregisterAll()
+}
 
 export const shortcutsService = {
   registerAll(): void {
@@ -28,11 +35,6 @@ export const shortcutsService = {
   },
 
   unregisterAll(): void {
-    // globalShortcut cannot be used before the app is ready. The before-quit /
-    // will-quit handlers can fire early (e.g. a second instance failing to get
-    // the single-instance lock calls app.quit() during module load), so guard
-    // against that — nothing was registered before ready anyway.
-    if (!app.isReady()) return
-    globalShortcut.unregisterAll()
+    _unregisterGlobalShortcutsIfAppReady()
   }
 }

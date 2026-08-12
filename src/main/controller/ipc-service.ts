@@ -1,9 +1,9 @@
 import { ipcMain, type BrowserWindow } from 'electron'
 import fs from 'node:fs'
-import { settingsService } from '@src/main/settings'
-import { modelsService } from '@src/main/models'
-import { ttsService } from '@src/main/tts'
-import { shortcutsService } from '@src/main/shortcuts'
+import { settingsService } from '@src/main/business/service/settings-service'
+import { modelsService } from '@src/main/business/service/models-service'
+import { ttsService } from '@src/main/business/service/tts-service'
+import { shortcutsService } from '@src/main/business/service/shortcuts-service'
 import type { Lang } from '@src/shared/types'
 
 export const ipcService = {

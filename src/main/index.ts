@@ -1,11 +1,11 @@
 import { app, BrowserWindow, shell } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { settingsService } from '@src/main/settings'
-import { shortcutsService } from '@src/main/shortcuts'
-import { trayService } from '@src/main/tray'
-import { ipcService } from '@src/main/ipc'
-import { ttsService } from '@src/main/tts'
+import { settingsService } from '@src/main/business/service/settings-service'
+import { shortcutsService } from '@src/main/business/service/shortcuts-service'
+import { trayService } from '@src/main/business/service/tray-service'
+import { ipcService } from '@src/main/controller/ipc-service'
+import { ttsService } from '@src/main/business/service/tts-service'
 import type { TtsStatus } from '@src/shared/types'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -63,7 +63,7 @@ function createWindow(): BrowserWindow {
   return win
 }
 
-function statusToReading(s: TtsStatus): void {
+function _reflectReadingStateInTray(s: TtsStatus): void {
   trayService.setReading(s.state === 'synthesizing' || s.state === 'reading')
 }
 
@@ -78,7 +78,7 @@ app.whenReady().then(() => {
   shortcutsService.registerAll()
   ipcService.register(() => mainWindow)
 
-  ttsService.events.on('status', statusToReading)
+  ttsService.events.on('status', _reflectReadingStateInTray)
 
   if (!settings.startHidden || !app.isPackaged) {
     mainWindow.show()

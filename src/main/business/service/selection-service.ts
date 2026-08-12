@@ -4,10 +4,22 @@ import { promisify } from 'node:util'
 
 const pexec = promisify(exec)
 
-const delay = (ms: number): Promise<void> => {
+function _delayMs(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms)
   })
+}
+
+async function _triggerMacOsCopyShortcut(): Promise<void> {
+  await pexec(
+    `osascript -e 'tell application "System Events" to keystroke "c" using command down'`
+  )
+}
+
+function _restoreClipboard(params: { saved: string }): void {
+  if (params.saved) {
+    clipboard.writeText(params.saved)
+  }
 }
 
 export const selectionService = {
@@ -16,19 +28,15 @@ export const selectionService = {
 
     if (process.platform === 'darwin') {
       try {
-        await pexec(
-          `osascript -e 'tell application "System Events" to keystroke "c" using command down'`
-        )
-        await delay(180)
+        await _triggerMacOsCopyShortcut()
+        await _delayMs(180)
       } catch {
         // TODO: Remove when Linux/Windows selection grab lands — fall through with the existing clipboard.
       }
     }
 
     const selection = clipboard.readText()
-    if (saved) {
-      clipboard.writeText(saved)
-    }
+    _restoreClipboard({ saved })
     return selection.trim()
   }
 }

@@ -1,5 +1,5 @@
 import fs from 'node:fs'
-import { pathsService } from '@src/main/paths'
+import { pathsService } from '@src/main/util/paths-service'
 import type { Settings } from '@src/shared/types'
 
 const DEFAULT_SETTINGS: Settings = {
@@ -19,12 +19,15 @@ const DEFAULT_SETTINGS: Settings = {
   maxChars: 6000
 }
 
-const FILE = (): string => pathsService.userDataFile('settings.json')
-
 let cache: Settings = structuredClone(DEFAULT_SETTINGS)
 const listeners = new Set<() => void>()
 
-function deepMerge(base: Settings, patch: Partial<Settings>): Settings {
+function _settingsFilePath(): string {
+  return pathsService.userDataFile('settings.json')
+}
+
+function _deepMergeSettings(params: { base: Settings; patch: Partial<Settings> }): Settings {
+  const { base, patch } = params
   const next: Settings = { ...base, ...(patch as Partial<Settings>) }
   if (patch.shortcuts) {
     next.shortcuts = { ...base.shortcuts, ...patch.shortcuts }
@@ -32,9 +35,9 @@ function deepMerge(base: Settings, patch: Partial<Settings>): Settings {
   return next
 }
 
-function save(): void {
+function _persistSettingsToDisk(): void {
   try {
-    fs.writeFileSync(FILE(), JSON.stringify(cache, null, 2), 'utf8')
+    fs.writeFileSync(_settingsFilePath(), JSON.stringify(cache, null, 2), 'utf8')
   } catch (err) {
     console.error('Failed to save settings:', err)
   }
@@ -45,12 +48,12 @@ export const settingsService = {
 
   init(): Settings {
     try {
-      const raw = fs.readFileSync(FILE(), 'utf8')
+      const raw = fs.readFileSync(_settingsFilePath(), 'utf8')
       const parsed = JSON.parse(raw) as Partial<Settings>
-      cache = deepMerge(DEFAULT_SETTINGS, parsed)
+      cache = _deepMergeSettings({ base: DEFAULT_SETTINGS, patch: parsed })
     } catch {
       cache = structuredClone(DEFAULT_SETTINGS)
-      save()
+      _persistSettingsToDisk()
     }
     return cache
   },
@@ -60,9 +63,11 @@ export const settingsService = {
   },
 
   update(params: { patch: Partial<Settings> }): Settings {
-    cache = deepMerge(cache, params.patch)
-    save()
-    listeners.forEach((cb) => cb())
+    cache = _deepMergeSettings({ base: cache, patch: params.patch })
+    _persistSettingsToDisk()
+    listeners.forEach((cb) => {
+      cb()
+    })
     return cache
   },
 
