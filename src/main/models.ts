@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { pathsService } from '@src/main/paths'
@@ -7,6 +8,8 @@ import { langService } from '@src/main/lib/lang'
 import type { Voice } from '@src/shared/types'
 
 const SR_VOICE = 'sr_Marko_medium'
+const EN_VOICE = 'en_US-lessac-medium'
+const DEFAULT_INSTALL_VOICES = [SR_VOICE, EN_VOICE]
 const SR_REPO = 'https://huggingface.co/phantom9623/piper-serbian-tts/resolve/main'
 const VOICES_BASE = 'https://huggingface.co/rhasspy/piper-voices/resolve/main'
 
@@ -73,6 +76,10 @@ function listVoices(): Voice[] {
     })
 }
 
+function venvPip(): string {
+  return path.join(pathsService.venvDir(), 'bin', 'pip')
+}
+
 function isEngineInstalled(): boolean {
   try {
     return fs.existsSync(pathsService.piperBin())
@@ -81,36 +88,136 @@ function isEngineInstalled(): boolean {
   }
 }
 
-function installEngine(params: { onLog: (line: string) => void }): Promise<boolean> {
+// Run a command, streaming each stdout/stderr line to onLog. Resolves with the
+// exit code (or -1 on a failure to spawn).
+function runCmd(params: {
+  cmd: string
+  args: string[]
+  env?: NodeJS.ProcessEnv
+  onLog?: (line: string) => void
+}): Promise<number> {
   return new Promise((resolve) => {
-    const child: ChildProcess = spawn('bash', [pathsService.installScript()], {
+    const child: ChildProcess = spawn(params.cmd, params.args, {
       cwd: pathsService.projectRoot(),
-      env: { ...process.env, FORCE: '0' }
+      env: { ...process.env, ...(params.env ?? {}) }
     })
     const feed = (d: Buffer): void => {
-      d.toString()
-        .split('\n')
-        .forEach((line) => {
-          if (line.trim()) {
-            params.onLog(line)
-          }
-        })
+      for (const line of d.toString().split('\n')) {
+        if (line.trim()) params.onLog?.(line)
+      }
     }
     child.stdout?.on('data', feed)
     child.stderr?.on('data', feed)
-    child.on('exit', (code) => {
-      if (code === 0) {
-        params.onLog('[done]')
-      } else {
-        params.onLog(`[failed (exit ${code})]`)
-      }
-      resolve(code === 0 && isEngineInstalled())
-    })
+    child.on('exit', (code) => resolve(code ?? -1))
     child.on('error', (err) => {
-      params.onLog(String(err))
-      resolve(false)
+      params.onLog?.(String(err))
+      resolve(-1)
     })
   })
+}
+
+// Pipe "test." through piper into a throwaway WAV; true if audio was produced.
+function verifySynthesis(voice: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const onnx = path.join(pathsService.modelsDir(), `${voice}.onnx`)
+    const json = path.join(pathsService.modelsDir(), `${voice}.onnx.json`)
+    if (!fs.existsSync(onnx) || !fs.existsSync(json)) {
+      resolve(false)
+      return
+    }
+    const wav = path.join(os.tmpdir(), `tts-verify-${process.pid}.wav`)
+    let child: ChildProcess
+    try {
+      child = spawn(
+        pathsService.piperBin(),
+        ['-m', onnx, '-c', json, '-f', wav],
+        { stdio: ['pipe', 'ignore', 'ignore'] }
+      )
+    } catch {
+      resolve(false)
+      return
+    }
+    child.on('error', () => resolve(false))
+    child.on('exit', () => {
+      let ok = false
+      try {
+        ok = fs.existsSync(wav) && fs.statSync(wav).size > 0
+      } catch {}
+      try {
+        fs.rmSync(wav, { force: true })
+      } catch {}
+      resolve(ok)
+    })
+    child.stdin?.end('test.\n')
+  })
+}
+
+async function installEngine(params: { onLog: (line: string) => void }): Promise<boolean> {
+  const log = params.onLog
+
+  // 1. python3 3.9+
+  const versionOk = await runCmd({
+    cmd: 'python3',
+    args: ['-c', 'import sys; sys.exit(0 if (sys.version_info.major, sys.version_info.minor) >= (3, 9) else 1)']
+  })
+  if (versionOk !== 0) {
+    log('error: Python 3.9+ is required to run the Piper engine.')
+    return false
+  }
+
+  // 2. Create the virtualenv and install piper-tts (unless already present).
+  if (!isEngineInstalled()) {
+    log('Creating virtualenv…')
+    const venvOk = await runCmd({
+      cmd: 'python3',
+      args: ['-m', 'venv', pathsService.venvDir()],
+      onLog: log
+    })
+    if (venvOk !== 0) {
+      log('python3 -m venv failed. On Debian/Ubuntu you may need: sudo apt install python3-venv')
+      return false
+    }
+
+    log('Installing piper-tts (one-time, ~1 min)…')
+    await runCmd({ cmd: venvPip(), args: ['install', '-q', '--upgrade', 'pip'], onLog: log })
+    const installOk = await runCmd({ cmd: venvPip(), args: ['install', 'piper-tts'], onLog: log })
+    if (installOk !== 0 || !isEngineInstalled()) {
+      log('pip install piper-tts failed.')
+      log(
+        process.platform === 'darwin'
+          ? 'On macOS try: brew install espeak-ng   then retry.'
+          : 'On Linux try: sudo apt install espeak-ng-dev   then retry.'
+      )
+      return false
+    }
+    log('piper-tts installed.')
+  } else {
+    log('piper-tts already installed.')
+  }
+
+  // 3. Download the default voices if missing (any other voice is added in the UI).
+  fs.mkdirSync(pathsService.modelsDir(), { recursive: true })
+  for (const voice of DEFAULT_INSTALL_VOICES) {
+    const onnx = path.join(pathsService.modelsDir(), `${voice}.onnx`)
+    if (fs.existsSync(onnx)) {
+      log(`  present: ${voice}`)
+      continue
+    }
+    log(`Downloading ${voice}…`)
+    try {
+      await downloadVoice({ name: voice, onProgress: () => {} })
+      log(`  done: ${voice}`)
+    } catch (err) {
+      log(`  failed: ${voice}: ${String(err)}`)
+    }
+  }
+
+  // 4. Lenient verify.
+  log('Verifying synthesis…')
+  const verified = await verifySynthesis(SR_VOICE)
+  log(verified ? '  ok' : '  verify failed (the engine may still work).')
+  log('[done]')
+  return isEngineInstalled()
 }
 
 async function downloadOne(params: {

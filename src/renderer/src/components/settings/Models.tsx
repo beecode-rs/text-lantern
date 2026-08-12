@@ -54,8 +54,8 @@ export function ModelsSettings(): React.JSX.Element {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium">Piper engine not found</p>
               <p className="text-xs text-text/60 mt-1">
-                The app speaks through <code>bin/venv/bin/piper</code>. Install it (creates a private
-                virtualenv and downloads the default voices).
+                Install the Piper engine — it creates a private virtualenv (Python <code>piper-tts</code>)
+                and downloads the default Serbian and English voices.
               </p>
               <button
                 type="button"

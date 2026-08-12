@@ -9,12 +9,12 @@ function modelsDir(): string {
   return path.join(projectRoot(), 'models')
 }
 
-function piperBin(): string {
-  return path.join(projectRoot(), 'bin', 'venv', 'bin', 'piper')
+function venvDir(): string {
+  return path.join(projectRoot(), 'bin', 'venv')
 }
 
-function installScript(): string {
-  return path.join(projectRoot(), 'install.sh')
+function piperBin(): string {
+  return path.join(venvDir(), 'bin', 'piper')
 }
 
 function userDataFile(name: string): string {
@@ -24,7 +24,7 @@ function userDataFile(name: string): string {
 export const pathsService = {
   projectRoot,
   modelsDir,
+  venvDir,
   piperBin,
-  installScript,
   userDataFile
 }
