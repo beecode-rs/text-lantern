@@ -1,12 +1,12 @@
 import { app, BrowserWindow, shell } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { settingsService } from './settings'
-import { shortcutsService } from './shortcuts'
-import { trayService } from './tray'
-import { registerIpc } from './ipc'
-import { ttsService } from './tts'
-import type { TtsStatus } from '../shared/types'
+import { settingsService } from '@src/main/settings'
+import { shortcutsService } from '@src/main/shortcuts'
+import { trayService } from '@src/main/tray'
+import { registerIpc } from '@src/main/ipc'
+import { ttsService } from '@src/main/tts'
+import type { TtsStatus } from '@src/shared/types'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 

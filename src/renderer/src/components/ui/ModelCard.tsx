@@ -1,6 +1,6 @@
 import { Trash2, Star } from 'lucide-react'
-import { formatService } from '../../lib/format'
-import type { Voice } from '../../../../shared/types'
+import { formatService } from '@src/renderer/src/lib/format'
+import type { Voice } from '@src/shared/types'
 
 const LANG_BADGE: Record<string, string> = {
   sr: 'Serbian',

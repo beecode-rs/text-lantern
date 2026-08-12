@@ -1,4 +1,4 @@
-import type { Lang, Settings } from '../../shared/types'
+import type { Lang, Settings } from '@src/shared/types'
 
 const SERBIAN_RE = /[Ѐ-ӿĆćČčĐđŠšŽž]/
 

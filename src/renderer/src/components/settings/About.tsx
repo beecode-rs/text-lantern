@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api } from '../../api'
+import { api } from '@src/renderer/src/api'
 
 export function AboutSettings(): React.JSX.Element {
   const [voices, setVoices] = useState<{ sr: string; en: string } | null>(null)

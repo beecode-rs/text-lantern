@@ -1,10 +1,10 @@
 import { ipcMain, type BrowserWindow } from 'electron'
 import fs from 'node:fs'
-import { settingsService } from './settings'
-import { modelsService } from './models'
-import { ttsService } from './tts'
-import { shortcutsService } from './shortcuts'
-import type { Lang } from '../shared/types'
+import { settingsService } from '@src/main/settings'
+import { modelsService } from '@src/main/models'
+import { ttsService } from '@src/main/tts'
+import { shortcutsService } from '@src/main/shortcuts'
+import type { Lang } from '@src/shared/types'
 
 export function registerIpc(getWindow: () => BrowserWindow | null): void {
   const send = (channel: string, ...args: unknown[]): void => {

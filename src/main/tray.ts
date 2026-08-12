@@ -1,7 +1,7 @@
 import { Tray, Menu, type BrowserWindow, nativeImage } from 'electron'
-import { ttsService } from './tts'
-import { settingsService } from './settings'
-import type { Lang } from '../shared/types'
+import { ttsService } from '@src/main/tts'
+import { settingsService } from '@src/main/settings'
+import type { Lang } from '@src/shared/types'
 
 const SIZE = 22
 

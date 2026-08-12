@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import type { Voice } from '../../../shared/types'
-import { api } from '../api'
+import type { Voice } from '@src/shared/types'
+import { api } from '@src/renderer/src/api'
 
 interface ModelsStore {
   voices: Voice[]

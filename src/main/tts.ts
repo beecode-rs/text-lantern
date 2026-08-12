@@ -3,11 +3,11 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { pathsService } from './paths'
-import { cleanText } from './lib/clean'
-import { langService } from './lib/lang'
-import { grabSelection } from './selection'
-import type { Lang, Settings, TtsStatus } from '../shared/types'
+import { pathsService } from '@src/main/paths'
+import { cleanText } from '@src/main/lib/clean'
+import { langService } from '@src/main/lib/lang'
+import { grabSelection } from '@src/main/selection'
+import type { Lang, Settings, TtsStatus } from '@src/shared/types'
 
 const ttsEvents = new EventEmitter()
 ttsEvents.setMaxListeners(50)

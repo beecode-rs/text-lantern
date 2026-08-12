@@ -3,8 +3,11 @@ import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+const srcDir = resolve(__dirname, 'src')
+
 export default defineConfig({
   main: {
+    resolve: { alias: { '@src': srcDir } },
     build: {
       rollupOptions: {
         input: { index: resolve(__dirname, 'src/main/index.ts') }
@@ -12,6 +15,7 @@ export default defineConfig({
     }
   },
   preload: {
+    resolve: { alias: { '@src': srcDir } },
     build: {
       rollupOptions: {
         input: { index: resolve(__dirname, 'src/preload/index.ts') }
@@ -22,8 +26,7 @@ export default defineConfig({
     root: 'src/renderer',
     resolve: {
       alias: {
-        '@renderer': resolve(__dirname, 'src/renderer/src'),
-        '@': resolve(__dirname, 'src/renderer/src')
+        '@src': srcDir
       }
     },
     build: {

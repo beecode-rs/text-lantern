@@ -1,7 +1,7 @@
-import { globalShortcut } from 'electron'
-import { ttsService } from './tts'
-import { settingsService } from './settings'
-import type { Lang } from '../shared/types'
+import { app, globalShortcut } from 'electron'
+import { ttsService } from '@src/main/tts'
+import { settingsService } from '@src/main/settings'
+import type { Lang } from '@src/shared/types'
 
 function registerAll(): void {
   globalShortcut.unregisterAll()
@@ -27,6 +27,11 @@ function registerAll(): void {
 }
 
 function unregisterAll(): void {
+  // globalShortcut cannot be used before the app is ready. The before-quit /
+  // will-quit handlers can fire early (e.g. a second instance failing to get
+  // the single-instance lock calls app.quit() during module load), so guard
+  // against that — nothing was registered before ready anyway.
+  if (!app.isReady()) return
   globalShortcut.unregisterAll()
 }
 

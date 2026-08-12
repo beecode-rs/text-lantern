@@ -1,8 +1,8 @@
-import { useSettingsStore } from '../../store/settings'
-import { useModelsStore } from '../../store/models'
-import { SettingsGroup, Row } from '../ui/SettingsGroup'
-import { Toggle } from '../ui/Toggle'
-import { Slider } from '../ui/Slider'
+import { useSettingsStore } from '@src/renderer/src/store/settings'
+import { useModelsStore } from '@src/renderer/src/store/models'
+import { SettingsGroup, Row } from '@src/renderer/src/components/ui/SettingsGroup'
+import { Toggle } from '@src/renderer/src/components/ui/Toggle'
+import { Slider } from '@src/renderer/src/components/ui/Slider'
 
 function VoiceSelect({
   value,

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
-import type { TtsApi } from '../shared/types'
+import type { TtsApi } from '@src/shared/types'
 
 function on<P>(channel: string) {
   return (cb: (payload: P) => void): (() => void) => {

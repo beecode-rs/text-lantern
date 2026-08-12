@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Square, Loader2, AlertTriangle } from 'lucide-react'
-import type { TtsStatus } from '../../../shared/types'
-import { api } from '../api'
+import type { TtsStatus } from '@src/shared/types'
+import { api } from '@src/renderer/src/api'
 
 export function NowPlaying(): React.JSX.Element {
   const [status, setStatus] = useState<TtsStatus>({ state: 'idle' })

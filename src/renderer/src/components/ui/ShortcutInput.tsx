@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { formatService } from '../../lib/format'
+import { formatService } from '@src/renderer/src/lib/format'
 
 function eventToAccelerator(e: KeyboardEvent): { accel: string } | { cancel: true } | null {
   if (e.key === 'Escape') {

@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Sidebar, type Section } from './components/Sidebar'
-import { NowPlaying } from './components/NowPlaying'
-import { GeneralSettings } from './components/settings/General'
-import { ModelsSettings } from './components/settings/Models'
-import { ShortcutsSettings } from './components/settings/Shortcuts'
-import { AboutSettings } from './components/settings/About'
-import { useSettingsStore } from './store/settings'
-import { useModelsStore } from './store/models'
-import { api } from './api'
+import { Sidebar, type Section } from '@src/renderer/src/components/Sidebar'
+import { NowPlaying } from '@src/renderer/src/components/NowPlaying'
+import { GeneralSettings } from '@src/renderer/src/components/settings/General'
+import { ModelsSettings } from '@src/renderer/src/components/settings/Models'
+import { ShortcutsSettings } from '@src/renderer/src/components/settings/Shortcuts'
+import { AboutSettings } from '@src/renderer/src/components/settings/About'
+import { useSettingsStore } from '@src/renderer/src/store/settings'
+import { useModelsStore } from '@src/renderer/src/store/models'
+import { api } from '@src/renderer/src/api'
 
 function Section({ active }: { active: Section }): React.JSX.Element {
   switch (active) {

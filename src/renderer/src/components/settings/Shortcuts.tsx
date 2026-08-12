@@ -1,9 +1,9 @@
-import { useSettingsStore } from '../../store/settings'
-import { SettingsGroup, Row } from '../ui/SettingsGroup'
-import { ShortcutInput } from '../ui/ShortcutInput'
-import { formatService } from '../../lib/format'
+import { useSettingsStore } from '@src/renderer/src/store/settings'
+import { SettingsGroup, Row } from '@src/renderer/src/components/ui/SettingsGroup'
+import { ShortcutInput } from '@src/renderer/src/components/ui/ShortcutInput'
+import { formatService } from '@src/renderer/src/lib/format'
 import { AlertTriangle } from 'lucide-react'
-import type { Shortcuts } from '../../../../shared/types'
+import type { Shortcuts } from '@src/shared/types'
 
 type Key = keyof Shortcuts
 

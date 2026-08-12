@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Download, Search, AlertTriangle, RefreshCw } from 'lucide-react'
-import { useModelsStore } from '../../store/models'
-import { useSettingsStore } from '../../store/settings'
-import { ModelCard, DownloadRow } from '../ui/ModelCard'
+import { useModelsStore } from '@src/renderer/src/store/models'
+import { useSettingsStore } from '@src/renderer/src/store/settings'
+import { ModelCard, DownloadRow } from '@src/renderer/src/components/ui/ModelCard'
 
 export function ModelsSettings(): React.JSX.Element {
   const {

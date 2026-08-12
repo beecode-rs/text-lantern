@@ -1,6 +1,6 @@
 import fs from 'node:fs'
-import { pathsService } from './paths'
-import type { Settings } from '../shared/types'
+import { pathsService } from '@src/main/paths'
+import type { Settings } from '@src/shared/types'
 
 const DEFAULT_SETTINGS: Settings = {
   shortcuts: {
