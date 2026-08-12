@@ -13,25 +13,40 @@ function _unregisterGlobalShortcutsIfAppReady(): void {
 export const shortcutsService = {
   registerAll(): void {
     globalShortcut.unregisterAll()
-    const { shortcuts } = settingsService.get()
-    ;(Object.keys(shortcuts) as (keyof typeof shortcuts)[]).forEach((key) => {
-      const accel = shortcuts[key]
-      if (!accel) {
+    const settings = settingsService.get()
+    settings.languageBindings.forEach((binding) => {
+      if (!binding.shortcut) {
         return
       }
-      const registered = globalShortcut.register(accel, () => {
-        if (key === 'stop') {
-          void ttsService.stop()
-          return
-        }
-        void ttsService.speak({ lang: key as Lang, settings: settingsService.get() })
+      const registered = globalShortcut.register(binding.shortcut, () => {
+        void ttsService.speak({ lang: binding.langCode, settings: settingsService.get() })
       })
       if (!registered) {
         console.warn(
-          `[shortcuts] could not register “${key}” = ${accel} (conflict with another app?)`
+          `[shortcuts] could not register "${binding.shortcut}" (conflict with another app?)`
         )
       }
     })
+    if (settings.autoShortcut) {
+      const registered = globalShortcut.register(settings.autoShortcut, () => {
+        void ttsService.speak({ lang: 'auto', settings: settingsService.get() })
+      })
+      if (!registered) {
+        console.warn(
+          `[shortcuts] could not register "auto" = ${settings.autoShortcut} (conflict with another app?)`
+        )
+      }
+    }
+    if (settings.stopShortcut) {
+      const registered = globalShortcut.register(settings.stopShortcut, () => {
+        void ttsService.stop()
+      })
+      if (!registered) {
+        console.warn(
+          `[shortcuts] could not register "stop" = ${settings.stopShortcut} (conflict with another app?)`
+        )
+      }
+    }
   },
 
   unregisterAll(): void {

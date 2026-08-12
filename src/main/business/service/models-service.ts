@@ -289,7 +289,9 @@ export const modelsService = {
           hasJson: fs.existsSync(path.join(dir, `${name}.onnx.json`)),
           sizeBytes,
           lang: langService.voiceLang({ name }),
-          isDefault: name === settings.voiceSr || name === settings.voiceEn
+          inUse: settings.languageBindings.some((binding) => {
+            return binding.voice === name
+          })
         }
       })
   },

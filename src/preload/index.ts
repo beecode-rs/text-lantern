@@ -48,9 +48,6 @@ const api: TtsApi = {
   deleteVoice: (name) => {
     return ipcRenderer.invoke('models:delete', name)
   },
-  setDefaultVoice: (lang, name) => {
-    return ipcRenderer.invoke('models:setDefault', lang, name)
-  },
 
   speak: (lang, text) => {
     return ipcRenderer.invoke('tts:speak', lang, text)

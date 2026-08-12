@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Download, Search, AlertTriangle, RefreshCw } from 'lucide-react'
 import { useModelsStore } from '@src/renderer/src/store/models'
-import { useSettingsStore } from '@src/renderer/src/store/settings'
 import { ModelCard, DownloadRow } from '@src/renderer/src/components/ui/ModelCard'
 
 export function ModelsSettings(): React.JSX.Element {
@@ -16,7 +15,6 @@ export function ModelsSettings(): React.JSX.Element {
     download,
     remove
   } = useModelsStore()
-  const update = useSettingsStore((s) => s.update)
 
   const [query, setQuery] = useState('')
   const [addName, setAddName] = useState('')
@@ -147,8 +145,6 @@ export function ModelsSettings(): React.JSX.Element {
               <ModelCard
                 key={voice.name}
                 voice={voice}
-                onSetDefaultSr={() => update({ voiceSr: voice.name })}
-                onSetDefaultEn={() => update({ voiceEn: voice.name })}
                 onDelete={() => remove(voice.name)}
               />
             ))}

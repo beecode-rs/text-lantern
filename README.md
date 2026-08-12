@@ -32,14 +32,16 @@ on your machine; the app does the rest.)
 
 ## Features
 
-- **Menu-bar tray** with a reading-state icon and a menu (Read auto/Serbian/English,
-  Stop, Settings, Quit).
-- **Global shortcuts, one per language** (Settings → Shortcuts): Read–Auto,
-  Read–Serbian, Read–English, Stop. Rebindable; conflicts are flagged.
-- **Models** (Settings → Models): install the Piper engine, list installed voices,
-  and download any Piper voice by name with a progress bar.
-- **General**: default voice per language, speech speed, text-cleaning toggles,
-  window prefs.
+- **Menu-bar tray** with a reading-state icon and a menu (Read auto, one entry per
+  configured language, Stop, Settings, Quit).
+- **Languages** (Settings → Languages): pair each language with the voice that reads
+  it and a global shortcut — one row per language. Add any recognized language, pick
+  its voice, and bind a hotkey; each language and each shortcut can be used only once,
+  and conflicts are flagged. Auto-detect and Stop have their own shortcuts too.
+- **Models** (Settings → Models): install the Piper engine, list installed voices, and
+  download any Piper voice by name with a progress bar. Voices used by a language are
+  marked "in use".
+- **General**: speech speed, text-cleaning toggles, window prefs.
 - A **Now Playing** bar shows synthesis/reading state with a Stop button.
 
 ## Selecting text
@@ -51,21 +53,63 @@ your clipboard isn't disturbed.
 
 ## Voices & languages
 
-| Tag | Default voice | Source |
-|-----|---------------|--------|
-| `sr` | `sr_Marko_medium` | phantom9623/piper-serbian-tts |
-| `en` | `en_US-lessac-medium` | rhasspy/piper-voices |
+The app ships with two language bindings:
 
-**Auto-detection** (the default) picks Serbian if the text contains Cyrillic
-letters or any of `č ć ž š đ`; otherwise English. This is unambiguous for
-Cyrillic and Serbian-Latin-with-diacritics. For Serbian Latin *without* diacritics
-(e.g. "Beograd je lep"), force Serbian via its shortcut / the tray menu.
+| Language | Default voice | Source |
+|----------|---------------|--------|
+| Serbian (`sr`) | `sr_Marko_medium` | phantom9623/piper-serbian-tts |
+| English (`en`) | `en_US-lessac-medium` | rhasspy/piper-voices |
+
+In **Settings → Languages** each language is one row: choose the voice that reads it
+and the global shortcut that triggers reading. Add any recognized language (the full
+list lives in `src/shared/languages.ts`), then pair it with an installed voice. Each
+language and each shortcut may be used only once.
+
+**Auto-detect** (its own shortcut, and the tray's default action) detects the language
+from the selected text and reads it with the matching binding's voice; when the
+detected language has no binding, the first binding is used.
 
 **Add more voices** (any from [rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices))
 in Settings → Models, e.g. `en_US-ryan-high` (male), `en_US-amy-medium` (female),
 `en_GB-cori-high` (British). Some natural English options: `en_US-lessac-medium`
 (default), `en_US-ryan-high` (male), `en_US-amy-medium` (female),
 `en_GB-cori-high` (British), `en_GB-alan-medium` (male, British).
+
+### Adding custom languages (environment variable)
+
+Extend the list of **recognized languages** shown in the UI via the `languages`
+environment variable, whose value is a JSON array of `{ code, name }` objects.
+
+```json
+[
+  {"code": "hr", "name": "Croatian"},
+  {"code": "sl", "name": "Slovenian"},
+  {"code": "en", "name": "American English"}
+]
+```
+
+- **Existing code** → its display **name is overridden** (above, `en` becomes
+  "American English"); the code is not duplicated and keeps its position.
+- **New code** → **appended** to the end of the list. Codes stay unique.
+- Codes are **case-normalized to lowercase**; each entry needs a non-empty
+  `code` and `name`, otherwise it is skipped.
+- If `languages` is **unset or the JSON is invalid**, the built-in list is used
+  unchanged (invalid JSON also logs a warning to the console).
+
+Set it inline before launching, or `export` it in your shell:
+
+```bash
+languages='[{"code":"hr","name":"Croatian"}]' npm run dev
+languages='[{"code":"hr","name":"Croatian"}]' npm run build
+```
+
+For a packaged build, set `languages` in the process environment the same way.
+
+> **Note:** listing a language does **not** install a voice. Whether a Piper
+> voice exists for a code is resolved at runtime from installed/downloaded
+> voices (Settings → Models). Add `{"code":"hr","name":"Croatian"}` and Croatian
+> appears in the list, but you still need to download a Croatian voice for it
+> to speak.
 
 ### What the cleaner removes
 

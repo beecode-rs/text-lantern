@@ -1,12 +1,13 @@
 import type { ComponentType } from 'react'
-import { BookOpen, Cpu, Keyboard, Info } from 'lucide-react'
+import { BookOpen, Cpu, Languages, Volume2, Info } from 'lucide-react'
 
-export type Section = 'general' | 'models' | 'shortcuts' | 'about'
+export type Section = 'general' | 'models' | 'languages' | 'test' | 'about'
 
 const ITEMS: { id: Section; label: string; icon: ComponentType<{ size?: number | string }> }[] = [
   { id: 'general', label: 'General', icon: BookOpen },
   { id: 'models', label: 'Models', icon: Cpu },
-  { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
+  { id: 'languages', label: 'Languages', icon: Languages },
+  { id: 'test', label: 'Test', icon: Volume2 },
   { id: 'about', label: 'About', icon: Info }
 ]
 

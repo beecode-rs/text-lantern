@@ -1,22 +1,14 @@
-import { Trash2, Star } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
+import { StarBadge } from '@src/renderer/src/components/ui/StarBadge'
 import { formatService } from '@src/renderer/src/lib/format'
+import { ttsLanguageName } from '@src/shared/languages'
 import type { Voice } from '@src/shared/types'
-
-const LANG_BADGE: Record<string, string> = {
-  sr: 'Serbian',
-  en: 'English',
-  other: 'Other'
-}
 
 export function ModelCard({
   voice,
-  onSetDefaultSr,
-  onSetDefaultEn,
   onDelete
 }: {
   voice: Voice
-  onSetDefaultSr: () => void
-  onSetDefaultEn: () => void
   onDelete: () => void
 }): React.JSX.Element {
   return (
@@ -24,34 +16,14 @@ export function ModelCard({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium truncate selectable">{voice.name}</span>
-          {voice.isDefault && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wide text-logo-primary">
-              <Star size={11} fill="currentColor" /> default
-            </span>
-          )}
+          {voice.inUse && <StarBadge>in use</StarBadge>}
         </div>
         <div className="text-xs text-text/55 mt-0.5">
-          {LANG_BADGE[voice.lang]} · {formatService.formatBytes(voice.sizeBytes)}
+          {ttsLanguageName({ code: voice.lang })} · {formatService.formatBytes(voice.sizeBytes)}
           {!voice.hasJson && <span className="text-red-500"> · missing .json</span>}
         </div>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
-        <button
-          type="button"
-          onClick={onSetDefaultSr}
-          title="Set as Serbian voice"
-          className="px-2 py-1 text-xs rounded-md bg-mid-gray/10 hover:bg-mid-gray/25 transition-colors"
-        >
-          sr
-        </button>
-        <button
-          type="button"
-          onClick={onSetDefaultEn}
-          title="Set as English voice"
-          className="px-2 py-1 text-xs rounded-md bg-mid-gray/10 hover:bg-mid-gray/25 transition-colors"
-        >
-          en
-        </button>
         <button
           type="button"
           onClick={onDelete}

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { api } from '@src/renderer/src/api'
+import { ttsLanguageName } from '@src/shared/languages'
+import type { Settings } from '@src/shared/types'
 
 export function AboutSettings(): React.JSX.Element {
-  const [voices, setVoices] = useState<{ sr: string; en: string } | null>(null)
+  const [settings, setSettings] = useState<Settings | null>(null)
   useEffect(() => {
-    api.getSettings().then((s) => setVoices({ sr: s.voiceSr, en: s.voiceEn }))
+    api.getSettings().then(setSettings)
   }, [])
 
   return (
@@ -26,13 +28,20 @@ export function AboutSettings(): React.JSX.Element {
         </div>
         <p className="text-sm text-text/70 leading-relaxed">
           Press a global shortcut to read the selected text aloud with neural Piper voices. Everything
-          runs on your device — nothing is sent anywhere. Language is auto-detected (Cyrillic or Serbian
-          diacritics → Serbian, otherwise English) or chosen per shortcut.
+          runs on your device — nothing is sent anywhere. Language is auto-detected from the text or
+          chosen via a per-language shortcut.
         </p>
-        {voices && (
+        {settings && settings.languageBindings.length > 0 && (
           <div className="text-xs text-text/55 mt-1">
-            Serbian: <span className="selectable">{voices.sr}</span> · English:{' '}
-            <span className="selectable">{voices.en}</span>
+            {settings.languageBindings.map((binding, index) => {
+              return (
+                <span key={binding.id}>
+                  {index > 0 ? ' · ' : ''}
+                  {ttsLanguageName({ code: binding.langCode })}:{' '}
+                  <span className="selectable">{binding.voice}</span>
+                </span>
+              )
+            })}
           </div>
         )}
       </section>

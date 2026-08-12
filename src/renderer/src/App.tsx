@@ -3,7 +3,8 @@ import { Sidebar, type Section } from '@src/renderer/src/components/Sidebar'
 import { NowPlaying } from '@src/renderer/src/components/NowPlaying'
 import { GeneralSettings } from '@src/renderer/src/components/settings/General'
 import { ModelsSettings } from '@src/renderer/src/components/settings/Models'
-import { ShortcutsSettings } from '@src/renderer/src/components/settings/Shortcuts'
+import { LanguagesSettings } from '@src/renderer/src/components/settings/Languages'
+import { TestSettings } from '@src/renderer/src/components/settings/Test'
 import { AboutSettings } from '@src/renderer/src/components/settings/About'
 import { useSettingsStore } from '@src/renderer/src/store/settings'
 import { useModelsStore } from '@src/renderer/src/store/models'
@@ -15,8 +16,10 @@ function Section({ active }: { active: Section }): React.JSX.Element {
       return <GeneralSettings />
     case 'models':
       return <ModelsSettings />
-    case 'shortcuts':
-      return <ShortcutsSettings />
+    case 'languages':
+      return <LanguagesSettings />
+    case 'test':
+      return <TestSettings />
     case 'about':
       return <AboutSettings />
   }

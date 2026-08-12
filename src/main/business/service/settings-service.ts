@@ -1,16 +1,35 @@
 import fs from 'node:fs'
 import { pathsService } from '@src/main/util/paths-service'
-import type { Settings } from '@src/shared/types'
+import type { LanguageBinding, Settings } from '@src/shared/types'
+
+/**
+ * Pre-electron-settings shape: two hardcoded language voices and a fixed
+ * shortcuts object. Recognized only when migrating an older `settings.json`
+ * that predates `languageBindings`.
+ */
+interface LegacyShortcuts {
+  auto?: string
+  sr?: string
+  en?: string
+  stop?: string
+}
+
+interface LegacySettings {
+  voiceSr?: string
+  voiceEn?: string
+  shortcuts?: LegacyShortcuts
+}
+
+const DEFAULT_BINDINGS: LanguageBinding[] = [
+  { id: 'sr', langCode: 'sr', voice: 'sr_Marko_medium', shortcut: 'CommandOrControl+Shift+S' },
+  { id: 'en', langCode: 'en', voice: 'en_US-lessac-medium', shortcut: 'CommandOrControl+Shift+E' }
+]
 
 const DEFAULT_SETTINGS: Settings = {
-  shortcuts: {
-    auto: 'CommandOrControl+Shift+R',
-    sr: 'CommandOrControl+Shift+S',
-    en: 'CommandOrControl+Shift+E',
-    stop: 'CommandOrControl+Shift+Q'
-  },
-  voiceSr: 'sr_Marko_medium',
-  voiceEn: 'en_US-lessac-medium',
+  languageBindings: structuredClone(DEFAULT_BINDINGS),
+  fallbackLang: 'en',
+  autoShortcut: 'CommandOrControl+Shift+R',
+  stopShortcut: 'CommandOrControl+Shift+Q',
   rate: 1.0,
   cleanText: true,
   stripBrackets: false,
@@ -26,13 +45,64 @@ function _settingsFilePath(): string {
   return pathsService.userDataFile('settings.json')
 }
 
-function _deepMergeSettings(params: { base: Settings; patch: Partial<Settings> }): Settings {
-  const { base, patch } = params
-  const next: Settings = { ...base, ...(patch as Partial<Settings>) }
-  if (patch.shortcuts) {
-    next.shortcuts = { ...base.shortcuts, ...patch.shortcuts }
+/**
+ * Builds the Serbian and English bindings from a legacy settings object, using
+ * each stored voice / per-language shortcut when present and falling back to the
+ * built-in defaults otherwise. Returns `null` when there is nothing legacy to
+ * migrate, so the caller can fall back to the built-in default bindings.
+ */
+function _migrateLegacyBindings(params: { parsed: LegacySettings }): LanguageBinding[] | null {
+  const { parsed } = params
+  const hasLegacy = parsed.voiceSr ?? parsed.voiceEn ?? parsed.shortcuts
+  if (!hasLegacy) {
+    return null
   }
-  return next
+  const sc = parsed.shortcuts ?? {}
+  return DEFAULT_BINDINGS.map<LanguageBinding>((binding) => {
+    if (binding.langCode === 'sr') {
+      return {
+        id: binding.id,
+        langCode: 'sr',
+        voice: parsed.voiceSr ?? binding.voice,
+        shortcut: sc.sr ?? binding.shortcut
+      }
+    }
+    return {
+      id: binding.id,
+      langCode: 'en',
+      voice: parsed.voiceEn ?? binding.voice,
+      shortcut: sc.en ?? binding.shortcut
+    }
+  })
+}
+
+/**
+ * Normalizes a parsed settings object into a complete, valid `Settings`,
+ * migrating any legacy two-language fields into `languageBindings` and filling
+ * every field from the defaults when missing. Pure and total.
+ */
+function _buildSettings(params: {
+  defaults: Settings
+  parsed: Partial<Settings> & LegacySettings
+}): Settings {
+  const { defaults, parsed } = params
+  const bindings = Array.isArray(parsed.languageBindings)
+    ? parsed.languageBindings
+    : _migrateLegacyBindings({ parsed }) ?? defaults.languageBindings
+  const autoShortcut = parsed.autoShortcut ?? parsed.shortcuts?.auto ?? defaults.autoShortcut
+  const stopShortcut = parsed.stopShortcut ?? parsed.shortcuts?.stop ?? defaults.stopShortcut
+  return {
+    languageBindings: bindings,
+    fallbackLang: parsed.fallbackLang ?? defaults.fallbackLang,
+    autoShortcut,
+    stopShortcut,
+    rate: parsed.rate ?? defaults.rate,
+    cleanText: parsed.cleanText ?? defaults.cleanText,
+    stripBrackets: parsed.stripBrackets ?? defaults.stripBrackets,
+    startHidden: parsed.startHidden ?? defaults.startHidden,
+    showTray: parsed.showTray ?? defaults.showTray,
+    maxChars: parsed.maxChars ?? defaults.maxChars
+  }
 }
 
 function _persistSettingsToDisk(): void {
@@ -49,12 +119,12 @@ export const settingsService = {
   init(): Settings {
     try {
       const raw = fs.readFileSync(_settingsFilePath(), 'utf8')
-      const parsed = JSON.parse(raw) as Partial<Settings>
-      cache = _deepMergeSettings({ base: DEFAULT_SETTINGS, patch: parsed })
+      const parsed = JSON.parse(raw) as Partial<Settings> & LegacySettings
+      cache = _buildSettings({ defaults: DEFAULT_SETTINGS, parsed })
     } catch {
       cache = structuredClone(DEFAULT_SETTINGS)
-      _persistSettingsToDisk()
     }
+    _persistSettingsToDisk()
     return cache
   },
 
@@ -63,7 +133,7 @@ export const settingsService = {
   },
 
   update(params: { patch: Partial<Settings> }): Settings {
-    cache = _deepMergeSettings({ base: cache, patch: params.patch })
+    cache = { ...cache, ...params.patch }
     _persistSettingsToDisk()
     listeners.forEach((cb) => {
       cb()

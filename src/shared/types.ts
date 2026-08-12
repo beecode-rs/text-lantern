@@ -1,16 +1,41 @@
-export type Lang = 'auto' | 'sr' | 'en'
-
-export interface Shortcuts {
-  auto: string
-  sr: string
-  en: string
-  stop: string
+/**
+ * A user-configurable language binding: one recognized language paired with
+ * the voice model that reads it and the global shortcut that triggers reading.
+ * The set of these (`Settings.languageBindings`) is the single source of truth
+ * for the language → voice → shortcut mapping; the older hardcoded Serbian /
+ * English fields have been folded into two default bindings.
+ */
+export interface LanguageBinding {
+  /** Stable id decoupled from `langCode`, so the language can be re-chosen without losing identity. */
+  id: string
+  /** Recognized language code (matches a `TtsLanguageInfo.code`), e.g. `sr`, `en`, `de`. */
+  langCode: string
+  /** Voice model name that reads this language, e.g. `sr_Marko_medium`. */
+  voice: string
+  /** Global accelerator, e.g. `CommandOrControl+Shift+S`; empty string means no shortcut. */
+  shortcut: string
 }
 
+/**
+ * The target of a speak request. `'auto'` detects the language from the text
+ * and resolves the matching binding's voice; any other value is a concrete
+ * language code that must match a binding's `langCode`.
+ */
+export type Lang = 'auto' | string
+
 export interface Settings {
-  shortcuts: Shortcuts
-  voiceSr: string
-  voiceEn: string
+  languageBindings: LanguageBinding[]
+  /**
+   * Language code used when auto-detection fails or yields a language with no
+   * binding (e.g. too-short, ambiguous, or unsupported text). References a
+   * binding's `langCode`; because it must point at a bound language, the
+   * auto-detect shortcut cannot be configured without at least one binding.
+   */
+  fallbackLang: string
+  /** Shortcut for auto-detect reading (not tied to a single language). */
+  autoShortcut: string
+  /** Shortcut that stops any active reading. */
+  stopShortcut: string
   rate: number
   cleanText: boolean
   stripBrackets: boolean
@@ -23,8 +48,10 @@ export interface Voice {
   name: string
   hasJson: boolean
   sizeBytes: number
-  lang: 'sr' | 'en' | 'other'
-  isDefault: boolean
+  /** Language code derived from the voice-name prefix, e.g. `sr`, `en`, `de`. */
+  lang: string
+  /** True when at least one language binding uses this voice. */
+  inUse: boolean
 }
 
 export type TtsStatus =
@@ -42,7 +69,6 @@ export interface TtsApi {
   installEngine(): Promise<boolean>
   downloadVoice(name: string): Promise<Voice[]>
   deleteVoice(name: string): Promise<Voice[]>
-  setDefaultVoice(lang: 'sr' | 'en', name: string): Promise<Settings>
 
   speak(lang: Lang, text?: string): Promise<boolean>
   stop(): Promise<boolean>

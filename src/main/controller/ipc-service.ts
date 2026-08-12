@@ -4,6 +4,7 @@ import { settingsService } from '@src/main/business/service/settings-service'
 import { modelsService } from '@src/main/business/service/models-service'
 import { ttsService } from '@src/main/business/service/tts-service'
 import { shortcutsService } from '@src/main/business/service/shortcuts-service'
+import { trayService } from '@src/main/business/service/tray-service'
 import type { Lang } from '@src/shared/types'
 
 export const ipcService = {
@@ -46,12 +47,6 @@ export const ipcService = {
       modelsService.deleteVoice({ name })
       return modelsService.listVoices()
     })
-    ipcMain.handle('models:setDefault', (_e, lang: 'sr' | 'en', name: string) => {
-      if (lang === 'sr') {
-        return settingsService.update({ patch: { voiceSr: name } })
-      }
-      return settingsService.update({ patch: { voiceEn: name } })
-    })
 
     ipcMain.handle('tts:speak', (_e, lang: Lang, text?: string) => {
       void ttsService.speak({ lang, text, settings: settingsService.get() })
@@ -93,6 +88,7 @@ export const ipcService = {
 
     settingsService.onChange(() => {
       shortcutsService.registerAll()
+      trayService.refreshMenu()
       send('settings:changed', settingsService.get())
     })
   }

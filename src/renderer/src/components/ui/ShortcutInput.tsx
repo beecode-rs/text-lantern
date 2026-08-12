@@ -37,11 +37,13 @@ function eventToAccelerator(e: KeyboardEvent): { accel: string } | { cancel: tru
 export function ShortcutInput({
   value,
   onChange,
-  conflict
+  conflict,
+  disabled
 }: {
   value: string
   onChange: (accel: string) => void
   conflict?: boolean
+  disabled?: boolean
 }): React.JSX.Element {
   const [listening, setListening] = useState(false)
 
@@ -70,9 +72,14 @@ export function ShortcutInput({
   return (
     <button
       type="button"
-      onClick={() => setListening((v) => !v)}
+      disabled={disabled}
+      onClick={() => {
+        setListening((v) => {
+          return !v
+        })
+      }}
       onBlur={() => setListening(false)}
-      className={`min-w-[150px] px-3 py-1.5 text-sm rounded-lg border transition-colors text-left ${
+      className={`min-w-[150px] px-3 py-1.5 text-sm rounded-lg border transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed ${
         conflict
           ? 'border-red-500/70 bg-red-500/10'
           : listening

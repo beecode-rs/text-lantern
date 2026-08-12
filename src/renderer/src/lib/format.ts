@@ -7,13 +7,6 @@ const detectMac = (): boolean => {
 
 const isMac = detectMac()
 
-const PRETTIER_NAMES: Record<string, string> = {
-  auto: 'Auto-detect',
-  sr: 'Serbian',
-  en: 'English',
-  stop: 'Stop'
-}
-
 function formatBytes(bytes: number): string {
   if (!bytes || bytes <= 0) {
     return '0 B'
@@ -76,12 +69,7 @@ function formatAccelerator(accel: string): string {
   return parts.join(joiner)
 }
 
-function prettyLang(key: string): string {
-  return PRETTIER_NAMES[key] ?? key
-}
-
 export const formatService = {
   formatBytes,
-  formatAccelerator,
-  prettyLang
+  formatAccelerator
 }
