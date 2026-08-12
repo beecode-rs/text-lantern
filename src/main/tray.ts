@@ -116,39 +116,35 @@ function menuTemplate(window: BrowserWindow): Electron.MenuItemConstructorOption
   ]
 }
 
-function create(window: BrowserWindow): Tray {
-  ensureIcons()
-  tray = new Tray(idleIcon)
-  tray.setToolTip('TTS Reader')
-  tray.setContextMenu(Menu.buildFromTemplate(menuTemplate(window)))
-  tray.on('click', () => {
-    window.show()
-    window.focus()
-  })
-  return tray
-}
-
-function setReading(reading: boolean): void {
-  if (!tray) {
-    return
-  }
-  ensureIcons()
-  if (reading) {
-    tray.setImage(readingIcon)
-    tray.setToolTip('TTS Reader — reading…')
-  } else {
-    tray.setImage(idleIcon)
-    tray.setToolTip('TTS Reader')
-  }
-}
-
-function destroy(): void {
-  tray?.destroy()
-  tray = null
-}
-
 export const trayService = {
-  create,
-  setReading,
-  destroy
+  create(window: BrowserWindow): Tray {
+    ensureIcons()
+    tray = new Tray(idleIcon)
+    tray.setToolTip('TTS Reader')
+    tray.setContextMenu(Menu.buildFromTemplate(menuTemplate(window)))
+    tray.on('click', () => {
+      window.show()
+      window.focus()
+    })
+    return tray
+  },
+
+  setReading(reading: boolean): void {
+    if (!tray) {
+      return
+    }
+    ensureIcons()
+    if (reading) {
+      tray.setImage(readingIcon)
+      tray.setToolTip('TTS Reader — reading…')
+    } else {
+      tray.setImage(idleIcon)
+      tray.setToolTip('TTS Reader')
+    }
+  },
+
+  destroy(): void {
+    tray?.destroy()
+    tray = null
+  }
 }

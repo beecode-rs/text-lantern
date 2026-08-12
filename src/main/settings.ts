@@ -32,36 +32,6 @@ function deepMerge(base: Settings, patch: Partial<Settings>): Settings {
   return next
 }
 
-function init(): Settings {
-  try {
-    const raw = fs.readFileSync(FILE(), 'utf8')
-    const parsed = JSON.parse(raw) as Partial<Settings>
-    cache = deepMerge(DEFAULT_SETTINGS, parsed)
-  } catch {
-    cache = structuredClone(DEFAULT_SETTINGS)
-    save()
-  }
-  return cache
-}
-
-function get(): Settings {
-  return cache
-}
-
-function update(params: { patch: Partial<Settings> }): Settings {
-  cache = deepMerge(cache, params.patch)
-  save()
-  listeners.forEach((cb) => cb())
-  return cache
-}
-
-function onChange(cb: () => void): () => void {
-  listeners.add(cb)
-  return () => {
-    listeners.delete(cb)
-  }
-}
-
 function save(): void {
   try {
     fs.writeFileSync(FILE(), JSON.stringify(cache, null, 2), 'utf8')
@@ -72,8 +42,34 @@ function save(): void {
 
 export const settingsService = {
   defaults: DEFAULT_SETTINGS,
-  init,
-  get,
-  update,
-  onChange
+
+  init(): Settings {
+    try {
+      const raw = fs.readFileSync(FILE(), 'utf8')
+      const parsed = JSON.parse(raw) as Partial<Settings>
+      cache = deepMerge(DEFAULT_SETTINGS, parsed)
+    } catch {
+      cache = structuredClone(DEFAULT_SETTINGS)
+      save()
+    }
+    return cache
+  },
+
+  get(): Settings {
+    return cache
+  },
+
+  update(params: { patch: Partial<Settings> }): Settings {
+    cache = deepMerge(cache, params.patch)
+    save()
+    listeners.forEach((cb) => cb())
+    return cache
+  },
+
+  onChange(cb: () => void): () => void {
+    listeners.add(cb)
+    return () => {
+      listeners.delete(cb)
+    }
+  }
 }

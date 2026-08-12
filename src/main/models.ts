@@ -45,47 +45,8 @@ function voiceUrlPrefix(params: { name: string }): string {
   return `${VOICES_BASE}/${lang}/${langRegion}/${voice}/${quality}`
 }
 
-function listVoices(): Voice[] {
-  const dir = pathsService.modelsDir()
-  const settings = settingsService.get()
-  let entries: string[] = []
-  try {
-    entries = fs.readdirSync(dir)
-  } catch {
-    return []
-  }
-
-  const onnxNames = new Set(
-    entries.filter((e) => e.endsWith('.onnx')).map((e) => e.slice(0, -'.onnx'.length))
-  )
-
-  return Array.from(onnxNames)
-    .sort()
-    .map<Voice>((name) => {
-      let sizeBytes = 0
-      try {
-        sizeBytes = fs.statSync(path.join(dir, `${name}.onnx`)).size
-      } catch {}
-      return {
-        name,
-        hasJson: fs.existsSync(path.join(dir, `${name}.onnx.json`)),
-        sizeBytes,
-        lang: langService.voiceLang({ name }),
-        isDefault: name === settings.voiceSr || name === settings.voiceEn
-      }
-    })
-}
-
 function venvPip(): string {
   return path.join(pathsService.venvDir(), 'bin', 'pip')
-}
-
-function isEngineInstalled(): boolean {
-  try {
-    return fs.existsSync(pathsService.piperBin())
-  } catch {
-    return false
-  }
 }
 
 // Run a command, streaming each stdout/stderr line to onLog. Resolves with the
@@ -152,74 +113,6 @@ function verifySynthesis(voice: string): Promise<boolean> {
   })
 }
 
-async function installEngine(params: { onLog: (line: string) => void }): Promise<boolean> {
-  const log = params.onLog
-
-  // 1. python3 3.9+
-  const versionOk = await runCmd({
-    cmd: 'python3',
-    args: ['-c', 'import sys; sys.exit(0 if (sys.version_info.major, sys.version_info.minor) >= (3, 9) else 1)']
-  })
-  if (versionOk !== 0) {
-    log('error: Python 3.9+ is required to run the Piper engine.')
-    return false
-  }
-
-  // 2. Create the virtualenv and install piper-tts (unless already present).
-  if (!isEngineInstalled()) {
-    log('Creating virtualenv…')
-    const venvOk = await runCmd({
-      cmd: 'python3',
-      args: ['-m', 'venv', pathsService.venvDir()],
-      onLog: log
-    })
-    if (venvOk !== 0) {
-      log('python3 -m venv failed. On Debian/Ubuntu you may need: sudo apt install python3-venv')
-      return false
-    }
-
-    log('Installing piper-tts (one-time, ~1 min)…')
-    await runCmd({ cmd: venvPip(), args: ['install', '-q', '--upgrade', 'pip'], onLog: log })
-    const installOk = await runCmd({ cmd: venvPip(), args: ['install', 'piper-tts'], onLog: log })
-    if (installOk !== 0 || !isEngineInstalled()) {
-      log('pip install piper-tts failed.')
-      log(
-        process.platform === 'darwin'
-          ? 'On macOS try: brew install espeak-ng   then retry.'
-          : 'On Linux try: sudo apt install espeak-ng-dev   then retry.'
-      )
-      return false
-    }
-    log('piper-tts installed.')
-  } else {
-    log('piper-tts already installed.')
-  }
-
-  // 3. Download the default voices if missing (any other voice is added in the UI).
-  fs.mkdirSync(pathsService.modelsDir(), { recursive: true })
-  for (const voice of DEFAULT_INSTALL_VOICES) {
-    const onnx = path.join(pathsService.modelsDir(), `${voice}.onnx`)
-    if (fs.existsSync(onnx)) {
-      log(`  present: ${voice}`)
-      continue
-    }
-    log(`Downloading ${voice}…`)
-    try {
-      await downloadVoice({ name: voice, onProgress: () => {} })
-      log(`  done: ${voice}`)
-    } catch (err) {
-      log(`  failed: ${voice}: ${String(err)}`)
-    }
-  }
-
-  // 4. Lenient verify.
-  log('Verifying synthesis…')
-  const verified = await verifySynthesis(SR_VOICE)
-  log(verified ? '  ok' : '  verify failed (the engine may still work).')
-  log('[done]')
-  return isEngineInstalled()
-}
-
 async function downloadOne(params: {
   url: string
   dest: string
@@ -249,48 +142,149 @@ async function downloadOne(params: {
   })
 }
 
-async function downloadVoice(params: {
-  name: string
-  onProgress: (p: number) => void
-}): Promise<void> {
-  fs.mkdirSync(pathsService.modelsDir(), { recursive: true })
-  const prefix = voiceUrlPrefix({ name: params.name })
-  const files = [
-    { ext: 'onnx', weight: 0.97 },
-    { ext: 'onnx.json', weight: 0.03 }
-  ]
-  let base = 0
-  await files.reduce(async (acc, f) => {
-    await acc
-    const dest = path.join(pathsService.modelsDir(), `${params.name}.${f.ext}`)
-    const url = `${prefix}/${params.name}.${f.ext}`
-    await downloadOne({
-      url,
-      dest,
-      onProgress: (p) => {
-        params.onProgress(base + p * f.weight)
-      }
-    })
-    base += f.weight
-    params.onProgress(base)
-  }, Promise.resolve())
-  params.onProgress(1)
-}
-
-function deleteVoice(params: { name: string }): void {
-  const dir = pathsService.modelsDir()
-  ;['onnx', 'onnx.json'].forEach((ext) => {
-    const file = path.join(dir, `${params.name}.${ext}`)
-    try {
-      fs.rmSync(file, { force: true })
-    } catch {}
-  })
-}
-
 export const modelsService = {
-  listVoices,
-  isEngineInstalled,
-  installEngine,
-  downloadVoice,
-  deleteVoice
+  listVoices(): Voice[] {
+    const dir = pathsService.modelsDir()
+    const settings = settingsService.get()
+    let entries: string[] = []
+    try {
+      entries = fs.readdirSync(dir)
+    } catch {
+      return []
+    }
+
+    const onnxNames = new Set(
+      entries.filter((e) => e.endsWith('.onnx')).map((e) => e.slice(0, -'.onnx'.length))
+    )
+
+    return Array.from(onnxNames)
+      .sort()
+      .map<Voice>((name) => {
+        let sizeBytes = 0
+        try {
+          sizeBytes = fs.statSync(path.join(dir, `${name}.onnx`)).size
+        } catch {}
+        return {
+          name,
+          hasJson: fs.existsSync(path.join(dir, `${name}.onnx.json`)),
+          sizeBytes,
+          lang: langService.voiceLang({ name }),
+          isDefault: name === settings.voiceSr || name === settings.voiceEn
+        }
+      })
+  },
+
+  isEngineInstalled(): boolean {
+    try {
+      return fs.existsSync(pathsService.piperBin())
+    } catch {
+      return false
+    }
+  },
+
+  async installEngine(params: { onLog: (line: string) => void }): Promise<boolean> {
+    const log = params.onLog
+
+    // 1. python3 3.9+
+    const versionOk = await runCmd({
+      cmd: 'python3',
+      args: ['-c', 'import sys; sys.exit(0 if (sys.version_info.major, sys.version_info.minor) >= (3, 9) else 1)']
+    })
+    if (versionOk !== 0) {
+      log('error: Python 3.9+ is required to run the Piper engine.')
+      return false
+    }
+
+    // 2. Create the virtualenv and install piper-tts (unless already present).
+    if (!this.isEngineInstalled()) {
+      log('Creating virtualenv…')
+      const venvOk = await runCmd({
+        cmd: 'python3',
+        args: ['-m', 'venv', pathsService.venvDir()],
+        onLog: log
+      })
+      if (venvOk !== 0) {
+        log('python3 -m venv failed. On Debian/Ubuntu you may need: sudo apt install python3-venv')
+        return false
+      }
+
+      log('Installing piper-tts (one-time, ~1 min)…')
+      await runCmd({ cmd: venvPip(), args: ['install', '-q', '--upgrade', 'pip'], onLog: log })
+      const installOk = await runCmd({ cmd: venvPip(), args: ['install', 'piper-tts'], onLog: log })
+      if (installOk !== 0 || !this.isEngineInstalled()) {
+        log('pip install piper-tts failed.')
+        log(
+          process.platform === 'darwin'
+            ? 'On macOS try: brew install espeak-ng   then retry.'
+            : 'On Linux try: sudo apt install espeak-ng-dev   then retry.'
+        )
+        return false
+      }
+      log('piper-tts installed.')
+    } else {
+      log('piper-tts already installed.')
+    }
+
+    // 3. Download the default voices if missing (any other voice is added in the UI).
+    fs.mkdirSync(pathsService.modelsDir(), { recursive: true })
+    for (const voice of DEFAULT_INSTALL_VOICES) {
+      const onnx = path.join(pathsService.modelsDir(), `${voice}.onnx`)
+      if (fs.existsSync(onnx)) {
+        log(`  present: ${voice}`)
+        continue
+      }
+      log(`Downloading ${voice}…`)
+      try {
+        await this.downloadVoice({ name: voice, onProgress: () => {} })
+        log(`  done: ${voice}`)
+      } catch (err) {
+        log(`  failed: ${voice}: ${String(err)}`)
+      }
+    }
+
+    // 4. Lenient verify.
+    log('Verifying synthesis…')
+    const verified = await verifySynthesis(SR_VOICE)
+    log(verified ? '  ok' : '  verify failed (the engine may still work).')
+    log('[done]')
+    return this.isEngineInstalled()
+  },
+
+  async downloadVoice(params: {
+    name: string
+    onProgress: (p: number) => void
+  }): Promise<void> {
+    fs.mkdirSync(pathsService.modelsDir(), { recursive: true })
+    const prefix = voiceUrlPrefix({ name: params.name })
+    const files = [
+      { ext: 'onnx', weight: 0.97 },
+      { ext: 'onnx.json', weight: 0.03 }
+    ]
+    let base = 0
+    await files.reduce(async (acc, f) => {
+      await acc
+      const dest = path.join(pathsService.modelsDir(), `${params.name}.${f.ext}`)
+      const url = `${prefix}/${params.name}.${f.ext}`
+      await downloadOne({
+        url,
+        dest,
+        onProgress: (p) => {
+          params.onProgress(base + p * f.weight)
+        }
+      })
+      base += f.weight
+      params.onProgress(base)
+    }, Promise.resolve())
+    params.onProgress(1)
+  },
+
+  deleteVoice(params: { name: string }): void {
+    const dir = pathsService.modelsDir()
+    ;['onnx', 'onnx.json'].forEach((ext) => {
+      const file = path.join(dir, `${params.name}.${ext}`)
+      try {
+        fs.rmSync(file, { force: true })
+      } catch {}
+    })
+  }
 }
