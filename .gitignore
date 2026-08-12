@@ -6,3 +6,11 @@ models/
 # scratch
 *.wav
 tmp/
+
+# Node / Electron / electron-vite
+node_modules/
+out/
+dist/
+dist-electron/
+.vite/
+*.tsbuildinfo

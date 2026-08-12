@@ -1,0 +1,53 @@
+import type { ComponentType } from 'react'
+import { BookOpen, Cpu, Keyboard, Info } from 'lucide-react'
+
+export type Section = 'general' | 'models' | 'shortcuts' | 'about'
+
+const ITEMS: { id: Section; label: string; icon: ComponentType<{ size?: number | string }> }[] = [
+  { id: 'general', label: 'General', icon: BookOpen },
+  { id: 'models', label: 'Models', icon: Cpu },
+  { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
+  { id: 'about', label: 'About', icon: Info }
+]
+
+export function Sidebar({
+  active,
+  onChange
+}: {
+  active: Section
+  onChange: (s: Section) => void
+}): React.JSX.Element {
+  return (
+    <nav className="flex flex-col w-44 h-full border-r border-mid-gray/20 items-stretch px-2 pt-4 pb-2 select-none">
+      <div className="flex items-center gap-2 px-2 mb-5">
+        <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-logo-primary text-logo-stroke text-sm font-bold">
+          R
+        </span>
+        <span className="text-sm font-semibold tracking-tight">Reader</span>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        {ITEMS.map(({ id, label, icon: Icon }) => {
+          const isActive = active === id
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onChange(id)}
+              className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-logo-primary text-logo-stroke'
+                  : 'text-text/85 hover:bg-mid-gray/20'
+              }`}
+            >
+              <Icon size={17} />
+              {label}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="mt-auto px-2 text-[11px] text-text/40">Piper TTS · on-device</div>
+    </nav>
+  )
+}

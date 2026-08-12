@@ -1,0 +1,59 @@
+@import 'tailwindcss';
+
+/* Handy-inspired palette. Tokens live in @theme so Tailwind generates the
+   matching utilities (bg-background, text-text, border-mid-gray, text-logo-primary…),
+   and we override the same CSS variables for dark mode. */
+@theme {
+  --color-text: #0f0f0f;
+  --color-background: #fbfbfb;
+  --color-background-ui: #da5893;
+  --color-logo-primary: #faa2ca;
+  --color-logo-stroke: #382731;
+  --color-mid-gray: #808080;
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: #fbfbfb;
+    --color-background: #2c2b29;
+    --color-logo-primary: #f28cbb;
+    --color-logo-stroke: #fad1ed;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* The content area may select text (model names, logs). */
+.selectable {
+  user-select: text;
+}
+
+/* Slim scrollbars to match the minimal macOS look. */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--color-mid-gray) 40%, transparent);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}

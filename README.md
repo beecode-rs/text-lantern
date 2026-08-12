@@ -13,6 +13,37 @@ diacritics → Serbian, otherwise English), or you force it with `--lang`.
 
 Both Cyrillic and Latin Serbian input are supported by the Serbian voice.
 
+## Desktop app (Electron UI)
+
+A Handy-inspired, menu-bar-resident UI lives in `src/` (Electron + Node + TypeScript
+ES modules, React + Tailwind renderer). It reuses the same Piper engine (`bin/venv`)
+and `models/` as the CLI — nothing is duplicated.
+
+```bash
+npm install        # then, once:
+node node_modules/electron/install.js   # download the Electron binary (first time only)
+npm run dev        # launch with hot reload
+npm run build      # production build into out/
+```
+
+What it does (MVP):
+
+- **Menu-bar tray** with a reading-state icon and a menu (Read auto/Serbian/English, Stop,
+  Settings, Quit).
+- **Global shortcuts, one per language** (Settings → Shortcuts): Read–Auto, Read–Serbian,
+  Read–English, Stop. Rebindable; conflicts are flagged.
+- **Models** (Settings → Models): list installed voices, install the Piper engine (runs
+  `install.sh`), and download any Piper voice by name with a progress bar.
+- **General**: default voice per language, speech speed, text-cleaning toggles, window prefs.
+- A **Now Playing** bar shows synthesis/reading state with a Stop button.
+
+On macOS, reading the selection needs **Accessibility** permission for the app (it sends a
+Cmd+C to copy the selected text; the clipboard is saved and restored). Grant it under
+System Settings → Privacy & Security → Accessibility.
+
+> The bash CLI (`speak.sh` / `install.sh`) still works unchanged and is what the UI's
+> engine-install and voice-download features build on.
+
 ## Requirements
 
 - **bash** (works on macOS's stock bash 3.2; no bash-4-only features)
