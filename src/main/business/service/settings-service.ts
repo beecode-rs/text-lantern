@@ -25,6 +25,8 @@ const DEFAULT_BINDINGS: LanguageBinding[] = [
   { id: 'en', langCode: 'en', voice: 'en_US-lessac-medium', shortcut: 'CommandOrControl+Shift+E' }
 ]
 
+const CURRENT_SCHEMA_VERSION = 2
+
 const DEFAULT_SETTINGS: Settings = {
   languageBindings: structuredClone(DEFAULT_BINDINGS),
   fallbackLang: 'en',
@@ -34,8 +36,8 @@ const DEFAULT_SETTINGS: Settings = {
   cleanText: true,
   stripBrackets: false,
   startHidden: true,
-  showTray: true,
-  maxChars: 6000
+  maxChars: 6000,
+  schemaVersion: CURRENT_SCHEMA_VERSION
 }
 
 let cache: Settings = structuredClone(DEFAULT_SETTINGS)
@@ -77,6 +79,30 @@ function _migrateLegacyBindings(params: { parsed: LegacySettings }): LanguageBin
 }
 
 /**
+ * Converts a persisted `rate` from the pre-v2 length-scale semantics (lower was
+ * faster) into the v2 speed-multiplier semantics (higher is faster) by inverting
+ * it (`1 / rate`). Runs only while the stored schema is older than v2; once a
+ * value has been migrated it is left untouched. Returns `undefined` when no rate
+ * was stored so the caller can fall back to the default. Pure and total.
+ */
+function _migrateLegacyRate(params: {
+  rate: number | undefined
+  schemaVersion: number | undefined
+}): number | undefined {
+  const { rate, schemaVersion } = params
+  if (rate === undefined) {
+    return undefined
+  }
+  if ((schemaVersion ?? 1) >= CURRENT_SCHEMA_VERSION) {
+    return rate
+  }
+  if (rate > 0) {
+    return 1 / rate
+  }
+  return 1
+}
+
+/**
  * Normalizes a parsed settings object into a complete, valid `Settings`,
  * migrating any legacy two-language fields into `languageBindings` and filling
  * every field from the defaults when missing. Pure and total.
@@ -91,17 +117,18 @@ function _buildSettings(params: {
     : _migrateLegacyBindings({ parsed }) ?? defaults.languageBindings
   const autoShortcut = parsed.autoShortcut ?? parsed.shortcuts?.auto ?? defaults.autoShortcut
   const stopShortcut = parsed.stopShortcut ?? parsed.shortcuts?.stop ?? defaults.stopShortcut
+  const rate = _migrateLegacyRate({ rate: parsed.rate, schemaVersion: parsed.schemaVersion }) ?? defaults.rate
   return {
     languageBindings: bindings,
     fallbackLang: parsed.fallbackLang ?? defaults.fallbackLang,
     autoShortcut,
     stopShortcut,
-    rate: parsed.rate ?? defaults.rate,
+    rate,
     cleanText: parsed.cleanText ?? defaults.cleanText,
     stripBrackets: parsed.stripBrackets ?? defaults.stripBrackets,
     startHidden: parsed.startHidden ?? defaults.startHidden,
-    showTray: parsed.showTray ?? defaults.showTray,
-    maxChars: parsed.maxChars ?? defaults.maxChars
+    maxChars: parsed.maxChars ?? defaults.maxChars,
+    schemaVersion: CURRENT_SCHEMA_VERSION
   }
 }
 

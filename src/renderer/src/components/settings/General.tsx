@@ -12,8 +12,8 @@ export function GeneralSettings(): React.JSX.Element {
   }
 
   const rateLabel = (r: number): string => {
-    if (r > 1.15) return 'Slower'
-    if (r < 0.9) return 'Faster'
+    if (r > 1.001) return 'Faster'
+    if (r < 0.999) return 'Slower'
     return 'Normal'
   }
 
@@ -24,12 +24,12 @@ export function GeneralSettings(): React.JSX.Element {
         <p className="text-sm text-text/55 mt-1">Speech speed and text cleaning.</p>
       </header>
 
-      <SettingsGroup title="Speech" description="Length-scale maps to Piper's playback speed.">
+      <SettingsGroup title="Speech" description="Higher reads faster. 1.0× is normal speed.">
         <Row title="Speed" description={`${settings.rate.toFixed(2)}× · ${rateLabel(settings.rate)}`}>
           <Slider
             value={settings.rate}
-            min={0.6}
-            max={1.6}
+            min={0.5}
+            max={3}
             step={0.05}
             onChange={(v) => update({ rate: v })}
             format={(v) => `${v.toFixed(2)}×`}
@@ -69,13 +69,6 @@ export function GeneralSettings(): React.JSX.Element {
             checked={settings.startHidden}
             onChange={(v) => update({ startHidden: v })}
             ariaLabel="Start hidden"
-          />
-        </Row>
-        <Row title="Show tray icon" description="Show the menu-bar icon.">
-          <Toggle
-            checked={settings.showTray}
-            onChange={(v) => update({ showTray: v })}
-            ariaLabel="Show tray"
           />
         </Row>
       </SettingsGroup>

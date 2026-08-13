@@ -36,12 +36,22 @@ export interface Settings {
   autoShortcut: string
   /** Shortcut that stops any active reading. */
   stopShortcut: string
+  /**
+   * Reading-speed multiplier passed to the engine: `2.0` reads twice as fast,
+   * `1.0` is normal, `0.5` is half speed. Internally inverted to Piper's
+   * `--length-scale` (`1 / rate`).
+   */
   rate: number
   cleanText: boolean
   stripBrackets: boolean
   startHidden: boolean
-  showTray: boolean
   maxChars: number
+  /**
+   * Monotonic settings-schema version. Bumped whenever a persisted field changes
+   * meaning; `settingsService.init` runs the matching one-time migration when a
+   * stored file is older than the current version.
+   */
+  schemaVersion: number
 }
 
 export interface Voice {

@@ -127,8 +127,9 @@ Before speaking, the text is cleaned (toggle in Settings → General):
 
 ### Speed / prosody
 
-Speech speed maps to Piper's `length-scale` (General → Speech speed). `1.0` is
-normal; higher is slower, lower is faster.
+Speech speed (General → Speech) is a reading-speed multiplier: `2.0` reads twice
+as fast, `1.0` is normal, `0.5` half speed. It is inverted to Piper's
+`--length-scale` (`1 / speed`) at the engine.
 
 ## Requirements
 

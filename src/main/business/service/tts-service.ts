@@ -82,13 +82,20 @@ function _newTempWavPath(): string {
   return path.join(os.tmpdir(), `text-lantern-${process.pid}-${Date.now()}.wav`)
 }
 
+function _lengthScaleFromSpeed(speed: number): number {
+  if (speed > 0) {
+    return 1 / speed
+  }
+  return 1
+}
+
 function _buildPiperSynthesisArgs(params: {
   onnx: string
   json: string
   wavPath: string
-  rate: number
+  speed: number
 }): string[] {
-  return ['-m', params.onnx, '-c', params.json, '-f', params.wavPath, '--length-scale', String(params.rate)]
+  return ['-m', params.onnx, '-c', params.json, '-f', params.wavPath, '--length-scale', String(_lengthScaleFromSpeed(params.speed))]
 }
 
 function _synthesizeViaPiper(params: {
@@ -179,7 +186,7 @@ export const ttsService = {
 
     const wavPath = _newTempWavPath()
     const { onnx, json } = _voiceModelPaths({ voice })
-    const args = _buildPiperSynthesisArgs({ onnx, json, wavPath, rate: opts.settings.rate })
+    const args = _buildPiperSynthesisArgs({ onnx, json, wavPath, speed: opts.settings.rate })
     const { stderr } = await _synthesizeViaPiper({ args, stdinText: capped })
 
     current = null

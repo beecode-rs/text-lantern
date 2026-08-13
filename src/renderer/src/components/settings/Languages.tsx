@@ -95,86 +95,93 @@ export function LanguagesSettings(): React.JSX.Element {
       )}
 
       <SettingsGroup title="Language bindings">
-        <div className={`${BINDING_GRID} py-2 text-[11px] font-medium uppercase tracking-wide text-text/50`}>
-          <span>Language</span>
-          <span>Voice</span>
-          <span>Shortcut</span>
-        </div>
-        {settings.languageBindings.map((binding) => {
-          const usedByOthers = settings.languageBindings
-            .filter((b) => { return b.id !== binding.id })
-            .map((b) => { return b.langCode })
-          const langOptions = listTtsLanguages().filter((l) => {
-            return !usedByOthers.includes(l.code)
-          })
-          const rowVoices = [...voices].sort((a, b) => {
-            const aRank = a.lang === binding.langCode ? 0 : 1
-            const bRank = b.lang === binding.langCode ? 0 : 1
-            return aRank - bRank
-          })
-          const voiceMissing = !voices.some((v) => { return v.name === binding.voice })
-          return (
-            <div key={binding.id} className={`${BINDING_GRID} py-3`}>
-              <div className="relative">
-                {binding.langCode === settings.fallbackLang && (
-                  <StarBadge className="absolute bottom-full left-0 mb-1">default</StarBadge>
-                )}
-                <select
-                  value={binding.langCode}
-                  onChange={(e) => { return setBinding(binding.id, { langCode: e.target.value }) }}
-                  className="w-full min-w-0 truncate px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors"
-                >
-                  {langOptions.map((l) => {
-                    return (
-                      <option key={l.code} value={l.code}>
-                        {l.name}
-                      </option>
-                    )
-                  })}
-                </select>
-              </div>
-              <select
-                value={binding.voice}
-                onChange={(e) => { return setBinding(binding.id, { voice: e.target.value }) }}
-                className="w-full max-w-[190px] min-w-0 truncate px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors"
-              >
-                {voiceMissing && (
-                  <option value={binding.voice}>{binding.voice} (missing)</option>
-                )}
-                {rowVoices.map((v) => {
-                  return (
-                    <option key={v.name} value={v.name}>
-                      {v.name}
-                    </option>
-                  )
-                })}
-              </select>
-              <ShortcutInput
-                value={binding.shortcut}
-                conflict={conflictFor(binding.shortcut)}
-                onChange={(accel) => { return setBinding(binding.id, { shortcut: accel }) }}
-              />
+        <div className="overflow-x-auto">
+          <div className="min-w-[500px] divide-y divide-mid-gray/15">
+            <div className={`${BINDING_GRID} py-2 text-[11px] font-medium uppercase tracking-wide text-text/50`}>
+              <span>Language</span>
+              <span>Voice</span>
+              <span>Shortcut</span>
+              <span className="justify-self-end">
+                <Trash2 size={13} />
+              </span>
+            </div>
+            {settings.languageBindings.map((binding) => {
+              const usedByOthers = settings.languageBindings
+                .filter((b) => { return b.id !== binding.id })
+                .map((b) => { return b.langCode })
+              const langOptions = listTtsLanguages().filter((l) => {
+                return !usedByOthers.includes(l.code)
+              })
+              const rowVoices = [...voices].sort((a, b) => {
+                const aRank = a.lang === binding.langCode ? 0 : 1
+                const bRank = b.lang === binding.langCode ? 0 : 1
+                return aRank - bRank
+              })
+              const voiceMissing = !voices.some((v) => { return v.name === binding.voice })
+              return (
+                <div key={binding.id} className={`${BINDING_GRID} py-3`}>
+                  <div className="relative">
+                    {binding.langCode === settings.fallbackLang && (
+                      <StarBadge className="absolute bottom-full left-0 mb-1">default</StarBadge>
+                    )}
+                    <select
+                      value={binding.langCode}
+                      onChange={(e) => { return setBinding(binding.id, { langCode: e.target.value }) }}
+                      className="w-full min-w-0 truncate px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors"
+                    >
+                      {langOptions.map((l) => {
+                        return (
+                          <option key={l.code} value={l.code}>
+                            {l.name}
+                          </option>
+                        )
+                      })}
+                    </select>
+                  </div>
+                  <select
+                    value={binding.voice}
+                    onChange={(e) => { return setBinding(binding.id, { voice: e.target.value }) }}
+                    className="w-full max-w-[190px] min-w-0 truncate px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors"
+                  >
+                    {voiceMissing && (
+                      <option value={binding.voice}>{binding.voice} (missing)</option>
+                    )}
+                    {rowVoices.map((v) => {
+                      return (
+                        <option key={v.name} value={v.name}>
+                          {v.name}
+                        </option>
+                      )
+                    })}
+                  </select>
+                  <ShortcutInput
+                    value={binding.shortcut}
+                    conflict={conflictFor(binding.shortcut)}
+                    onChange={(accel) => { return setBinding(binding.id, { shortcut: accel }) }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { return removeBinding(binding.id) }}
+                    title="Remove language"
+                    className="justify-self-end p-1.5 rounded-md text-text/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              )
+            })}
+            <div className="px-4 py-3">
               <button
                 type="button"
-                onClick={() => { return removeBinding(binding.id) }}
-                title="Remove language"
-                className="justify-self-end p-1.5 rounded-md text-text/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                onClick={addBinding}
+                disabled={settings.languageBindings.length >= listTtsLanguages().length}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-mid-gray/10 hover:bg-mid-gray/25 transition-colors disabled:opacity-50"
               >
-                <Trash2 size={15} />
+                <Plus size={14} />
+                Add language
               </button>
             </div>
-          )
-        })}
-        <div className="px-4 py-3">
-          <button
-            type="button"
-            onClick={addBinding}
-            disabled={settings.languageBindings.length >= listTtsLanguages().length}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-mid-gray/10 hover:bg-mid-gray/25 transition-colors disabled:opacity-50"
-          >
-            <Plus size={14} />
-            Add language
-          </button>
+          </div>
         </div>
       </SettingsGroup>
 

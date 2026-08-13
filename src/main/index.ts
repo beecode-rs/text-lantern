@@ -96,9 +96,7 @@ app.whenReady().then(() => {
   }
 
   mainWindow = createWindow()
-  if (settings.showTray) {
-    trayService.create(mainWindow)
-  }
+  trayService.create(mainWindow)
   shortcutsService.registerAll()
   ipcService.register(() => mainWindow)
 
