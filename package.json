@@ -6,11 +6,13 @@
   "type": "module",
   "author": "milosbugarinovic",
   "license": "MIT",
+  "packageManager": "pnpm@10.23.0",
   "main": "./out/main/index.js",
   "imports": {
     "#packageJson": "./package.json"
   },
   "scripts": {
+    "preinstall": "node -e \"if(!/pnpm/.test(process.env.npm_execpath||'')){console.error('This project uses pnpm only. Run: pnpm install');process.exit(1)}\"",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
@@ -41,5 +43,8 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "vite": "^7.3.6"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["electron"]
   }
 }

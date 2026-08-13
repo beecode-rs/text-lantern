@@ -18,12 +18,19 @@ Both Cyrillic and Latin Serbian input are supported by the Serbian voice.
 ## Quick start
 
 ```bash
-npm install
-node node_modules/electron/install.js   # download the Electron binary (first time only)
-npm run dev                              # launch with hot reload
+nvm use                                  # switch to Node 22 (pinned in .nvmrc)
+pnpm install                             # installs deps + downloads the Electron binary
+pnpm dev                                 # launch with hot reload
 # or
-npm run build                            # production build into out/
+pnpm build                               # production build into out/
 ```
+
+> The Electron binary downloads automatically during `pnpm install` (Electron is
+> allowlisted in `package.json` → `pnpm.onlyBuiltDependencies`). It must run under
+> the Node version above — Electron's installer `require()`s an ESM module that
+> Node < 22.12 can't load. If `pnpm install` was ever run on an older Node and you
+> see `Error: Electron uninstall`, re-run it on Node 22, or fetch the binary
+> directly: `node node_modules/electron/install.js`.
 
 On first launch, **Settings → Models** shows *Piper engine not found*. Click
 **Install engine** — the app creates the virtualenv, installs `piper-tts`, and
@@ -133,6 +140,21 @@ as fast, `1.0` is normal, `0.5` half speed. It is inverted to Piper's
 
 ## Requirements
 
+- **Node.js** `^20.19 || >=22.12` (Node 22 LTS recommended) — required to run the
+  dev server and build. `electron-vite` uses Vite 7, which needs this Node range.
+  Older Node (e.g. 18) fails to start the dev server with
+  `TypeError: crypto.hash is not a function`. The project pins this via an
+  `.nvmrc`; with [fnm](https://github.com/Schniz/fnm) or
+  [nvm](https://github.com/nvm-sh/nvm), switch to it before installing:
+
+  ```bash
+  fnm use            # or: nvm use   (reads .nvmrc → Node 22)
+  fnm install 22     # one-time, if you don't already have Node 22
+  ```
+- **pnpm** (`pnpm-lock.yaml`; `packageManager` pinned to `pnpm@10.23.0`) — install
+  via [Corepack](https://nodejs.org/api/corepack.html) (`corepack enable`) or
+  [standalone](https://pnpm.io/installation). **npm and yarn are blocked** by a
+  `preinstall` guard; always use `pnpm install`.
 - **python3** 3.9+ — only for the Piper engine, which the app installs into `bin/venv/`.
   On Linux, if engine install fails, install the headers (`sudo apt install
   espeak-ng-dev`) and retry from Settings → Models.
