@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import { BookOpen, Cpu, History, Languages, Volume2, Info } from 'lucide-react'
+import iconUrl from '../assets/icon.png'
 
 export type Section = 'general' | 'models' | 'languages' | 'test' | 'history' | 'about'
 
@@ -22,10 +23,8 @@ export function Sidebar({
   return (
     <nav className="flex flex-col w-44 h-full border-r border-mid-gray/20 items-stretch px-2 pt-4 pb-2 select-none">
       <div className="flex items-center gap-2 px-2 mb-5">
-        <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gradient-to-br from-logo-primary to-lavender text-logo-stroke text-sm font-bold">
-          R
-        </span>
-        <span className="text-sm font-semibold tracking-tight">Reader</span>
+        <img src={iconUrl} alt="" className="h-7 w-7 rounded-lg" draggable={false} />
+        <span className="text-sm font-semibold tracking-tight">Text Lantern</span>
       </div>
 
       <div className="flex flex-col gap-1">

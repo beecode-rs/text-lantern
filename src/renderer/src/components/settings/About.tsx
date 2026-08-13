@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '@src/renderer/src/api'
 import { ttsLanguageName } from '@src/shared/languages'
 import type { Settings } from '@src/shared/types'
+import iconUrl from '../../assets/icon.png'
 
 export function AboutSettings(): React.JSX.Element {
   const [settings, setSettings] = useState<Settings | null>(null)
@@ -18,9 +19,7 @@ export function AboutSettings(): React.JSX.Element {
 
       <section className="rounded-xl border border-mid-gray/25 bg-mid-gray/5 p-5 flex flex-col gap-3">
         <div className="flex items-center gap-3">
-          <span className="flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-logo-primary to-lavender text-logo-stroke text-lg font-bold">
-            T
-          </span>
+          <img src={iconUrl} alt="" className="h-10 w-10 rounded-xl" draggable={false} />
           <div>
             <div className="text-base font-semibold">Text Lantern</div>
             <div className="text-xs text-text/55">Version 0.1.0 · MVP</div>

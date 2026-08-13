@@ -1,8 +1,9 @@
-import { app, BrowserWindow, shell, systemPreferences } from 'electron'
+import { app, BrowserWindow, nativeImage, shell, systemPreferences } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { APP_NAME } from '@src/main/util/constants'
+import { pathsService } from '@src/main/util/paths-service'
 import { settingsService } from '@src/main/business/service/settings-service'
 import { historyService } from '@src/main/business/service/history-service'
 import { shortcutsService } from '@src/main/business/service/shortcuts-service'
@@ -31,6 +32,16 @@ function _migrateLegacyUserData(): void {
     fs.cpSync(oldPath, newPath, { recursive: true })
   } catch (err) {
     console.error('[main] could not migrate legacy user data:', err)
+  }
+}
+
+function _applyAppIcon(): void {
+  const icon = nativeImage.createFromPath(path.join(pathsService.projectRoot(), 'resources', 'icon.png'))
+  if (icon.isEmpty()) {
+    return
+  }
+  if (process.platform === 'darwin' && app.dock) {
+    app.dock.setIcon(icon)
   }
 }
 
@@ -105,6 +116,7 @@ app.whenReady().then(() => {
     void systemPreferences.isTrustedAccessibilityClient(true)
   }
 
+  _applyAppIcon()
   mainWindow = createWindow()
   trayService.create(mainWindow)
   shortcutsService.registerAll()

@@ -1,13 +1,14 @@
 import { nativeImage, type NativeImage } from 'electron'
 
-const ICON_PIXEL_SIZE = 22
+const ICON_WIDTH = 28
+const ICON_HEIGHT = 20
 
-function _isPixelInsideSpeechBubbleShape(px: number, py: number): boolean {
-  const x0 = 3
-  const y0 = 3
-  const x1 = 18
-  const y1 = 14
-  const r = 3
+const BUBBLE = { x0: 3, y0: 4, x1: 14, y1: 12, r: 2 }
+const TAIL = { x0: 4, slope: 1.2, y0: 11, y1: 15, cap: 8 }
+const WAVES = { cx: 14, cy: 8, radii: [2.5, 4.5, 6.5], angleMaxDeg: 50, tolerance: 0.8 }
+
+function _isPixelInsideSpeechBubble(px: number, py: number): boolean {
+  const { x0, y0, x1, y1, r } = BUBBLE
   let rx = px
   if (px < x0 + r) {
     rx = x0 + r
@@ -22,18 +23,48 @@ function _isPixelInsideSpeechBubbleShape(px: number, py: number): boolean {
   }
   const dx = px - rx
   const dy = py - ry
-  const inBody =
-    px >= x0 && px <= x1 && py >= y0 && py <= y1 && dx * dx + dy * dy <= r * r
-  const inTail =
-    py >= 13 && py <= 18 && px >= 6 && px <= 6 + (py - 13) * 1.5 && px <= 11
-  return inBody || inTail
+  return px >= x0 && px <= x1 && py >= y0 && py <= y1 && dx * dx + dy * dy <= r * r
 }
 
-function _buildSpeechBubblePixelGrid(): Uint8Array {
-  return Uint8Array.from({ length: ICON_PIXEL_SIZE * ICON_PIXEL_SIZE }, (_unused, i) => {
-    const x = i % ICON_PIXEL_SIZE
-    const y = Math.floor(i / ICON_PIXEL_SIZE)
-    if (_isPixelInsideSpeechBubbleShape(x, y)) {
+function _isPixelInsideTail(px: number, py: number): boolean {
+  const { x0, slope, y0, y1, cap } = TAIL
+  if (py < y0 || py > y1) {
+    return false
+  }
+  const xLimit = Math.min(x0 + (py - y0) * slope, cap)
+  return px >= x0 && px <= xLimit
+}
+
+function _isPixelOnWave(px: number, py: number): boolean {
+  const { cx, cy, radii, angleMaxDeg, tolerance } = WAVES
+  const ddx = px - cx
+  if (ddx < 0) {
+    return false
+  }
+  const ddy = py - cy
+  const dist = Math.hypot(ddx, ddy)
+  const angleDeg = Math.abs((Math.atan2(ddy, ddx) * 180) / Math.PI)
+  if (angleDeg > angleMaxDeg) {
+    return false
+  }
+  return radii.some((ri) => {
+    return Math.abs(dist - ri) <= tolerance
+  })
+}
+
+function _isPixelInsideMark(px: number, py: number): boolean {
+  return (
+    _isPixelInsideSpeechBubble(px, py) ||
+    _isPixelInsideTail(px, py) ||
+    _isPixelOnWave(px, py)
+  )
+}
+
+function _buildMarkPixelGrid(): Uint8Array {
+  return Uint8Array.from({ length: ICON_WIDTH * ICON_HEIGHT }, (_unused, i) => {
+    const x = i % ICON_WIDTH
+    const y = Math.floor(i / ICON_WIDTH)
+    if (_isPixelInsideMark(x, y)) {
       return 1
     }
     return 0
@@ -41,11 +72,11 @@ function _buildSpeechBubblePixelGrid(): Uint8Array {
 }
 
 function _pixelIndexInGrid(x: number, y: number): number {
-  return y * ICON_PIXEL_SIZE + x
+  return y * ICON_WIDTH + x
 }
 
 function _isGridPixelOn(grid: Uint8Array, x: number, y: number): boolean {
-  if (x < 0 || y < 0 || x >= ICON_PIXEL_SIZE || y >= ICON_PIXEL_SIZE) {
+  if (x < 0 || y < 0 || x >= ICON_WIDTH || y >= ICON_HEIGHT) {
     return false
   }
   return grid[_pixelIndexInGrid(x, y)] === 1
@@ -62,10 +93,10 @@ function _isPixelOnShapeEdge(grid: Uint8Array, x: number, y: number): boolean {
 
 function _renderPixelGridToImage(params: { grid: Uint8Array; filled: boolean }): NativeImage {
   const { grid, filled } = params
-  const buf = Buffer.alloc(ICON_PIXEL_SIZE * ICON_PIXEL_SIZE * 4)
-  Array.from({ length: ICON_PIXEL_SIZE * ICON_PIXEL_SIZE }, (_unused, i) => {
-    const x = i % ICON_PIXEL_SIZE
-    const y = Math.floor(i / ICON_PIXEL_SIZE)
+  const buf = Buffer.alloc(ICON_WIDTH * ICON_HEIGHT * 4)
+  Array.from({ length: ICON_WIDTH * ICON_HEIGHT }, (_unused, i) => {
+    const x = i % ICON_WIDTH
+    const y = Math.floor(i / ICON_WIDTH)
     const o = i * 4
     const pixelIsOn = _isGridPixelOn(grid, x, y)
     let lit: boolean
@@ -85,8 +116,8 @@ function _renderPixelGridToImage(params: { grid: Uint8Array; filled: boolean }):
     return undefined
   })
   const img = nativeImage.createFromBuffer(buf, {
-    width: ICON_PIXEL_SIZE,
-    height: ICON_PIXEL_SIZE
+    width: ICON_WIDTH,
+    height: ICON_HEIGHT
   })
   img.setTemplateImage(true)
   return img
@@ -98,7 +129,7 @@ function _buildIconsOnce(): { outline: NativeImage; filled: NativeImage } {
   if (cachedIcons) {
     return cachedIcons
   }
-  const grid = _buildSpeechBubblePixelGrid()
+  const grid = _buildMarkPixelGrid()
   cachedIcons = {
     outline: _renderPixelGridToImage({ grid, filled: false }),
     filled: _renderPixelGridToImage({ grid, filled: true })
