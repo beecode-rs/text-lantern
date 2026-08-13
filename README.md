@@ -1,4 +1,4 @@
-# TTS Reader — read selected text aloud (Serbian + English)
+# Text Lantern — read selected text aloud (Serbian + English)
 
 A Handy-inspired, **menu-bar** desktop app (Electron + TypeScript, React + Tailwind
 renderer) that reads the currently-selected text aloud using

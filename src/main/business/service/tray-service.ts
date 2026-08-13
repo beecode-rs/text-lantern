@@ -1,6 +1,7 @@
 import { Tray, Menu, type BrowserWindow } from 'electron'
 import { ttsService } from '@src/main/business/service/tts-service'
 import { settingsService } from '@src/main/business/service/settings-service'
+import { APP_NAME } from '@src/main/util/constants'
 import { trayIconImageUtil } from '@src/main/util/tray-icon-image'
 import { ttsLanguageName } from '@src/shared/languages'
 import type { Lang } from '@src/shared/types'
@@ -35,7 +36,7 @@ function _buildTrayMenuTemplate(): Electron.MenuItemConstructorOptions[] {
         }
       }
     },
-    { role: 'quit', label: 'Quit TTS Reader' }
+    { role: 'quit', label: `Quit ${APP_NAME}` }
   )
   return items
 }
@@ -44,7 +45,7 @@ export const trayService = {
   create(window: BrowserWindow): Tray {
     trayWindow = window
     tray = new Tray(trayIconImageUtil.outlineIcon())
-    tray.setToolTip('TTS Reader')
+    tray.setToolTip(APP_NAME)
     tray.setContextMenu(Menu.buildFromTemplate(_buildTrayMenuTemplate()))
     tray.on('click', () => {
       window.show()
@@ -66,10 +67,10 @@ export const trayService = {
     }
     if (reading) {
       tray.setImage(trayIconImageUtil.filledIcon())
-      tray.setToolTip('TTS Reader — reading…')
+      tray.setToolTip(`${APP_NAME} — reading…`)
     } else {
       tray.setImage(trayIconImageUtil.outlineIcon())
-      tray.setToolTip('TTS Reader')
+      tray.setToolTip(APP_NAME)
     }
   },
 

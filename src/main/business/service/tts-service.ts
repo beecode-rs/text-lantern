@@ -43,6 +43,13 @@ async function _resolveInputText(params: { text?: string }): Promise<string> {
   return selectionService.grab()
 }
 
+function _selectionErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+  return 'Could not read the selected text.'
+}
+
 function _cleanTextIfEnabled(params: { text: string; settings: Settings }): string {
   if (params.settings.cleanText) {
     return textService.cleanText({
@@ -72,7 +79,7 @@ function _voiceModelFilesExist(params: { voice: string }): boolean {
 }
 
 function _newTempWavPath(): string {
-  return path.join(os.tmpdir(), `tts-reader-${process.pid}-${Date.now()}.wav`)
+  return path.join(os.tmpdir(), `text-lantern-${process.pid}-${Date.now()}.wav`)
 }
 
 function _buildPiperSynthesisArgs(params: {
@@ -135,7 +142,13 @@ export const ttsService = {
   async speak(opts: { lang: Lang; text?: string; settings: Settings }): Promise<void> {
     await this.stop()
 
-    const rawText = await _resolveInputText({ text: opts.text })
+    let rawText: string
+    try {
+      rawText = await _resolveInputText({ text: opts.text })
+    } catch (error) {
+      _emitTtsStatus({ state: 'error', error: _selectionErrorMessage(error) })
+      return
+    }
     if (!_hasText(rawText)) {
       _emitIdle()
       return

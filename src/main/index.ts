@@ -1,6 +1,8 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, systemPreferences } from 'electron'
+import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { APP_NAME } from '@src/main/util/constants'
 import { settingsService } from '@src/main/business/service/settings-service'
 import { shortcutsService } from '@src/main/business/service/shortcuts-service'
 import { trayService } from '@src/main/business/service/tray-service'
@@ -8,9 +10,26 @@ import { ipcService } from '@src/main/controller/ipc-service'
 import { ttsService } from '@src/main/business/service/tts-service'
 import type { TtsStatus } from '@src/shared/types'
 
+app.setName(APP_NAME)
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 let mainWindow: BrowserWindow | null = null
+
+function _migrateLegacyUserData(): void {
+  const legacyName = 'tts-reader'
+  const appData = app.getPath('appData')
+  const newPath = app.getPath('userData')
+  const oldPath = path.join(appData, legacyName)
+  if (fs.existsSync(newPath) || !fs.existsSync(oldPath)) {
+    return
+  }
+  try {
+    fs.cpSync(oldPath, newPath, { recursive: true })
+  } catch (err) {
+    console.error('[main] could not migrate legacy user data:', err)
+  }
+}
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -68,8 +87,13 @@ function _reflectReadingStateInTray(s: TtsStatus): void {
 }
 
 app.whenReady().then(() => {
+  _migrateLegacyUserData()
   settingsService.init()
   const settings = settingsService.get()
+
+  if (process.platform === 'darwin') {
+    void systemPreferences.isTrustedAccessibilityClient(true)
+  }
 
   mainWindow = createWindow()
   if (settings.showTray) {

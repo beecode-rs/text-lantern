@@ -19,10 +19,10 @@ export function AboutSettings(): React.JSX.Element {
       <section className="rounded-xl border border-mid-gray/25 bg-mid-gray/5 p-5 flex flex-col gap-3">
         <div className="flex items-center gap-3">
           <span className="flex items-center justify-center h-10 w-10 rounded-xl bg-logo-primary text-logo-stroke text-lg font-bold">
-            R
+            T
           </span>
           <div>
-            <div className="text-base font-semibold">TTS Reader</div>
+            <div className="text-base font-semibold">Text Lantern</div>
             <div className="text-xs text-text/55">Version 0.1.0 · MVP</div>
           </div>
         </div>

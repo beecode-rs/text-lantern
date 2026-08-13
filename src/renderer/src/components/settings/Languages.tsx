@@ -8,7 +8,7 @@ import { StarBadge } from '@src/renderer/src/components/ui/StarBadge'
 import { listTtsLanguages, ttsLanguageName } from '@src/shared/languages'
 import type { LanguageBinding } from '@src/shared/types'
 
-const BINDING_GRID = 'grid grid-cols-[170px_minmax(0,1fr)_160px_40px] items-center gap-2 px-4'
+const BINDING_GRID = 'grid grid-cols-[minmax(130px,170px)_minmax(120px,190px)_minmax(150px,160px)_minmax(0,1fr)] items-center gap-2 px-4'
 
 export function LanguagesSettings(): React.JSX.Element {
   const settings = useSettingsStore((s) => { return s.settings })
@@ -115,38 +115,40 @@ export function LanguagesSettings(): React.JSX.Element {
           const voiceMissing = !voices.some((v) => { return v.name === binding.voice })
           return (
             <div key={binding.id} className={`${BINDING_GRID} py-3`}>
-              <select
-                value={binding.langCode}
-                onChange={(e) => { return setBinding(binding.id, { langCode: e.target.value }) }}
-                className="w-full truncate px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors"
-              >
-                {langOptions.map((l) => {
-                  return (
-                    <option key={l.code} value={l.code}>
-                      {l.name}
-                    </option>
-                  )
-                })}
-              </select>
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="relative">
+                {binding.langCode === settings.fallbackLang && (
+                  <StarBadge className="absolute bottom-full left-0 mb-1">default</StarBadge>
+                )}
                 <select
-                  value={binding.voice}
-                  onChange={(e) => { return setBinding(binding.id, { voice: e.target.value }) }}
-                  className="max-w-[190px] truncate px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors"
+                  value={binding.langCode}
+                  onChange={(e) => { return setBinding(binding.id, { langCode: e.target.value }) }}
+                  className="w-full min-w-0 truncate px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors"
                 >
-                  {voiceMissing && (
-                    <option value={binding.voice}>{binding.voice} (missing)</option>
-                  )}
-                  {rowVoices.map((v) => {
+                  {langOptions.map((l) => {
                     return (
-                      <option key={v.name} value={v.name}>
-                        {v.name}
+                      <option key={l.code} value={l.code}>
+                        {l.name}
                       </option>
                     )
                   })}
                 </select>
-                {binding.langCode === settings.fallbackLang && <StarBadge>default</StarBadge>}
               </div>
+              <select
+                value={binding.voice}
+                onChange={(e) => { return setBinding(binding.id, { voice: e.target.value }) }}
+                className="w-full max-w-[190px] min-w-0 truncate px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors"
+              >
+                {voiceMissing && (
+                  <option value={binding.voice}>{binding.voice} (missing)</option>
+                )}
+                {rowVoices.map((v) => {
+                  return (
+                    <option key={v.name} value={v.name}>
+                      {v.name}
+                    </option>
+                  )
+                })}
+              </select>
               <ShortcutInput
                 value={binding.shortcut}
                 conflict={conflictFor(binding.shortcut)}
@@ -196,7 +198,7 @@ export function LanguagesSettings(): React.JSX.Element {
             value={autoDisabled ? '' : settings.fallbackLang}
             disabled={autoDisabled}
             onChange={(e) => { void update({ fallbackLang: e.target.value }) }}
-            className="max-w-[150px] truncate px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="min-w-[150px] truncate px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {autoDisabled ? (
               <option value="">No languages</option>
@@ -228,9 +230,10 @@ export function LanguagesSettings(): React.JSX.Element {
       </SettingsGroup>
 
       <p className="text-xs text-text/50 leading-relaxed px-1">
-        On macOS, reading the selection needs <strong>Accessibility</strong> permission for TTS Reader
-        (System Settings → Privacy &amp; Security → Accessibility), because it sends a Cmd+C to copy the
-        selected text. Your clipboard is saved and restored around the grab.
+        On macOS, reading the selection needs <strong>Automation</strong> permission (control of System
+        Events) and may need <strong>Accessibility</strong> permission for Text Lantern
+        (System Settings → Privacy &amp; Security), because it sends a Cmd+C to copy the selected text.
+        Your clipboard is saved and restored around the grab.
       </p>
     </div>
   )
