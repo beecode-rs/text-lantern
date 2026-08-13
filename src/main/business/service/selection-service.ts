@@ -1,25 +1,39 @@
 import { clipboard } from 'electron'
-import { exec } from 'node:child_process'
-import { promisify } from 'node:util'
+import { execFile } from 'node:child_process'
 import { APP_NAME } from '@src/main/util/constants'
 
-const pexec = promisify(exec)
-
 const COPY_TIMEOUT_MS = 1000
-const COPY_POLL_INTERVAL_MS = 40
-const COPY_MAX_ATTEMPTS = Math.ceil(COPY_TIMEOUT_MS / COPY_POLL_INTERVAL_MS)
+const COPY_POLL_STEP_MS = 10
+const COPY_MAX_POLLS = Math.round(COPY_TIMEOUT_MS / COPY_POLL_STEP_MS)
+const COPY_POLL_STEP_SECONDS = COPY_POLL_STEP_MS / 1000
 const PERMISSION_DENIED_MARKERS = ['-1743', 'not authorized', 'assistive', 'apple events', 'not allowed']
 
-function _delayMs(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms)
-  })
-}
+const COPY_SELECTION_SCRIPT = `use framework "AppKit"
+use scripting additions
+set pb to current application's NSPasteboard's generalPasteboard()
+set priorCount to (pb's changeCount()) as integer
+tell application "System Events" to keystroke "c" using command down
+set didChange to false
+repeat ${COPY_MAX_POLLS} times
+	if ((pb's changeCount()) as integer) > priorCount then
+		set didChange to true
+		exit repeat
+	end if
+	delay ${COPY_POLL_STEP_SECONDS}
+end repeat
+return didChange as string`
 
-async function _triggerMacOsCopyShortcut(): Promise<void> {
-  await pexec(
-    `osascript -e 'tell application "System Events" to keystroke "c" using command down'`
-  )
+function _runAppleScript(params: { source: string }): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const proc = execFile('osascript', [], (err, stdout, stderr) => {
+      if (err) {
+        reject(new Error(stderr || err.message))
+        return
+      }
+      resolve(stdout)
+    })
+    proc.stdin?.end(params.source)
+  })
 }
 
 function _restoreClipboard(params: { saved: string }): void {
@@ -50,15 +64,9 @@ function _grabFailureMessage(params: { stderr: string }): string {
   return `${APP_NAME} could not copy the selection. ${params.stderr}`
 }
 
-async function _waitForClipboardChange(params: { before: string; attempts: number }): Promise<boolean> {
-  if (params.attempts <= 0) {
-    return false
-  }
-  if (clipboard.readText() !== params.before) {
-    return true
-  }
-  await _delayMs(COPY_POLL_INTERVAL_MS)
-  return _waitForClipboardChange({ before: params.before, attempts: params.attempts - 1 })
+async function _copySelectionAndWait(): Promise<boolean> {
+  const stdout = await _runAppleScript({ source: COPY_SELECTION_SCRIPT })
+  return stdout.trim() === 'true'
 }
 
 export const selectionService = {
@@ -67,9 +75,8 @@ export const selectionService = {
 
     if (process.platform === 'darwin') {
       try {
-        await _triggerMacOsCopyShortcut()
-        const changed = await _waitForClipboardChange({ before: saved, attempts: COPY_MAX_ATTEMPTS })
-        if (!changed) {
+        const copied = await _copySelectionAndWait()
+        if (!copied) {
           _restoreClipboard({ saved })
           return ''
         }
