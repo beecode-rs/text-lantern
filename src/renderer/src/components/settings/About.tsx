@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '@src/renderer/src/api'
 import { ttsLanguageName } from '@src/shared/languages'
 import type { Settings } from '@src/shared/types'
-import iconUrl from '../../assets/icon.png'
+import iconUrl from '@src/renderer/src/assets/icon.png'
 
 export function AboutSettings(): React.JSX.Element {
   const [settings, setSettings] = useState<Settings | null>(null)

@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import { BookOpen, Cpu, History, Languages, Volume2, Info } from 'lucide-react'
-import iconUrl from '../assets/icon.png'
+import iconUrl from '@src/renderer/src/assets/icon.png'
 
 export type Section = 'general' | 'models' | 'languages' | 'test' | 'history' | 'about'
 
