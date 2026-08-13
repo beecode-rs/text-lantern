@@ -37,6 +37,7 @@ const DEFAULT_SETTINGS: Settings = {
   stripBrackets: false,
   startHidden: true,
   maxChars: 6000,
+  historyLimit: 5,
   schemaVersion: CURRENT_SCHEMA_VERSION
 }
 
@@ -128,6 +129,7 @@ function _buildSettings(params: {
     stripBrackets: parsed.stripBrackets ?? defaults.stripBrackets,
     startHidden: parsed.startHidden ?? defaults.startHidden,
     maxChars: parsed.maxChars ?? defaults.maxChars,
+    historyLimit: parsed.historyLimit ?? defaults.historyLimit,
     schemaVersion: CURRENT_SCHEMA_VERSION
   }
 }

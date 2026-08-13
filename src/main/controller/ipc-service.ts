@@ -1,10 +1,11 @@
 import { ipcMain, type BrowserWindow } from 'electron'
 import { settingsService } from '@src/main/business/service/settings-service'
+import { historyService } from '@src/main/business/service/history-service'
 import { modelsService } from '@src/main/business/service/models-service'
 import { ttsService } from '@src/main/business/service/tts-service'
 import { shortcutsService } from '@src/main/business/service/shortcuts-service'
 import { trayService } from '@src/main/business/service/tray-service'
-import type { Lang } from '@src/shared/types'
+import type { HistoryEntry, Lang } from '@src/shared/types'
 
 export const ipcService = {
   register(getWindow: () => BrowserWindow | null): void {
@@ -75,6 +76,14 @@ export const ipcService = {
       }
     })
 
+    ipcMain.handle('history:get', () => {
+      return historyService.get()
+    })
+    ipcMain.handle('history:clear', () => {
+      historyService.clear()
+      return true
+    })
+
     ttsService.events.on('status', (s) => {
       send('tts:status', s)
     })
@@ -91,9 +100,14 @@ export const ipcService = {
       send('tts:stopPlayback')
     })
 
+    historyService.events.on('changed', (entries: HistoryEntry[]) => {
+      send('history:changed', entries)
+    })
+
     settingsService.onChange(() => {
       shortcutsService.registerAll()
       trayService.refreshMenu()
+      historyService.prune()
       send('settings:changed', settingsService.get())
     })
   }

@@ -18,7 +18,7 @@ export function AboutSettings(): React.JSX.Element {
 
       <section className="rounded-xl border border-mid-gray/25 bg-mid-gray/5 p-5 flex flex-col gap-3">
         <div className="flex items-center gap-3">
-          <span className="flex items-center justify-center h-10 w-10 rounded-xl bg-logo-primary text-logo-stroke text-lg font-bold">
+          <span className="flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-logo-primary to-lavender text-logo-stroke text-lg font-bold">
             T
           </span>
           <div>

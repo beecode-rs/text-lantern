@@ -69,6 +69,13 @@ const api: TtsApi = {
     return ipcRenderer.invoke('app:showSettings')
   },
 
+  getHistory: () => {
+    return ipcRenderer.invoke('history:get')
+  },
+  clearHistory: () => {
+    return ipcRenderer.invoke('history:clear')
+  },
+
   onSettingsChanged: on('settings:changed'),
   onTtsStatus: on('tts:status'),
   onAudioStart: on('tts:audioStart'),
@@ -76,7 +83,8 @@ const api: TtsApi = {
   onAudioEnd: onVoid('tts:audioEnd'),
   onStopPlayback: onVoid('tts:stopPlayback'),
   onModelsLog: on('models:log'),
-  onModelsProgress: on('models:progress')
+  onModelsProgress: on('models:progress'),
+  onHistoryChanged: on('history:changed')
 }
 
 contextBridge.exposeInMainWorld('api', api)

@@ -1,13 +1,14 @@
 import type { ComponentType } from 'react'
-import { BookOpen, Cpu, Languages, Volume2, Info } from 'lucide-react'
+import { BookOpen, Cpu, History, Languages, Volume2, Info } from 'lucide-react'
 
-export type Section = 'general' | 'models' | 'languages' | 'test' | 'about'
+export type Section = 'general' | 'models' | 'languages' | 'test' | 'history' | 'about'
 
 const ITEMS: { id: Section; label: string; icon: ComponentType<{ size?: number | string }> }[] = [
   { id: 'general', label: 'General', icon: BookOpen },
   { id: 'models', label: 'Models', icon: Cpu },
   { id: 'languages', label: 'Languages', icon: Languages },
   { id: 'test', label: 'Test', icon: Volume2 },
+  { id: 'history', label: 'History', icon: History },
   { id: 'about', label: 'About', icon: Info }
 ]
 
@@ -21,7 +22,7 @@ export function Sidebar({
   return (
     <nav className="flex flex-col w-44 h-full border-r border-mid-gray/20 items-stretch px-2 pt-4 pb-2 select-none">
       <div className="flex items-center gap-2 px-2 mb-5">
-        <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-logo-primary text-logo-stroke text-sm font-bold">
+        <span className="flex items-center justify-center h-7 w-7 rounded-lg bg-gradient-to-br from-logo-primary to-lavender text-logo-stroke text-sm font-bold">
           R
         </span>
         <span className="text-sm font-semibold tracking-tight">Reader</span>

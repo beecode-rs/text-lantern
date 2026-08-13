@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
 import path from 'node:path'
+import { historyService } from '@src/main/business/service/history-service'
 import { piperServerService } from '@src/main/business/service/piper-server-service'
 import { selectionService } from '@src/main/business/service/selection-service'
 import { textService } from '@src/main/business/service/text-service'
@@ -195,6 +196,7 @@ export const ttsService = {
     const token: object = {}
     active = token
     _emitTtsStatus({ state: 'synthesizing', voice })
+    historyService.add({ text: capped, voice })
 
     let sampleRate: number
     try {

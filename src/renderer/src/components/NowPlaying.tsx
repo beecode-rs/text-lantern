@@ -51,7 +51,7 @@ export function NowPlaying(): React.JSX.Element {
   return (
     <>
       {(busy || status.state === 'error') && (
-        <div className="shrink-0 border-t border-mid-gray/20 bg-background-ui/95 backdrop-blur px-4 py-2.5 flex items-center gap-3 text-white">
+        <div className="shrink-0 border-t border-accent/40 bg-background-ui/95 backdrop-blur px-4 py-2.5 flex items-center gap-3 text-white">
           {status.state === 'synthesizing' && <Loader2 size={15} className="animate-spin" />}
           {status.state === 'reading' && <Square size={13} className="fill-current" />}
           {status.state === 'error' && <AlertTriangle size={15} />}

@@ -5,8 +5,10 @@ import { GeneralSettings } from '@src/renderer/src/components/settings/General'
 import { ModelsSettings } from '@src/renderer/src/components/settings/Models'
 import { LanguagesSettings } from '@src/renderer/src/components/settings/Languages'
 import { TestSettings } from '@src/renderer/src/components/settings/Test'
+import { HistorySettings } from '@src/renderer/src/components/settings/History'
 import { AboutSettings } from '@src/renderer/src/components/settings/About'
 import { useSettingsStore } from '@src/renderer/src/store/settings'
+import { useHistoryStore } from '@src/renderer/src/store/history'
 import { useModelsStore } from '@src/renderer/src/store/models'
 import { api } from '@src/renderer/src/api'
 
@@ -20,6 +22,8 @@ function Section({ active }: { active: Section }): React.JSX.Element {
       return <LanguagesSettings />
     case 'test':
       return <TestSettings />
+    case 'history':
+      return <HistorySettings />
     case 'about':
       return <AboutSettings />
   }
@@ -30,13 +34,17 @@ export default function App(): React.JSX.Element {
   const settings = useSettingsStore((s) => s.settings)
   const loadSettings = useSettingsStore((s) => s.load)
   const replaceSettings = useSettingsStore((s) => s.replace)
+  const loadHistory = useHistoryStore((s) => s.load)
+  const replaceHistory = useHistoryStore((s) => s.replace)
   const appendLog = useModelsStore((s) => s.appendLog)
   const setProgress = useModelsStore((s) => s.setProgress)
 
   useEffect(() => {
     void loadSettings()
+    void loadHistory()
 
     const offSettings = api.onSettingsChanged(replaceSettings)
+    const offHistory = api.onHistoryChanged(replaceHistory)
     const offLog = api.onModelsLog((line) => appendLog(line))
     const offProgress = api.onModelsProgress(({ name, progress }) =>
       setProgress(name, progress)
@@ -44,10 +52,11 @@ export default function App(): React.JSX.Element {
 
     return () => {
       offSettings()
+      offHistory()
       offLog()
       offProgress()
     }
-  }, [loadSettings, replaceSettings, appendLog, setProgress])
+  }, [loadSettings, replaceSettings, loadHistory, replaceHistory, appendLog, setProgress])
 
   if (!settings) {
     return (

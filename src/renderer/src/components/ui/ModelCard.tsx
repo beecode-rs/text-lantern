@@ -53,7 +53,7 @@ export function DownloadRow({
       </div>
       <div className="mt-2 h-1.5 rounded-full bg-mid-gray/25 overflow-hidden">
         <div
-          className="h-full bg-logo-primary transition-[width] duration-150"
+          className="h-full bg-gradient-to-r from-logo-primary to-accent transition-[width] duration-150"
           style={{ width: `${pct}%` }}
         />
       </div>

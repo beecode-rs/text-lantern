@@ -1,15 +1,18 @@
 @import 'tailwindcss';
 
-/* Handy-inspired palette. Tokens live in @theme so Tailwind generates the
-   matching utilities (bg-background, text-text, border-mid-gray, text-logo-primary…),
+/* Vibrant Tech palette — indigo brand anchor, electric-cyan energy, lavender
+   support. Tokens live in @theme so Tailwind generates the matching utilities
+   (bg-background, text-text, border-mid-gray, bg-logo-primary, text-accent…),
    and we override the same CSS variables for dark mode. */
 @theme {
-  --color-text: #0f0f0f;
-  --color-background: #fbfbfb;
-  --color-background-ui: #da5893;
-  --color-logo-primary: #faa2ca;
-  --color-logo-stroke: #382731;
-  --color-mid-gray: #808080;
+  --color-text: #12131C;          /* Midnight Blue — high-contrast text */
+  --color-background: #F5F6FA;    /* Cool Off-White — clean light surfaces */
+  --color-background-ui: #2A1B8C; /* Deep Indigo — NowPlaying bar surface */
+  --color-logo-primary: #2A1B8C;  /* Deep Indigo — brand anchor & actions */
+  --color-logo-stroke: #F5F6FA;   /* Cool Off-White — text on indigo */
+  --color-accent: #00F0FF;        /* Electric Cyan — energy / voice waves */
+  --color-lavender: #9D8BFF;      /* Soft Lavender — support / dark-mode primary */
+  --color-mid-gray: #6E7493;      /* Cool slate — borders & subtle surfaces */
 
   --font-sans:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica,
@@ -18,10 +21,12 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-text: #fbfbfb;
-    --color-background: #2c2b29;
-    --color-logo-primary: #f28cbb;
-    --color-logo-stroke: #fad1ed;
+    --color-text: #F5F6FA;
+    --color-background: #12131C;
+    --color-background-ui: #3A2BA0; /* lifted indigo, separates from dark bg */
+    --color-logo-primary: #9D8BFF;  /* Soft Lavender — accessible primary in dark */
+    --color-logo-stroke: #12131C;   /* dark text on the light lavender primary */
+    --color-lavender: #B7A6FF;      /* brighter lavender for dark surfaces */
   }
 }
 

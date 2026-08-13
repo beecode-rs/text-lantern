@@ -47,6 +47,12 @@ export interface Settings {
   startHidden: boolean
   maxChars: number
   /**
+   * Maximum number of readings retained in History. New entries are prepended and
+   * the list is trimmed to this size; lowering it prunes the existing list. Driven
+   * by `historyService`, which reads it live from the current settings.
+   */
+  historyLimit: number
+  /**
    * Monotonic settings-schema version. Bumped whenever a persisted field changes
    * meaning; `settingsService.init` runs the matching one-time migration when a
    * stored file is older than the current version.
@@ -85,6 +91,19 @@ export type TtsStatus =
   | { state: 'reading'; voice: string }
   | { state: 'error'; error: string }
 
+/**
+ * A single retained reading, recorded the moment text is dispatched to the TTS
+ * engine. `text` is the exact (cleaned, length-capped) string spoken; `voice` is
+ * the Piper voice name; `createdAt` is the dispatch time in epoch milliseconds.
+ * Kept so a reading can be replayed if anything went wrong.
+ */
+export interface HistoryEntry {
+  id: string
+  text: string
+  voice: string
+  createdAt: number
+}
+
 export interface TtsApi {
   getSettings(): Promise<Settings>
   updateSettings(patch: Partial<Settings>): Promise<Settings>
@@ -104,6 +123,9 @@ export interface TtsApi {
   reregisterShortcuts(): Promise<boolean>
   showSettings(): Promise<void>
 
+  getHistory(): Promise<HistoryEntry[]>
+  clearHistory(): Promise<boolean>
+
   onSettingsChanged(cb: (s: Settings) => void): () => void
   onTtsStatus(cb: (s: TtsStatus) => void): () => void
   onAudioStart(cb: (p: { sampleRate: number; voice: string }) => void): () => void
@@ -112,4 +134,5 @@ export interface TtsApi {
   onStopPlayback(cb: () => void): () => void
   onModelsLog(cb: (line: string) => void): () => void
   onModelsProgress(cb: (p: { name: string; progress: number }) => void): () => void
+  onHistoryChanged(cb: (entries: HistoryEntry[]) => void): () => void
 }

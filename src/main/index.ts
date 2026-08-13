@@ -4,6 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { APP_NAME } from '@src/main/util/constants'
 import { settingsService } from '@src/main/business/service/settings-service'
+import { historyService } from '@src/main/business/service/history-service'
 import { shortcutsService } from '@src/main/business/service/shortcuts-service'
 import { trayService } from '@src/main/business/service/tray-service'
 import { ipcService } from '@src/main/controller/ipc-service'
@@ -97,6 +98,7 @@ function _reflectReadingStateInTray(s: TtsStatus): void {
 app.whenReady().then(() => {
   _migrateLegacyUserData()
   settingsService.init()
+  historyService.init()
   const settings = settingsService.get()
 
   if (process.platform === 'darwin') {
