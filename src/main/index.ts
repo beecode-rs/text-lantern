@@ -36,7 +36,7 @@ function _migrateLegacyUserData(): void {
 }
 
 function _applyAppIcon(): void {
-  const icon = nativeImage.createFromPath(path.join(pathsService.projectRoot(), 'resources', 'icon.png'))
+  const icon = nativeImage.createFromPath(path.join(pathsService.projectRoot(), 'resource', 'icon.png'))
   if (icon.isEmpty()) {
     return
   }

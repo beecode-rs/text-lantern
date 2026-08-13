@@ -23,7 +23,7 @@ export const pathsService = {
   },
 
   piperServerScript(): string {
-    return path.join(this.projectRoot(), 'resources', 'script', 'piper_server.py')
+    return path.join(this.projectRoot(), 'resource', 'script', 'piper_server.py')
   },
 
   userDataFile(name: string): string {

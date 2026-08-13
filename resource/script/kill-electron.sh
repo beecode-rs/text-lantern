@@ -22,7 +22,7 @@
 set -u
 
 # --- locate the project root from this script's own path -------------------
-# This script lives at <root>/resources/script/, so the root is two levels up.
+# This script lives at <root>/resource/script/, so the root is two levels up.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 ELECTRON_APP_DIR="$PROJECT_ROOT/node_modules/electron/dist/Electron.app"

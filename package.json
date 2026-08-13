@@ -13,7 +13,7 @@
   },
   "scripts": {
     "preinstall": "node -e \"if(!/pnpm/.test(process.env.npm_execpath||'')){console.error('This project uses pnpm only. Run: pnpm install');process.exit(1)}\"",
-    "postinstall": "node resources/script/install-electron.cjs",
+    "postinstall": "node resource/script/install-electron.cjs",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
