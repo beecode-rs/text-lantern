@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Download, Search, AlertTriangle, RefreshCw } from 'lucide-react'
 import { useModelsStore } from '@src/renderer/src/store/models'
 import { ModelCard, DownloadRow } from '@src/renderer/src/components/ui/ModelCard'
+import { DownloadModels } from '@src/renderer/src/components/settings/DownloadModels'
 
 export function ModelsSettings(): React.JSX.Element {
   const {
@@ -12,12 +13,11 @@ export function ModelsSettings(): React.JSX.Element {
     progress,
     load,
     installEngine,
-    download,
     remove
   } = useModelsStore()
 
   const [query, setQuery] = useState('')
-  const [addName, setAddName] = useState('')
+  const [view, setView] = useState<'installed' | 'download'>('installed')
 
   useEffect(() => {
     load()
@@ -25,22 +25,40 @@ export function ModelsSettings(): React.JSX.Element {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return voices
-    return voices.filter((v) => v.name.toLowerCase().includes(q))
+    if (!q) {
+      return voices
+    }
+    return voices.filter((v) => {
+      return v.name.toLowerCase().includes(q)
+    })
   }, [voices, query])
 
   const downloadingNames = Object.keys(progress)
-  const downloadingRows = useMemo(
-    () => downloadingNames.map((name) => ({ name, progress: progress[name] })),
-    [downloadingNames, progress]
-  )
+  const downloadingRows = useMemo(() => {
+    return downloadingNames.map((name) => {
+      return { name, progress: progress[name] }
+    })
+  }, [downloadingNames, progress])
+
+  if (view === 'download') {
+    return <DownloadModels onBack={() => { setView('installed') }} />
+  }
 
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
       <header>
-        <h1 className="text-xl font-semibold">Models</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold">Models</h1>
+          <button
+            type="button"
+            onClick={() => { setView('download') }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-logo-primary text-logo-stroke"
+          >
+            <Download size={14} /> Download voices
+          </button>
+        </div>
         <p className="text-sm text-text/55 mt-1">
-          Voices are stored in <code className="text-xs">models/</code>. Download defaults or add any
+          Voices are stored in <code className="text-xs">models/</code>. Browse the catalog or add any
           Piper voice.
         </p>
       </header>
@@ -74,42 +92,6 @@ export function ModelsSettings(): React.JSX.Element {
         </section>
       )}
 
-      <section className="flex flex-col gap-2">
-        <div className="flex gap-2">
-          <input
-            value={addName}
-            onChange={(e) => setAddName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && addName.trim()) {
-                void download(addName.trim())
-                setAddName('')
-              }
-            }}
-            placeholder="Add a voice, e.g. en_US-ryan-high"
-            className="flex-1 px-3 py-2 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 placeholder:text-text/40 focus:outline-none focus:ring-1 focus:ring-logo-primary"
-          />
-          <button
-            type="button"
-            disabled={!addName.trim()}
-            onClick={() => {
-              if (addName.trim()) {
-                void download(addName.trim())
-                setAddName('')
-              }
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-logo-primary text-logo-stroke disabled:opacity-50"
-          >
-            <Download size={14} /> Download
-          </button>
-        </div>
-        <p className="text-xs text-text/50">
-          Any voice from{' '}
-          <span className="selectable">rhasspy/piper-voices</span> by name, e.g.{' '}
-          <span className="selectable">en_GB-cori-high</span>. The Serbian voice is{' '}
-          <span className="selectable">sr_Marko_medium</span>.
-        </p>
-      </section>
-
       {downloadingRows.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="text-sm font-medium text-text/60 px-1">Downloading</h2>
@@ -137,16 +119,14 @@ export function ModelsSettings(): React.JSX.Element {
 
         {filtered.length === 0 ? (
           <p className="text-sm text-text/50 px-1 py-6 text-center">
-            {voices.length === 0 ? 'No voices yet — add one above.' : 'No voices match your filter.'}
+            {voices.length === 0
+              ? 'No voices yet — download one to get started.'
+              : 'No voices match your filter.'}
           </p>
         ) : (
           <div className="flex flex-col gap-2">
             {filtered.map((voice) => (
-              <ModelCard
-                key={voice.name}
-                voice={voice}
-                onDelete={() => remove(voice.name)}
-              />
+              <ModelCard key={voice.name} voice={voice} onDelete={() => remove(voice.name)} />
             ))}
           </div>
         )}

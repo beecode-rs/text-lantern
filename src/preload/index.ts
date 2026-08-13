@@ -48,6 +48,9 @@ const api: TtsApi = {
   deleteVoice: (name) => {
     return ipcRenderer.invoke('models:delete', name)
   },
+  searchVoices: (query) => {
+    return ipcRenderer.invoke('models:search', query)
+  },
 
   speak: (lang, text) => {
     return ipcRenderer.invoke('tts:speak', lang, text)

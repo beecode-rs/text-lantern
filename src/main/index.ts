@@ -110,6 +110,11 @@ app.whenReady().then(() => {
 
   ttsService.events.on('status', _reflectReadingStateInTray)
 
+  const prewarmVoice = settings.languageBindings[0]?.voice
+  if (prewarmVoice) {
+    void ttsService.prewarmVoice({ voice: prewarmVoice })
+  }
+
   if (!settings.startHidden || !app.isPackaged) {
     mainWindow.show()
   }
@@ -123,6 +128,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true
+  ttsService.dispose()
   shortcutsService.unregisterAll()
   trayService.destroy()
 })

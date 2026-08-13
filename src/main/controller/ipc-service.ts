@@ -46,6 +46,9 @@ export const ipcService = {
       modelsService.deleteVoice({ name })
       return modelsService.listVoices()
     })
+    ipcMain.handle('models:search', (_e, query: string) => {
+      return modelsService.searchVoices({ query })
+    })
 
     ipcMain.handle('tts:speak', (_e, lang: Lang, text?: string) => {
       void ttsService.speak({ lang, text, settings: settingsService.get() })

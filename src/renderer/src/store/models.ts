@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Voice } from '@src/shared/types'
+import type { RemoteVoice, Voice } from '@src/shared/types'
 import { api } from '@src/renderer/src/api'
 
 interface ModelsStore {
@@ -9,12 +9,16 @@ interface ModelsStore {
   logs: string[]
   progress: Record<string, number>
   loading: boolean
+  remote: RemoteVoice[]
+  searching: boolean
+  searchError: string | null
 
   load: () => Promise<void>
   refreshEngine: () => Promise<void>
   download: (name: string) => Promise<void>
   remove: (name: string) => Promise<void>
   installEngine: () => Promise<void>
+  search: (query: string) => Promise<void>
   appendLog: (line: string) => void
   setProgress: (name: string, p: number) => void
 }
@@ -26,6 +30,9 @@ export const useModelsStore = create<ModelsStore>((set, get) => ({
   logs: [],
   progress: {},
   loading: false,
+  remote: [],
+  searching: false,
+  searchError: null,
 
   load: async () => {
     set({ loading: true })
@@ -58,6 +65,15 @@ export const useModelsStore = create<ModelsStore>((set, get) => ({
     const voices = await api.listVoices()
     set({ installing: false, engineInstalled, voices })
     if (!ok) get().appendLog('Engine install finished but did not verify.')
+  },
+  search: async (query) => {
+    set({ searching: true, searchError: null, remote: [] })
+    try {
+      const remote = await api.searchVoices(query)
+      set({ remote, searching: false })
+    } catch (err) {
+      set({ searching: false, searchError: String(err) })
+    }
   },
   appendLog: (line) => set({ logs: [...get().logs, line] }),
   setProgress: (name, p) => set({ progress: { ...get().progress, [name]: p } })

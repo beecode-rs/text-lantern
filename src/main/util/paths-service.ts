@@ -18,6 +18,14 @@ export const pathsService = {
     return path.join(this.venvDir(), 'bin', 'piper')
   },
 
+  venvPython(): string {
+    return path.join(this.venvDir(), 'bin', 'python')
+  },
+
+  piperServerScript(): string {
+    return path.join(this.projectRoot(), 'resources', 'script', 'piper_server.py')
+  },
+
   userDataFile(name: string): string {
     return path.join(app.getPath('userData'), name)
   }

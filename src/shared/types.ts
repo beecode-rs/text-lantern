@@ -64,6 +64,21 @@ export interface Voice {
   inUse: boolean
 }
 
+/**
+ * A downloadable Piper voice discovered via the HuggingFace `rhasspy/piper-voices`
+ * tree listing. `name` is the exact Piper voice identifier (e.g. `en_US-lessac-medium`)
+ * and plugs straight into `downloadVoice`. Size is the real `.onnx` model size in
+ * bytes (resolved from the LFS pointer), not the `.onnx.json` companion.
+ */
+export interface RemoteVoice {
+  name: string
+  /** Derived 2-letter language code, e.g. `en`, `de`. */
+  lang: string
+  /** Piper quality tier: `low`, `medium`, or `high`. */
+  quality: string
+  sizeBytes: number
+}
+
 export type TtsStatus =
   | { state: 'idle' }
   | { state: 'synthesizing'; voice: string }
@@ -79,6 +94,8 @@ export interface TtsApi {
   installEngine(): Promise<boolean>
   downloadVoice(name: string): Promise<Voice[]>
   deleteVoice(name: string): Promise<Voice[]>
+  /** Searches the HuggingFace `rhasspy/piper-voices` repo by language code or name. */
+  searchVoices(query: string): Promise<RemoteVoice[]>
 
   speak(lang: Lang, text?: string): Promise<boolean>
   stop(): Promise<boolean>

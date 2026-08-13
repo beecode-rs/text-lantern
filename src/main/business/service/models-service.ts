@@ -5,13 +5,22 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { pathsService } from '@src/main/util/paths-service'
 import { settingsService } from '@src/main/business/service/settings-service'
 import { langService } from '@src/main/util/lang-service'
-import type { Voice } from '@src/shared/types'
+import { TTS_LANGUAGES } from '@src/shared/languages'
+import type { RemoteVoice, Voice } from '@src/shared/types'
 
 const SR_VOICE = 'sr_Marko_medium'
 const EN_VOICE = 'en_US-lessac-medium'
 const DEFAULT_INSTALL_VOICES = [SR_VOICE, EN_VOICE]
 const SR_REPO = 'https://huggingface.co/phantom9623/piper-serbian-tts/resolve/main'
 const VOICES_BASE = 'https://huggingface.co/rhasspy/piper-voices/resolve/main'
+const HF_VOICES_TREE_URL = 'https://huggingface.co/api/models/rhasspy/piper-voices/tree/main'
+
+interface HfTreeEntry {
+  type: 'file' | 'directory'
+  path: string
+  size: number
+  lfs?: { size: number }
+}
 
 function _splitVoiceNameIntoParts(name: string): {
   lang: string
@@ -43,6 +52,58 @@ function _resolveVoiceDownloadUrlPrefix(params: { name: string }): string {
   }
   const { lang, langRegion, voice, quality } = _splitVoiceNameIntoParts(params.name)
   return `${VOICES_BASE}/${lang}/${langRegion}/${voice}/${quality}`
+}
+
+/**
+ * Resolves a free-text search query to a Piper language code used as the
+ * HuggingFace tree path. Matches a known `TTS_LANGUAGES` code first, then a
+ * language name (case-insensitive), then passes through any 1–3 letter string
+ * as a raw code so codes outside the built-in list still reach the repo.
+ * Returns `null` for empty or non-code-like input.
+ */
+function _resolveLangCode(params: { query: string }): string | null {
+  const q = params.query.trim().toLowerCase()
+  if (!q) {
+    return null
+  }
+  const byCode = TTS_LANGUAGES.find((language) => {
+    return language.code === q
+  })
+  if (byCode) {
+    return byCode.code
+  }
+  const byName = TTS_LANGUAGES.find((language) => {
+    return language.name.toLowerCase() === q
+  })
+  if (byName) {
+    return byName.code
+  }
+  if (/^[a-z]{1,3}$/.test(q)) {
+    return q
+  }
+  return null
+}
+
+/**
+ * Converts a HuggingFace tree entry into a `RemoteVoice`, or `null` when the
+ * entry is not a Piper model file. Keeps only `*.onnx` files (the companion
+ * `*.onnx.json` ends in `.json` and is excluded) and reads the real model size
+ * from the LFS pointer when present — the top-level `size` is just the pointer.
+ */
+function _entryToRemoteVoice(params: { entry: HfTreeEntry }): RemoteVoice | null {
+  const { entry } = params
+  if (entry.type !== 'file' || !entry.path.endsWith('.onnx')) {
+    return null
+  }
+  const fileName = entry.path.slice(entry.path.lastIndexOf('/') + 1)
+  const name = fileName.slice(0, -'.onnx'.length)
+  const { lang, quality } = _splitVoiceNameIntoParts(name)
+  return {
+    name,
+    lang,
+    quality,
+    sizeBytes: entry.lfs?.size ?? entry.size
+  }
 }
 
 function _venvPipBinPath(): string {
@@ -360,5 +421,42 @@ export const modelsService = {
         fs.rmSync(file, { force: true })
       } catch {}
     })
+  },
+
+  /**
+   * Searches the HuggingFace `rhasspy/piper-voices` repo for every voice under
+   * the resolved language code. Returns an empty list for an unresolvable
+   * query or a failed/unreachable request — search never throws, so the
+   * renderer can treat `[]` as "no results" uniformly.
+   */
+  async searchVoices(params: { query: string }): Promise<RemoteVoice[]> {
+    const code = _resolveLangCode({ query: params.query })
+    if (!code) {
+      return []
+    }
+    const url = `${HF_VOICES_TREE_URL}/${encodeURIComponent(code)}?recursive=true`
+    let res: Response
+    try {
+      res = await fetch(url)
+    } catch {
+      return []
+    }
+    if (!res.ok) {
+      return []
+    }
+    const entries = (await res.json()) as HfTreeEntry[]
+    return entries
+      .filter((entry) => {
+        return entry.path.startsWith(`${code}/`)
+      })
+      .map((entry) => {
+        return _entryToRemoteVoice({ entry })
+      })
+      .filter((voice): voice is RemoteVoice => {
+        return voice !== null
+      })
+      .sort((a, b) => {
+        return a.name.localeCompare(b.name)
+      })
   }
 }
