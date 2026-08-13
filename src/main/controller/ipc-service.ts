@@ -1,5 +1,4 @@
 import { ipcMain, type BrowserWindow } from 'electron'
-import fs from 'node:fs'
 import { settingsService } from '@src/main/business/service/settings-service'
 import { modelsService } from '@src/main/business/service/models-service'
 import { ttsService } from '@src/main/business/service/tts-service'
@@ -60,9 +59,6 @@ export const ipcService = {
       ttsService.playbackEnded()
       return true
     })
-    ipcMain.handle('tts:loadWav', (_e, p: string) => {
-      return fs.promises.readFile(p)
-    })
 
     ipcMain.handle('shortcuts:reregister', () => {
       shortcutsService.registerAll()
@@ -79,8 +75,14 @@ export const ipcService = {
     ttsService.events.on('status', (s) => {
       send('tts:status', s)
     })
-    ttsService.events.on('playWav', (p: string) => {
-      send('tts:playWav', p)
+    ttsService.events.on('audioStart', (p: { sampleRate: number; voice: string }) => {
+      send('tts:audioStart', p)
+    })
+    ttsService.events.on('audioChunk', (buf: Buffer) => {
+      send('tts:audioChunk', buf)
+    })
+    ttsService.events.on('audioEnd', () => {
+      send('tts:audioEnd')
     })
     ttsService.events.on('stopPlayback', () => {
       send('tts:stopPlayback')

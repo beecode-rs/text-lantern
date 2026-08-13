@@ -1,13 +1,15 @@
 import { EventEmitter } from 'node:events'
 import { spawn, type ChildProcess } from 'node:child_process'
 import fs from 'node:fs'
-import os from 'node:os'
 import path from 'node:path'
 import { pathsService } from '@src/main/util/paths-service'
 import { textService } from '@src/main/business/service/text-service'
 import { langService } from '@src/main/util/lang-service'
 import { selectionService } from '@src/main/business/service/selection-service'
 import type { Lang, Settings, TtsStatus } from '@src/shared/types'
+
+const AUDIO_FRAME_BYTES = 4096
+const DEFAULT_SAMPLE_RATE = 16000
 
 const ttsEvents = new EventEmitter()
 ttsEvents.setMaxListeners(50)
@@ -78,10 +80,6 @@ function _voiceModelFilesExist(params: { voice: string }): boolean {
   return fs.existsSync(onnx) && fs.existsSync(json)
 }
 
-function _newTempWavPath(): string {
-  return path.join(os.tmpdir(), `text-lantern-${process.pid}-${Date.now()}.wav`)
-}
-
 function _lengthScaleFromSpeed(speed: number): number {
   if (speed > 0) {
     return 1 / speed
@@ -89,58 +87,108 @@ function _lengthScaleFromSpeed(speed: number): number {
   return 1
 }
 
-function _buildPiperSynthesisArgs(params: {
-  onnx: string
-  json: string
-  wavPath: string
-  speed: number
-}): string[] {
-  return ['-m', params.onnx, '-c', params.json, '-f', params.wavPath, '--length-scale', String(_lengthScaleFromSpeed(params.speed))]
+function _buildPiperSynthesisArgs(params: { onnx: string; json: string; speed: number }): string[] {
+  return [
+    '-m',
+    params.onnx,
+    '-c',
+    params.json,
+    '--output-raw',
+    '--length-scale',
+    String(_lengthScaleFromSpeed(params.speed))
+  ]
 }
 
-function _synthesizeViaPiper(params: {
+async function _voiceSampleRate(params: { json: string }): Promise<number> {
+  let rate = 0
+  try {
+    const content = await fs.promises.readFile(params.json, 'utf8')
+    const parsed = JSON.parse(content) as { audio?: { sample_rate?: number } }
+    rate = parsed.audio?.sample_rate ?? 0
+  } catch {
+    rate = 0
+  }
+  if (rate > 0) {
+    return rate
+  }
+  return DEFAULT_SAMPLE_RATE
+}
+
+function _streamViaPiper(params: {
   args: string[]
   stdinText: string
-}): Promise<{ stderr: string }> {
-  let stderr = ''
-  return new Promise<{ stderr: string }>((resolve) => {
-    let child: ChildProcess
-    try {
-      child = spawn(pathsService.piperBin(), params.args, { stdio: ['pipe', 'ignore', 'pipe'] })
-    } catch (err) {
-      resolve({ stderr: String(err) })
-      return
-    }
-    current = child
-    child.stderr?.on('data', (d: Buffer) => {
-      stderr += d.toString()
-    })
-    child.on('error', (err) => {
-      stderr += String(err)
-      resolve({ stderr })
-    })
-    child.on('exit', () => {
-      resolve({ stderr })
-    })
-    child.stdin?.end(params.stdinText)
-  })
-}
-
-function _announceSynthesisResult(params: {
-  wavPath: string
-  stderr: string
+  sampleRate: number
   voice: string
 }): void {
-  const wavHasAudio = fs.existsSync(params.wavPath) && fs.statSync(params.wavPath).size > 0
-  if (wavHasAudio) {
-    _emitTtsStatus({ state: 'reading', voice: params.voice })
-    ttsEvents.emit('playWav', params.wavPath)
+  let child: ChildProcess
+  try {
+    child = spawn(pathsService.piperBin(), params.args, { stdio: ['pipe', 'pipe', 'pipe'] })
+  } catch (err) {
+    _emitTtsStatus({ state: 'error', error: String(err) })
     return
   }
-  _emitTtsStatus({
-    state: 'error',
-    error: (params.stderr || 'Piper produced no audio.').trim()
+  current = child
+
+  let stderr = ''
+  let producedAudio = false
+  let started = false
+  let remainder = Buffer.alloc(0)
+
+  const forwardFrames = (buf: Buffer): void => {
+    if (current !== child) {
+      return
+    }
+    if (!started) {
+      started = true
+      producedAudio = true
+      _emitTtsStatus({ state: 'reading', voice: params.voice })
+      ttsEvents.emit('audioStart', { sampleRate: params.sampleRate, voice: params.voice })
+    }
+    remainder = Buffer.concat([remainder, buf])
+    while (remainder.length >= AUDIO_FRAME_BYTES) {
+      const frame = remainder.subarray(0, AUDIO_FRAME_BYTES)
+      remainder = remainder.subarray(AUDIO_FRAME_BYTES)
+      ttsEvents.emit('audioChunk', Buffer.from(frame))
+    }
+  }
+
+  child.stdout?.on('data', forwardFrames)
+  child.stdout?.on('end', () => {
+    if (current !== child) {
+      return
+    }
+    if (remainder.length > 0) {
+      ttsEvents.emit('audioChunk', Buffer.from(remainder))
+      remainder = Buffer.alloc(0)
+    }
+    if (producedAudio) {
+      ttsEvents.emit('audioEnd')
+    }
   })
+  child.stderr?.on('data', (d: Buffer) => {
+    stderr += d.toString()
+  })
+  child.on('error', (err) => {
+    if (current !== child) {
+      return
+    }
+    if (!producedAudio) {
+      _emitTtsStatus({ state: 'error', error: String(err) })
+    }
+  })
+  child.on('exit', () => {
+    if (current !== child) {
+      return
+    }
+    current = null
+    if (!producedAudio) {
+      _emitTtsStatus({
+        state: 'error',
+        error: (stderr || 'Piper produced no audio.').trim()
+      })
+    }
+  })
+  child.stdin?.end(params.stdinText)
 }
 
 export const ttsService = {
@@ -184,13 +232,10 @@ export const ttsService = {
 
     _emitTtsStatus({ state: 'synthesizing', voice })
 
-    const wavPath = _newTempWavPath()
     const { onnx, json } = _voiceModelPaths({ voice })
-    const args = _buildPiperSynthesisArgs({ onnx, json, wavPath, speed: opts.settings.rate })
-    const { stderr } = await _synthesizeViaPiper({ args, stdinText: capped })
-
-    current = null
-    _announceSynthesisResult({ wavPath, stderr, voice })
+    const sampleRate = await _voiceSampleRate({ json })
+    const args = _buildPiperSynthesisArgs({ onnx, json, speed: opts.settings.rate })
+    _streamViaPiper({ args, stdinText: capped, sampleRate, voice })
   },
 
   async stop(): Promise<void> {

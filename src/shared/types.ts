@@ -83,14 +83,15 @@ export interface TtsApi {
   speak(lang: Lang, text?: string): Promise<boolean>
   stop(): Promise<boolean>
   playbackEnded(): Promise<boolean>
-  loadWav(path: string): Promise<ArrayBuffer>
 
   reregisterShortcuts(): Promise<boolean>
   showSettings(): Promise<void>
 
   onSettingsChanged(cb: (s: Settings) => void): () => void
   onTtsStatus(cb: (s: TtsStatus) => void): () => void
-  onPlayWav(cb: (path: string) => void): () => void
+  onAudioStart(cb: (p: { sampleRate: number; voice: string }) => void): () => void
+  onAudioChunk(cb: (samples: Uint8Array) => void): () => void
+  onAudioEnd(cb: () => void): () => void
   onStopPlayback(cb: () => void): () => void
   onModelsLog(cb: (line: string) => void): () => void
   onModelsProgress(cb: (p: { name: string; progress: number }) => void): () => void

@@ -2,42 +2,46 @@ import { useEffect, useRef, useState } from 'react'
 import { Square, Loader2, AlertTriangle } from 'lucide-react'
 import type { TtsStatus } from '@src/shared/types'
 import { api } from '@src/renderer/src/api'
+import { StreamPlayer } from '@src/renderer/src/lib/stream-player'
 
 export function NowPlaying(): React.JSX.Element {
   const [status, setStatus] = useState<TtsStatus>({ state: 'idle' })
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const urlRef = useRef<string | null>(null)
+  const playerRef = useRef<StreamPlayer | null>(null)
+  if (playerRef.current === null) {
+    playerRef.current = new StreamPlayer()
+  }
 
   useEffect(() => {
     const offStatus = api.onTtsStatus(setStatus)
 
-    const offPlay = api.onPlayWav(async (path) => {
-      try {
-        const buf = await api.loadWav(path)
-        const blob = new Blob([buf], { type: 'audio/wav' })
-        if (urlRef.current) URL.revokeObjectURL(urlRef.current)
-        const url = URL.createObjectURL(blob)
-        urlRef.current = url
-        const a = audioRef.current
-        if (a) {
-          a.src = url
-          await a.play().catch(() => {})
-        }
-      } catch (err) {
-        console.error('Failed to play WAV:', err)
+    const offStart = api.onAudioStart(({ sampleRate }) => {
+      const player = playerRef.current
+      if (!player) {
+        return
       }
+      player.onDone = () => {
+        api.playbackEnded()
+      }
+      player.start({ sampleRate })
+    })
+
+    const offChunk = api.onAudioChunk((samples) => {
+      playerRef.current?.feed(samples)
+    })
+
+    const offEnd = api.onAudioEnd(() => {
+      playerRef.current?.end()
     })
 
     const offStop = api.onStopPlayback(() => {
-      const a = audioRef.current
-      if (a) {
-        a.pause()
-      }
+      playerRef.current?.stop()
     })
 
     return () => {
       offStatus()
-      offPlay()
+      offStart()
+      offChunk()
+      offEnd()
       offStop()
     }
   }, [])
@@ -46,12 +50,6 @@ export function NowPlaying(): React.JSX.Element {
 
   return (
     <>
-      <audio
-        ref={audioRef}
-        onEnded={() => api.playbackEnded()}
-        className="hidden"
-      />
-
       {(busy || status.state === 'error') && (
         <div className="shrink-0 border-t border-mid-gray/20 bg-background-ui/95 backdrop-blur px-4 py-2.5 flex items-center gap-3 text-white">
           {status.state === 'synthesizing' && <Loader2 size={15} className="animate-spin" />}

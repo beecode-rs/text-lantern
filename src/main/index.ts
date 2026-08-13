@@ -11,10 +11,12 @@ import { ttsService } from '@src/main/business/service/tts-service'
 import type { TtsStatus } from '@src/shared/types'
 
 app.setName(APP_NAME)
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 let mainWindow: BrowserWindow | null = null
+let isQuitting = false
 
 function _migrateLegacyUserData(): void {
   const legacyName = 'tts-reader'
@@ -49,6 +51,12 @@ function createWindow(): BrowserWindow {
   })
 
   win.on('close', (e) => {
+    if (isQuitting) {
+      return
+    }
+    if (!app.isPackaged) {
+      return
+    }
     e.preventDefault()
     win.hide()
   })
@@ -107,9 +115,14 @@ app.whenReady().then(() => {
   }
 })
 
-app.on('window-all-closed', () => {})
+app.on('window-all-closed', () => {
+  if (!app.isPackaged) {
+    app.quit()
+  }
+})
 
 app.on('before-quit', () => {
+  isQuitting = true
   shortcutsService.unregisterAll()
   trayService.destroy()
 })

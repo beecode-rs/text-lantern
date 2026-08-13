@@ -58,9 +58,6 @@ const api: TtsApi = {
   playbackEnded: () => {
     return ipcRenderer.invoke('tts:playbackEnded')
   },
-  loadWav: (path) => {
-    return ipcRenderer.invoke('tts:loadWav', path)
-  },
 
   reregisterShortcuts: () => {
     return ipcRenderer.invoke('shortcuts:reregister')
@@ -71,7 +68,9 @@ const api: TtsApi = {
 
   onSettingsChanged: on('settings:changed'),
   onTtsStatus: on('tts:status'),
-  onPlayWav: on('tts:playWav'),
+  onAudioStart: on('tts:audioStart'),
+  onAudioChunk: on('tts:audioChunk'),
+  onAudioEnd: onVoid('tts:audioEnd'),
   onStopPlayback: onVoid('tts:stopPlayback'),
   onModelsLog: on('models:log'),
   onModelsProgress: on('models:progress')

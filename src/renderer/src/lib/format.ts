@@ -45,8 +45,14 @@ function acceleratorMap(): Record<string, string> {
     CommandOrControl: 'Ctrl',
     CmdOrCtrl: 'Ctrl',
     Command: 'Win',
+    Cmd: 'Win',
     Super: 'Win',
-    Meta: 'Win'
+    Meta: 'Win',
+    Control: 'Ctrl',
+    Ctrl: 'Ctrl',
+    Alt: 'Alt',
+    Option: 'Alt',
+    Shift: 'Shift'
   }
 }
 

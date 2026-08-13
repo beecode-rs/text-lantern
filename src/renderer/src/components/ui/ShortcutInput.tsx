@@ -1,38 +1,6 @@
 import { useEffect, useState } from 'react'
+import { acceleratorService } from '@src/renderer/src/lib/accelerator'
 import { formatService } from '@src/renderer/src/lib/format'
-
-function eventToAccelerator(e: KeyboardEvent): { accel: string } | { cancel: true } | null {
-  if (e.key === 'Escape') {
-    return { cancel: true }
-  }
-  if (['Meta', 'Control', 'Alt', 'Shift', 'Fn'].includes(e.key)) {
-    return null
-  }
-  const parts: string[] = []
-  if (e.metaKey || e.ctrlKey) {
-    parts.push('CommandOrControl')
-  }
-  if (e.altKey) {
-    parts.push('Alt')
-  }
-  if (e.shiftKey) {
-    parts.push('Shift')
-  }
-  if (parts.length === 0) {
-    return null
-  }
-  let key = e.key
-  if (e.key === ' ') {
-    key = 'Space'
-  }
-  if (key.length === 1) {
-    key = key.toUpperCase()
-  }
-  parts.push(key)
-  e.preventDefault()
-  e.stopPropagation()
-  return { accel: parts.join('+') }
-}
 
 export function ShortcutInput({
   value,
@@ -52,7 +20,7 @@ export function ShortcutInput({
       return
     }
     const onKey = (e: KeyboardEvent): void => {
-      const result = eventToAccelerator(e)
+      const result = acceleratorService.fromKeyboardEvent(e)
       if (!result) {
         return
       }
