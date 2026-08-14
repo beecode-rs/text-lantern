@@ -1,0 +1,98 @@
+import { randomUUID } from 'node:crypto'
+import { EventEmitter } from 'node:events'
+import fs from 'node:fs'
+
+import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
+
+import { settingsDalSingleton } from '@src/main/dal/settings-dal'
+import { constant } from '@src/main/util/constants'
+import { logger } from '@src/main/util/logger'
+import { pathsService } from '@src/main/util/paths-service'
+import type { HistoryEntry } from '@src/shared/types'
+
+export class HistoryDal {
+  public readonly events: EventEmitter
+
+  private _cache: HistoryEntry[] = []
+
+  public constructor() {
+    this.events = new EventEmitter()
+    this.events.setMaxListeners(50)
+  }
+
+  public init(): HistoryEntry[] {
+    try {
+      const raw = fs.readFileSync(this._historyFilePath(), 'utf8')
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        this._cache = parsed as HistoryEntry[]
+      }
+    } catch {
+      this._cache = []
+    }
+    this._cache = this._cache.slice(0, this._resolveHistoryLimit())
+    this._persistHistoryToDisk()
+    return this._cache
+  }
+
+  public get(): HistoryEntry[] {
+    return this._cache
+  }
+
+  public add(params: { text: string; voice: string }): HistoryEntry[] {
+    const entry: HistoryEntry = {
+      id: randomUUID(),
+      text: params.text,
+      voice: params.voice,
+      createdAt: Date.now()
+    }
+    this._cache = [entry, ...this._cache].slice(0, this._resolveHistoryLimit())
+    this._persistHistoryToDisk()
+    this._emitChanged()
+    return this._cache
+  }
+
+  public clear(): HistoryEntry[] {
+    this._cache = []
+    this._persistHistoryToDisk()
+    this._emitChanged()
+    return this._cache
+  }
+
+  public prune(): HistoryEntry[] {
+    const limited = this._cache.slice(0, this._resolveHistoryLimit())
+    if (limited.length === this._cache.length) {
+      return this._cache
+    }
+    this._cache = limited
+    this._persistHistoryToDisk()
+    this._emitChanged()
+    return this._cache
+  }
+
+  protected _historyFilePath(): string {
+    return pathsService.userDataFile('history.json')
+  }
+
+  protected _resolveHistoryLimit(): number {
+    const limit = settingsDalSingleton().get().historyLimit
+    if (limit > 0) {
+      return limit
+    }
+    return constant().history.defaultEntryLimit
+  }
+
+  protected _persistHistoryToDisk(): void {
+    try {
+      fs.writeFileSync(this._historyFilePath(), JSON.stringify(this._cache, null, 2), 'utf8')
+    } catch (err) {
+      logger().error('Failed to save history:', err)
+    }
+  }
+
+  protected _emitChanged(): void {
+    this.events.emit('changed', this._cache)
+  }
+}
+
+export const historyDalSingleton = singletonPattern(() => new HistoryDal())

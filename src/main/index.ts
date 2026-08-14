@@ -2,14 +2,15 @@ import { app, BrowserWindow, nativeImage, nativeTheme, shell, systemPreferences 
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { APP_NAME } from '@src/main/util/constants'
+import { APP_NAME, constant } from '@src/main/util/constants'
+import { logger } from '@src/main/util/logger'
 import { pathsService } from '@src/main/util/paths-service'
-import { settingsService } from '@src/main/business/service/settings-service'
-import { historyService } from '@src/main/business/service/history-service'
-import { shortcutsService } from '@src/main/business/service/shortcuts-service'
-import { trayService } from '@src/main/business/service/tray-service'
-import { ipcService } from '@src/main/controller/ipc-service'
-import { ttsService } from '@src/main/business/service/tts-service'
+import { ttsServiceSingleton } from '@src/main/business/service/tts-service'
+import { historyDalSingleton } from '@src/main/dal/history-dal'
+import { settingsDalSingleton } from '@src/main/dal/settings-dal'
+import { ShortcutsService } from '@src/main/lib/shortcuts-service'
+import { trayServiceSingleton } from '@src/main/lib/tray-service'
+import { ipcController } from '@src/main/controller/ipc-controller'
 import type { ThemePreference, TtsStatus } from '@src/shared/types'
 
 app.setName(APP_NAME)
@@ -31,7 +32,7 @@ function _migrateLegacyUserData(): void {
   try {
     fs.cpSync(oldPath, newPath, { recursive: true })
   } catch (err) {
-    console.error('[main] could not migrate legacy user data:', err)
+    logger().error('could not migrate legacy user data:', err)
   }
 }
 
@@ -45,18 +46,17 @@ function _applyAppIcon(): void {
   }
 }
 
-const LIGHT_WINDOW_BACKGROUND = '#F5F6FA'
-const DARK_WINDOW_BACKGROUND = '#12131C'
-
 function _resolveBackgroundColor(params: { theme: ThemePreference }): string {
   const { theme } = params
   if (theme === 'dark') {
-    return DARK_WINDOW_BACKGROUND
+    return constant().mainWindow.darkBackground
   }
   if (theme === 'light') {
-    return LIGHT_WINDOW_BACKGROUND
+    return constant().mainWindow.lightBackground
   }
-  return nativeTheme.shouldUseDarkColors ? DARK_WINDOW_BACKGROUND : LIGHT_WINDOW_BACKGROUND
+  return nativeTheme.shouldUseDarkColors
+    ? constant().mainWindow.darkBackground
+    : constant().mainWindow.lightBackground
 }
 
 function _createWindow(params: { theme: ThemePreference }): BrowserWindow {
@@ -89,16 +89,16 @@ function _createWindow(params: { theme: ThemePreference }): BrowserWindow {
 
   if (!app.isPackaged) {
     win.webContents.on('console-message', (_e, _level, message) => {
-      console.log(`[renderer] ${message}`)
+      logger().debug(`renderer console: ${message}`)
     })
     win.webContents.on('did-finish-load', () => {
-      console.log('[main] renderer finished loading')
+      logger().debug('renderer finished loading')
     })
     win.webContents.on('did-fail-load', (_e, code, desc) => {
-      console.log(`[main] renderer load FAILED ${code}: ${desc}`)
+      logger().error(`renderer load failed ${code}: ${desc}`)
     })
     win.webContents.on('preload-error', (_e, p, err) => {
-      console.log(`[main] preload error in ${p}: ${String(err)}`)
+      logger().error(`preload error in ${p}: ${String(err)}`)
     })
   }
 
@@ -117,14 +117,14 @@ function _createWindow(params: { theme: ThemePreference }): BrowserWindow {
 }
 
 function _reflectReadingStateInTray(s: TtsStatus): void {
-  trayService.setReading(s.state === 'synthesizing' || s.state === 'reading')
+  trayServiceSingleton().setReading(s.state === 'synthesizing' || s.state === 'reading')
 }
 
 app.whenReady().then(() => {
   _migrateLegacyUserData()
-  settingsService.init()
-  historyService.init()
-  const settings = settingsService.get()
+  settingsDalSingleton().init()
+  historyDalSingleton().init()
+  const settings = settingsDalSingleton().get()
 
   if (process.platform === 'darwin') {
     void systemPreferences.isTrustedAccessibilityClient(true)
@@ -132,15 +132,15 @@ app.whenReady().then(() => {
 
   _applyAppIcon()
   mainWindow = _createWindow({ theme: settings.theme })
-  trayService.create(mainWindow)
-  shortcutsService.registerAll()
-  ipcService.register(() => mainWindow)
+  trayServiceSingleton().create(mainWindow)
+  new ShortcutsService().registerAll()
+  ipcController.register(() => mainWindow)
 
-  ttsService.events.on('status', _reflectReadingStateInTray)
+  ttsServiceSingleton().events.on('status', _reflectReadingStateInTray)
 
   const prewarmVoice = settings.languageBindings[0]?.voice
   if (prewarmVoice) {
-    void ttsService.prewarmVoice({ voice: prewarmVoice })
+    void ttsServiceSingleton().prewarmVoice({ voice: prewarmVoice })
   }
 
   if (!settings.startHidden || !app.isPackaged) {
@@ -156,13 +156,13 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true
-  ttsService.dispose()
-  shortcutsService.unregisterAll()
-  trayService.destroy()
+  ttsServiceSingleton().dispose()
+  new ShortcutsService().unregisterAll()
+  trayServiceSingleton().destroy()
 })
 
 app.on('will-quit', () => {
-  shortcutsService.unregisterAll()
+  new ShortcutsService().unregisterAll()
 })
 
 const gotLock = app.requestSingleInstanceLock()

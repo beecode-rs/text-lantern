@@ -62,7 +62,7 @@ export interface Settings {
   historyLimit: number
   /**
    * Monotonic settings-schema version. Bumped whenever a persisted field changes
-   * meaning; `settingsService.init` runs the matching one-time migration when a
+   * meaning; `settingsDalSingleton().init` runs the matching one-time migration when a
    * stored file is older than the current version.
    */
   schemaVersion: number

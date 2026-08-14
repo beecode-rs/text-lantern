@@ -1,6 +1,6 @@
 import { Download } from 'lucide-react'
 import { StarBadge } from '@src/renderer/src/components/ui/StarBadge'
-import { formatService } from '@src/renderer/src/lib/format'
+import { FormatService } from '@src/renderer/src/lib/format'
 import { languageServiceSingleton } from '@src/shared/language/language-service'
 import type { RemoteVoice } from '@src/shared/types'
 
@@ -24,7 +24,7 @@ export function RemoteModelRow({
         </div>
         <div className="text-xs text-text/55 mt-0.5">
           {languageServiceSingleton().getDisplayName({ code: voice.lang })} · {voice.quality} ·{' '}
-          {formatService.formatBytes(voice.sizeBytes)}
+          {new FormatService().formatBytes(voice.sizeBytes)}
         </div>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">

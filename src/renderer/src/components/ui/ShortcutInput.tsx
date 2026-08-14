@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { acceleratorService } from '@src/renderer/src/lib/accelerator'
-import { formatService } from '@src/renderer/src/lib/format'
+import { AcceleratorService } from '@src/renderer/src/lib/accelerator'
+import { FormatService } from '@src/renderer/src/lib/format'
 
 export function ShortcutInput({
   value,
@@ -20,7 +20,7 @@ export function ShortcutInput({
       return
     }
     const onKey = (e: KeyboardEvent): void => {
-      const result = acceleratorService.fromKeyboardEvent(e)
+      const result = new AcceleratorService().fromKeyboardEvent(e)
       if (!result) {
         return
       }
@@ -59,7 +59,7 @@ export function ShortcutInput({
         <span className="text-logo-primary">Press a shortcut…</span>
       ) : (
         <span className={conflict ? 'text-red-600 dark:text-red-400' : ''}>
-          {formatService.formatAccelerator(value) || 'Not set'}
+          {new FormatService().formatAccelerator(value) || 'Not set'}
         </span>
       )}
     </button>
