@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeImage, shell, systemPreferences } from 'electron'
+import { app, BrowserWindow, nativeImage, nativeTheme, shell, systemPreferences } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,7 +10,7 @@ import { shortcutsService } from '@src/main/business/service/shortcuts-service'
 import { trayService } from '@src/main/business/service/tray-service'
 import { ipcService } from '@src/main/controller/ipc-service'
 import { ttsService } from '@src/main/business/service/tts-service'
-import type { TtsStatus } from '@src/shared/types'
+import type { ThemePreference, TtsStatus } from '@src/shared/types'
 
 app.setName(APP_NAME)
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
@@ -45,7 +45,21 @@ function _applyAppIcon(): void {
   }
 }
 
-function createWindow(): BrowserWindow {
+const LIGHT_WINDOW_BACKGROUND = '#F5F6FA'
+const DARK_WINDOW_BACKGROUND = '#12131C'
+
+function _resolveBackgroundColor(params: { theme: ThemePreference }): string {
+  const { theme } = params
+  if (theme === 'dark') {
+    return DARK_WINDOW_BACKGROUND
+  }
+  if (theme === 'light') {
+    return LIGHT_WINDOW_BACKGROUND
+  }
+  return nativeTheme.shouldUseDarkColors ? DARK_WINDOW_BACKGROUND : LIGHT_WINDOW_BACKGROUND
+}
+
+function createWindow(params: { theme: ThemePreference }): BrowserWindow {
   const win = new BrowserWindow({
     width: 900,
     height: 620,
@@ -54,7 +68,7 @@ function createWindow(): BrowserWindow {
     show: false,
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 16, y: 18 },
-    backgroundColor: '#fbfbfb',
+    backgroundColor: _resolveBackgroundColor({ theme: params.theme }),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.mjs'),
       sandbox: false,
@@ -117,7 +131,7 @@ app.whenReady().then(() => {
   }
 
   _applyAppIcon()
-  mainWindow = createWindow()
+  mainWindow = createWindow({ theme: settings.theme })
   trayService.create(mainWindow)
   shortcutsService.registerAll()
   ipcService.register(() => mainWindow)

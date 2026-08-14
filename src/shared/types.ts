@@ -23,6 +23,12 @@ export interface LanguageBinding {
  */
 export type Lang = 'auto' | string
 
+/**
+ * The user's appearance preference. `'system'` follows the OS dark-mode setting
+ * and re-evaluates live as it changes; `'light'` and `'dark'` force one look.
+ */
+export type ThemePreference = 'system' | 'light' | 'dark'
+
 export interface Settings {
   languageBindings: LanguageBinding[]
   /**
@@ -45,6 +51,8 @@ export interface Settings {
   cleanText: boolean
   stripBrackets: boolean
   startHidden: boolean
+  /** Appearance: follows the OS when `system`, otherwise forces light or dark. */
+  theme: ThemePreference
   maxChars: number
   /**
    * Maximum number of readings retained in History. New entries are prepended and

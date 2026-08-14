@@ -11,6 +11,7 @@ import { useSettingsStore } from '@src/renderer/src/store/settings'
 import { useHistoryStore } from '@src/renderer/src/store/history'
 import { useModelsStore } from '@src/renderer/src/store/models'
 import { api } from '@src/renderer/src/api'
+import { useTheme } from '@src/renderer/src/lib/use-theme'
 
 function Section({ active }: { active: Section }): React.JSX.Element {
   switch (active) {
@@ -57,6 +58,8 @@ export default function App(): React.JSX.Element {
       offProgress()
     }
   }, [loadSettings, replaceSettings, loadHistory, replaceHistory, appendLog, setProgress])
+
+  useTheme(settings?.theme)
 
   if (!settings) {
     return (

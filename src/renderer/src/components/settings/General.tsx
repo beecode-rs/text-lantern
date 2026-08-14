@@ -1,7 +1,15 @@
 import { useSettingsStore } from '@src/renderer/src/store/settings'
 import { SettingsGroup, Row } from '@src/renderer/src/components/ui/SettingsGroup'
 import { Toggle } from '@src/renderer/src/components/ui/Toggle'
+import { Select, type SelectOption } from '@src/renderer/src/components/ui/Select'
 import { Slider } from '@src/renderer/src/components/ui/Slider'
+import type { ThemePreference } from '@src/shared/types'
+
+const THEME_OPTIONS: SelectOption<ThemePreference>[] = [
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' }
+]
 
 export function GeneralSettings(): React.JSX.Element {
   const settings = useSettingsStore((s) => s.settings)
@@ -21,8 +29,21 @@ export function GeneralSettings(): React.JSX.Element {
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
       <header>
         <h1 className="text-xl font-semibold">General</h1>
-        <p className="text-sm text-text/55 mt-1">Speech speed and text cleaning.</p>
+        <p className="text-sm text-text/55 mt-1">Appearance, speech speed, and text cleaning.</p>
       </header>
+
+      <SettingsGroup title="Appearance" description="System follows your macOS appearance.">
+        <Row title="Theme" description="Choose how Text Lantern looks.">
+          <Select
+            value={settings.theme}
+            options={THEME_OPTIONS}
+            onChange={(v) => {
+              update({ theme: v })
+            }}
+            ariaLabel="Theme"
+          />
+        </Row>
+      </SettingsGroup>
 
       <SettingsGroup title="Speech" description="Higher reads faster. 1.0× is normal speed.">
         <Row title="Speed" description={`${settings.rate.toFixed(2)}× · ${rateLabel(settings.rate)}`}>

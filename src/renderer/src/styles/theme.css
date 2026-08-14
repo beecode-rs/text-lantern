@@ -19,15 +19,13 @@
     Arial, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-text: #F5F6FA;
-    --color-background: #12131C;
-    --color-background-ui: #3A2BA0; /* lifted indigo, separates from dark bg */
-    --color-logo-primary: #9D8BFF;  /* Soft Lavender — accessible primary in dark */
-    --color-logo-stroke: #12131C;   /* dark text on the light lavender primary */
-    --color-lavender: #B7A6FF;      /* brighter lavender for dark surfaces */
-  }
+.dark {
+  --color-text: #F5F6FA;
+  --color-background: #12131C;
+  --color-background-ui: #3A2BA0; /* lifted indigo, separates from dark bg */
+  --color-logo-primary: #9D8BFF;  /* Soft Lavender — accessible primary in dark */
+  --color-logo-stroke: #12131C;   /* dark text on the light lavender primary */
+  --color-lavender: #B7A6FF;      /* brighter lavender for dark surfaces */
 }
 
 html,

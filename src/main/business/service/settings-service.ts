@@ -25,7 +25,7 @@ const DEFAULT_BINDINGS: LanguageBinding[] = [
   { id: 'en', langCode: 'en', voice: 'en_US-lessac-medium', shortcut: 'CommandOrControl+Shift+E' }
 ]
 
-const CURRENT_SCHEMA_VERSION = 2
+const CURRENT_SCHEMA_VERSION = 3
 
 const DEFAULT_SETTINGS: Settings = {
   languageBindings: structuredClone(DEFAULT_BINDINGS),
@@ -36,6 +36,7 @@ const DEFAULT_SETTINGS: Settings = {
   cleanText: true,
   stripBrackets: false,
   startHidden: true,
+  theme: 'system',
   maxChars: 6000,
   historyLimit: 5,
   schemaVersion: CURRENT_SCHEMA_VERSION
@@ -128,6 +129,7 @@ function _buildSettings(params: {
     cleanText: parsed.cleanText ?? defaults.cleanText,
     stripBrackets: parsed.stripBrackets ?? defaults.stripBrackets,
     startHidden: parsed.startHidden ?? defaults.startHidden,
+    theme: parsed.theme ?? defaults.theme,
     maxChars: parsed.maxChars ?? defaults.maxChars,
     historyLimit: parsed.historyLimit ?? defaults.historyLimit,
     schemaVersion: CURRENT_SCHEMA_VERSION
