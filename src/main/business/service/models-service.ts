@@ -54,13 +54,6 @@ function _resolveVoiceDownloadUrlPrefix(params: { name: string }): string {
   return `${VOICES_BASE}/${lang}/${langRegion}/${voice}/${quality}`
 }
 
-/**
- * Resolves a free-text search query to a Piper language code used as the
- * HuggingFace tree path. Matches a known language `code` first, then a
- * language name (case-insensitive), then passes through any 1–3 letter string
- * as a raw code so codes outside the built-in list still reach the repo.
- * Returns `null` for empty or non-code-like input.
- */
 function _resolveLangCode(params: { query: string }): string | null {
   const q = params.query.trim().toLowerCase()
   if (!q) {
@@ -84,12 +77,6 @@ function _resolveLangCode(params: { query: string }): string | null {
   return null
 }
 
-/**
- * Converts a HuggingFace tree entry into a `RemoteVoice`, or `null` when the
- * entry is not a Piper model file. Keeps only `*.onnx` files (the companion
- * `*.onnx.json` ends in `.json` and is excluded) and reads the real model size
- * from the LFS pointer when present — the top-level `size` is just the pointer.
- */
 function _entryToRemoteVoice(params: { entry: HfTreeEntry }): RemoteVoice | null {
   const { entry } = params
   if (entry.type !== 'file' || !entry.path.endsWith('.onnx')) {
@@ -423,12 +410,6 @@ export const modelsService = {
     })
   },
 
-  /**
-   * Searches the HuggingFace `rhasspy/piper-voices` repo for every voice under
-   * the resolved language code. Returns an empty list for an unresolvable
-   * query or a failed/unreachable request — search never throws, so the
-   * renderer can treat `[]` as "no results" uniformly.
-   */
   async searchVoices(params: { query: string }): Promise<RemoteVoice[]> {
     const code = _resolveLangCode({ query: params.query })
     if (!code) {

@@ -157,12 +157,12 @@ export const ttsService = {
     } catch {}
   },
 
-  async speak(opts: { lang: Lang; text?: string; settings: Settings }): Promise<void> {
+  async speak(params: { lang: Lang; text?: string; settings: Settings }): Promise<void> {
     await this.stop()
 
     let rawText: string
     try {
-      rawText = await _resolveInputText({ text: opts.text })
+      rawText = await _resolveInputText({ text: params.text })
     } catch (error) {
       _emitTtsStatus({ state: 'error', error: _selectionErrorMessage(error) })
       return
@@ -172,17 +172,17 @@ export const ttsService = {
       return
     }
 
-    const cleaned = _cleanTextIfEnabled({ text: rawText, settings: opts.settings })
+    const cleaned = _cleanTextIfEnabled({ text: rawText, settings: params.settings })
     if (!_hasText(cleaned)) {
       _emitIdle()
       return
     }
 
-    const capped = _capTextToMaxLength({ text: cleaned, maxChars: opts.settings.maxChars })
+    const capped = _capTextToMaxLength({ text: cleaned, maxChars: params.settings.maxChars })
     const voice = langService.resolveVoice({
-      lang: opts.lang,
+      lang: params.lang,
       text: cleaned,
-      settings: opts.settings
+      settings: params.settings
     })
 
     if (!_voiceModelFilesExist({ voice })) {
@@ -218,7 +218,7 @@ export const ttsService = {
 
     void _streamFromServer({
       text: capped,
-      lengthScale: _lengthScaleFromSpeed(opts.settings.rate),
+      lengthScale: _lengthScaleFromSpeed(params.settings.rate),
       sampleRate,
       voice,
       token

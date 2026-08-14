@@ -59,7 +59,7 @@ function _resolveBackgroundColor(params: { theme: ThemePreference }): string {
   return nativeTheme.shouldUseDarkColors ? DARK_WINDOW_BACKGROUND : LIGHT_WINDOW_BACKGROUND
 }
 
-function createWindow(params: { theme: ThemePreference }): BrowserWindow {
+function _createWindow(params: { theme: ThemePreference }): BrowserWindow {
   const win = new BrowserWindow({
     width: 900,
     height: 620,
@@ -131,7 +131,7 @@ app.whenReady().then(() => {
   }
 
   _applyAppIcon()
-  mainWindow = createWindow({ theme: settings.theme })
+  mainWindow = _createWindow({ theme: settings.theme })
   trayService.create(mainWindow)
   shortcutsService.registerAll()
   ipcService.register(() => mainWindow)

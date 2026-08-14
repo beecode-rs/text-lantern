@@ -2,11 +2,6 @@ import fs from 'node:fs'
 import { pathsService } from '@src/main/util/paths-service'
 import type { LanguageBinding, Settings } from '@src/shared/types'
 
-/**
- * Pre-electron-settings shape: two hardcoded language voices and a fixed
- * shortcuts object. Recognized only when migrating an older `settings.json`
- * that predates `languageBindings`.
- */
 interface LegacyShortcuts {
   auto?: string
   sr?: string
@@ -49,12 +44,6 @@ function _settingsFilePath(): string {
   return pathsService.userDataFile('settings.json')
 }
 
-/**
- * Builds the Serbian and English bindings from a legacy settings object, using
- * each stored voice / per-language shortcut when present and falling back to the
- * built-in defaults otherwise. Returns `null` when there is nothing legacy to
- * migrate, so the caller can fall back to the built-in default bindings.
- */
 function _migrateLegacyBindings(params: { parsed: LegacySettings }): LanguageBinding[] | null {
   const { parsed } = params
   const hasLegacy = parsed.voiceSr ?? parsed.voiceEn ?? parsed.shortcuts
@@ -80,13 +69,6 @@ function _migrateLegacyBindings(params: { parsed: LegacySettings }): LanguageBin
   })
 }
 
-/**
- * Converts a persisted `rate` from the pre-v2 length-scale semantics (lower was
- * faster) into the v2 speed-multiplier semantics (higher is faster) by inverting
- * it (`1 / rate`). Runs only while the stored schema is older than v2; once a
- * value has been migrated it is left untouched. Returns `undefined` when no rate
- * was stored so the caller can fall back to the default. Pure and total.
- */
 function _migrateLegacyRate(params: {
   rate: number | undefined
   schemaVersion: number | undefined
@@ -104,11 +86,6 @@ function _migrateLegacyRate(params: {
   return 1
 }
 
-/**
- * Normalizes a parsed settings object into a complete, valid `Settings`,
- * migrating any legacy two-language fields into `languageBindings` and filling
- * every field from the defaults when missing. Pure and total.
- */
 function _buildSettings(params: {
   defaults: Settings
   parsed: Partial<Settings> & LegacySettings
