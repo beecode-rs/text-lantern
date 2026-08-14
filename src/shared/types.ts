@@ -8,7 +8,7 @@
 export interface LanguageBinding {
   /** Stable id decoupled from `langCode`, so the language can be re-chosen without losing identity. */
   id: string
-  /** Recognized language code (matches a `TtsLanguageInfo.code`), e.g. `sr`, `en`, `de`. */
+  /** Recognized language code (matches a `LanguageInfo.code`), e.g. `sr`, `en`, `de`. */
   langCode: string
   /** Voice model name that reads this language, e.g. `sr_Marko_medium`. */
   voice: string

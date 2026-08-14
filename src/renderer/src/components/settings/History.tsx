@@ -3,7 +3,7 @@ import { Clock, RotateCcw, Trash2 } from 'lucide-react'
 import { useSettingsStore } from '@src/renderer/src/store/settings'
 import { useHistoryStore } from '@src/renderer/src/store/history'
 import { SettingsGroup, Row } from '@src/renderer/src/components/ui/SettingsGroup'
-import { ttsLanguageName } from '@src/shared/languages'
+import { languageServiceSingleton } from '@src/shared/language/language-service'
 import { api } from '@src/renderer/src/api'
 import type { HistoryEntry } from '@src/shared/types'
 
@@ -18,7 +18,7 @@ function HistoryItem({
 }): React.JSX.Element {
   const [expanded, setExpanded] = useState(false)
   const langCode = entry.voice.split('_')[0]
-  const langName = ttsLanguageName({ code: langCode })
+  const langName = languageServiceSingleton().getDisplayName({ code: langCode })
   const time = new Date(entry.createdAt)
   const isLong = entry.text.length > PREVIEW_CHARS
   const truncated = !expanded && isLong

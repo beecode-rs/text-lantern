@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '@src/renderer/src/api'
-import { ttsLanguageName } from '@src/shared/languages'
+import { languageServiceSingleton } from '@src/shared/language/language-service'
 import type { Settings } from '@src/shared/types'
 import iconUrl from '@src/renderer/src/assets/icon.png'
 
@@ -36,7 +36,7 @@ export function AboutSettings(): React.JSX.Element {
               return (
                 <span key={binding.id}>
                   {index > 0 ? ' · ' : ''}
-                  {ttsLanguageName({ code: binding.langCode })}:{' '}
+                  {languageServiceSingleton().getDisplayName({ code: binding.langCode })}:{' '}
                   <span className="selectable">{binding.voice}</span>
                 </span>
               )

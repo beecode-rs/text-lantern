@@ -4,7 +4,7 @@ import { useSettingsStore } from '@src/renderer/src/store/settings'
 import { useModelsStore } from '@src/renderer/src/store/models'
 import { useTestStore } from '@src/renderer/src/store/test'
 import { SettingsGroup } from '@src/renderer/src/components/ui/SettingsGroup'
-import { ttsLanguageName } from '@src/shared/languages'
+import { languageServiceSingleton } from '@src/shared/language/language-service'
 import { api } from '@src/renderer/src/api'
 import type { TtsStatus } from '@src/shared/types'
 
@@ -58,7 +58,7 @@ export function TestSettings(): React.JSX.Element {
     && voices.some((voice) => { return voice.name === fallbackBinding.voice })
   const autoLabel = fallbackVoiceConnected && fallbackBinding
     ? `Auto-detect · ${fallbackBinding.voice}`
-    : `Auto-detect · fallback: ${ttsLanguageName({ code: settings.fallbackLang })}`
+    : `Auto-detect · fallback: ${languageServiceSingleton().getDisplayName({ code: settings.fallbackLang })}`
 
   const onButtonClick = (): void => {
     if (busy) {
@@ -106,7 +106,7 @@ export function TestSettings(): React.JSX.Element {
                 {connectedBindings.map((binding) => {
                   return (
                     <option key={binding.id} value={binding.langCode}>
-                      {ttsLanguageName({ code: binding.langCode })} · {binding.voice}
+                      {languageServiceSingleton().getDisplayName({ code: binding.langCode })} · {binding.voice}
                     </option>
                   )
                 })}

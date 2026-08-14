@@ -1,7 +1,7 @@
 import { Download } from 'lucide-react'
 import { StarBadge } from '@src/renderer/src/components/ui/StarBadge'
 import { formatService } from '@src/renderer/src/lib/format'
-import { ttsLanguageName } from '@src/shared/languages'
+import { languageServiceSingleton } from '@src/shared/language/language-service'
 import type { RemoteVoice } from '@src/shared/types'
 
 export function RemoteModelRow({
@@ -23,7 +23,7 @@ export function RemoteModelRow({
           {installed && <StarBadge>installed</StarBadge>}
         </div>
         <div className="text-xs text-text/55 mt-0.5">
-          {ttsLanguageName({ code: voice.lang })} · {voice.quality} ·{' '}
+          {languageServiceSingleton().getDisplayName({ code: voice.lang })} · {voice.quality} ·{' '}
           {formatService.formatBytes(voice.sizeBytes)}
         </div>
       </div>

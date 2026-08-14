@@ -1,10 +1,10 @@
 import { detect } from 'tinyld'
 
-import { TTS_LANGUAGES } from '@src/shared/languages'
+import { languageServiceSingleton } from '@src/shared/language/language-service'
 import type { Lang, Settings } from '@src/shared/types'
 
 const TTS_LANGUAGE_CODES = new Set<string>(
-  TTS_LANGUAGES.map((language) => {
+  languageServiceSingleton().list().map((language) => {
     return language.code
   })
 )

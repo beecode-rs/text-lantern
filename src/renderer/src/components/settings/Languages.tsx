@@ -5,7 +5,7 @@ import { useModelsStore } from '@src/renderer/src/store/models'
 import { SettingsGroup, Row } from '@src/renderer/src/components/ui/SettingsGroup'
 import { ShortcutInput } from '@src/renderer/src/components/ui/ShortcutInput'
 import { StarBadge } from '@src/renderer/src/components/ui/StarBadge'
-import { listTtsLanguages, ttsLanguageName } from '@src/shared/languages'
+import { languageServiceSingleton } from '@src/shared/language/language-service'
 import type { LanguageBinding } from '@src/shared/types'
 
 const BINDING_GRID = 'grid grid-cols-[minmax(130px,170px)_minmax(120px,190px)_minmax(150px,160px)_minmax(0,1fr)] items-center gap-2 px-4'
@@ -40,7 +40,7 @@ export function LanguagesSettings(): React.JSX.Element {
   }
 
   const fallbackOptions = settings.languageBindings.map((binding) => {
-    return { code: binding.langCode, name: ttsLanguageName({ code: binding.langCode }) }
+    return { code: binding.langCode, name: languageServiceSingleton().getDisplayName({ code: binding.langCode }) }
   })
   const fallbackMissing = !settings.languageBindings.some((binding) => {
     return binding.langCode === settings.fallbackLang
@@ -65,7 +65,7 @@ export function LanguagesSettings(): React.JSX.Element {
 
   const addBinding = (): void => {
     const usedCodes = settings.languageBindings.map((b) => { return b.langCode })
-    const langCode = listTtsLanguages().find((l) => {
+    const langCode = languageServiceSingleton().list().find((l) => {
       return !usedCodes.includes(l.code)
     })?.code ?? ''
     const voice = voices.find((v) => { return v.lang === langCode })?.name
@@ -109,7 +109,7 @@ export function LanguagesSettings(): React.JSX.Element {
               const usedByOthers = settings.languageBindings
                 .filter((b) => { return b.id !== binding.id })
                 .map((b) => { return b.langCode })
-              const langOptions = listTtsLanguages().filter((l) => {
+              const langOptions = languageServiceSingleton().list().filter((l) => {
                 return !usedByOthers.includes(l.code)
               })
               const rowVoices = [...voices].sort((a, b) => {
@@ -174,7 +174,7 @@ export function LanguagesSettings(): React.JSX.Element {
               <button
                 type="button"
                 onClick={addBinding}
-                disabled={settings.languageBindings.length >= listTtsLanguages().length}
+                disabled={settings.languageBindings.length >= languageServiceSingleton().list().length}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-mid-gray/10 hover:bg-mid-gray/25 transition-colors disabled:opacity-50"
               >
                 <Plus size={14} />
@@ -213,7 +213,7 @@ export function LanguagesSettings(): React.JSX.Element {
               <>
                 {fallbackMissing && (
                   <option value={settings.fallbackLang}>
-                    {ttsLanguageName({ code: settings.fallbackLang })} (missing)
+                    {languageServiceSingleton().getDisplayName({ code: settings.fallbackLang })} (missing)
                   </option>
                 )}
                 {fallbackOptions.map((l) => {

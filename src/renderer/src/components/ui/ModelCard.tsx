@@ -1,7 +1,7 @@
 import { Trash2 } from 'lucide-react'
 import { StarBadge } from '@src/renderer/src/components/ui/StarBadge'
 import { formatService } from '@src/renderer/src/lib/format'
-import { ttsLanguageName } from '@src/shared/languages'
+import { languageServiceSingleton } from '@src/shared/language/language-service'
 import type { Voice } from '@src/shared/types'
 
 export function ModelCard({
@@ -19,7 +19,7 @@ export function ModelCard({
           {voice.inUse && <StarBadge>in use</StarBadge>}
         </div>
         <div className="text-xs text-text/55 mt-0.5">
-          {ttsLanguageName({ code: voice.lang })} · {formatService.formatBytes(voice.sizeBytes)}
+          {languageServiceSingleton().getDisplayName({ code: voice.lang })} · {formatService.formatBytes(voice.sizeBytes)}
           {!voice.hasJson && <span className="text-red-500"> · missing .json</span>}
         </div>
       </div>

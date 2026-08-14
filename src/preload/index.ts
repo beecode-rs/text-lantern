@@ -1,29 +1,7 @@
-import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import type { TtsApi } from '@src/shared/types'
 
-function on<P>(channel: string) {
-  return (cb: (payload: P) => void): (() => void) => {
-    const listener = (_e: IpcRendererEvent, payload: P): void => {
-      cb(payload)
-    }
-    ipcRenderer.on(channel, listener)
-    return () => {
-      ipcRenderer.removeListener(channel, listener)
-    }
-  }
-}
-
-function onVoid(channel: string) {
-  return (cb: () => void): (() => void) => {
-    const listener = (): void => {
-      cb()
-    }
-    ipcRenderer.on(channel, listener)
-    return () => {
-      ipcRenderer.removeListener(channel, listener)
-    }
-  }
-}
+import { channelSubscriberService } from '@src/preload/_channel-subscriber-service'
 
 const api: TtsApi = {
   getSettings: () => {
@@ -76,15 +54,15 @@ const api: TtsApi = {
     return ipcRenderer.invoke('history:clear')
   },
 
-  onSettingsChanged: on('settings:changed'),
-  onTtsStatus: on('tts:status'),
-  onAudioStart: on('tts:audioStart'),
-  onAudioChunk: on('tts:audioChunk'),
-  onAudioEnd: onVoid('tts:audioEnd'),
-  onStopPlayback: onVoid('tts:stopPlayback'),
-  onModelsLog: on('models:log'),
-  onModelsProgress: on('models:progress'),
-  onHistoryChanged: on('history:changed')
+  onSettingsChanged: channelSubscriberService.createForChannel({ channel: 'settings:changed' }),
+  onTtsStatus: channelSubscriberService.createForChannel({ channel: 'tts:status' }),
+  onAudioStart: channelSubscriberService.createForChannel({ channel: 'tts:audioStart' }),
+  onAudioChunk: channelSubscriberService.createForChannel({ channel: 'tts:audioChunk' }),
+  onAudioEnd: channelSubscriberService.createForChannel<void>({ channel: 'tts:audioEnd' }),
+  onStopPlayback: channelSubscriberService.createForChannel<void>({ channel: 'tts:stopPlayback' }),
+  onModelsLog: channelSubscriberService.createForChannel({ channel: 'models:log' }),
+  onModelsProgress: channelSubscriberService.createForChannel({ channel: 'models:progress' }),
+  onHistoryChanged: channelSubscriberService.createForChannel({ channel: 'history:changed' })
 }
 
 contextBridge.exposeInMainWorld('api', api)

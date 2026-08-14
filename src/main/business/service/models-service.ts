@@ -5,7 +5,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { pathsService } from '@src/main/util/paths-service'
 import { settingsService } from '@src/main/business/service/settings-service'
 import { langService } from '@src/main/util/lang-service'
-import { TTS_LANGUAGES } from '@src/shared/languages'
+import { languageServiceSingleton } from '@src/shared/language/language-service'
 import type { RemoteVoice, Voice } from '@src/shared/types'
 
 const SR_VOICE = 'sr_Marko_medium'
@@ -56,7 +56,7 @@ function _resolveVoiceDownloadUrlPrefix(params: { name: string }): string {
 
 /**
  * Resolves a free-text search query to a Piper language code used as the
- * HuggingFace tree path. Matches a known `TTS_LANGUAGES` code first, then a
+ * HuggingFace tree path. Matches a known language `code` first, then a
  * language name (case-insensitive), then passes through any 1–3 letter string
  * as a raw code so codes outside the built-in list still reach the repo.
  * Returns `null` for empty or non-code-like input.
@@ -66,13 +66,13 @@ function _resolveLangCode(params: { query: string }): string | null {
   if (!q) {
     return null
   }
-  const byCode = TTS_LANGUAGES.find((language) => {
+  const byCode = languageServiceSingleton().list().find((language) => {
     return language.code === q
   })
   if (byCode) {
     return byCode.code
   }
-  const byName = TTS_LANGUAGES.find((language) => {
+  const byName = languageServiceSingleton().list().find((language) => {
     return language.name.toLowerCase() === q
   })
   if (byName) {

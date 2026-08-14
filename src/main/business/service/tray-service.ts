@@ -3,7 +3,7 @@ import { ttsService } from '@src/main/business/service/tts-service'
 import { settingsService } from '@src/main/business/service/settings-service'
 import { APP_NAME } from '@src/main/util/constants'
 import { trayIconImageUtil } from '@src/main/util/tray-icon-image'
-import { ttsLanguageName } from '@src/shared/languages'
+import { languageServiceSingleton } from '@src/shared/language/language-service'
 import type { Lang } from '@src/shared/types'
 
 let tray: Electron.Tray | null = null
@@ -19,7 +19,7 @@ function _buildTrayMenuTemplate(): Electron.MenuItemConstructorOptions[] {
   ]
   settings.languageBindings.forEach((binding) => {
     items.push({
-      label: `Read — ${ttsLanguageName({ code: binding.langCode })} (${binding.voice})`,
+      label: `Read — ${languageServiceSingleton().getDisplayName({ code: binding.langCode })} (${binding.voice})`,
       click: () => { read(binding.langCode) }
     })
   })
