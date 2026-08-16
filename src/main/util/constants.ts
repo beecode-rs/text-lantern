@@ -44,6 +44,11 @@ export const constant = singletonPattern(() => {
   return objectUtil.deepFreeze({
     projectName: packageJson.name,
     projectVersion: packageJson.version,
+    configBackup: {
+      currentSchemaVersion: 1,
+      appIdentifier: packageJson.name,
+      defaultFileName: 'text-lantern-config.json'
+    },
     history: {
       defaultEntryLimit: defaultHistoryEntryLimit
     },

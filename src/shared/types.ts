@@ -56,6 +56,21 @@ export interface TtsSpeakOptions {
   shouldSkipHistory?: boolean
 }
 
+export interface ConfigBackup {
+  app: string
+  schemaVersion: number
+  exportedAt: number
+  settings: Settings
+  voices: string[]
+}
+
+export interface ConfigImportResult {
+  didSucceed: boolean
+  didCancel: boolean
+  failedVoices: string[]
+  errorMessage: string | null
+}
+
 export interface TtsApi {
   getSettings(): Promise<Settings>
   updateSettings(patch: Partial<Settings>): Promise<Settings>
@@ -73,6 +88,12 @@ export interface TtsApi {
 
   reregisterShortcuts(): Promise<boolean>
   showSettings(): Promise<void>
+
+  exportConfig(): Promise<boolean>
+  importConfig(): Promise<ConfigImportResult>
+
+  onConfigLog(cb: (line: string) => void): () => void
+  onConfigProgress(cb: (p: { name: string; progress: number }) => void): () => void
 
   getHistory(): Promise<HistoryEntry[]>
   clearHistory(): Promise<boolean>

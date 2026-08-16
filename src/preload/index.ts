@@ -47,6 +47,13 @@ const api: TtsApi = {
     return ipcRenderer.invoke('app:showSettings')
   },
 
+  exportConfig: () => {
+    return ipcRenderer.invoke('config:export')
+  },
+  importConfig: () => {
+    return ipcRenderer.invoke('config:import')
+  },
+
   getHistory: () => {
     return ipcRenderer.invoke('history:get')
   },
@@ -62,7 +69,9 @@ const api: TtsApi = {
   onStopPlayback: channelSubscriber.createForChannel<void>({ channel: 'tts:stopPlayback' }),
   onModelsLog: channelSubscriber.createForChannel({ channel: 'models:log' }),
   onModelsProgress: channelSubscriber.createForChannel({ channel: 'models:progress' }),
-  onHistoryChanged: channelSubscriber.createForChannel({ channel: 'history:changed' })
+  onHistoryChanged: channelSubscriber.createForChannel({ channel: 'history:changed' }),
+  onConfigLog: channelSubscriber.createForChannel({ channel: 'config:log' }),
+  onConfigProgress: channelSubscriber.createForChannel({ channel: 'config:progress' })
 }
 
 contextBridge.exposeInMainWorld('api', api)

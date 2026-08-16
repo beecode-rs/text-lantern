@@ -5,6 +5,7 @@ import { SettingsSection } from '@src/renderer/src/component/settings-section'
 import { useSettingsStore } from '@src/renderer/src/store/settings'
 import { useHistoryStore } from '@src/renderer/src/store/history'
 import { useModelsStore } from '@src/renderer/src/store/models'
+import { useConfigBackupStore } from '@src/renderer/src/store/config-backup'
 import { api } from '@src/renderer/src/api'
 import { useTheme } from '@src/renderer/src/lib/use-theme'
 
@@ -17,6 +18,8 @@ export default function App(): React.JSX.Element {
   const replaceHistory = useHistoryStore((s) => s.replace)
   const appendLog = useModelsStore((s) => s.appendLog)
   const setProgress = useModelsStore((s) => s.setProgress)
+  const appendConfigLog = useConfigBackupStore((s) => s.appendLog)
+  const setConfigProgress = useConfigBackupStore((s) => s.setProgress)
 
   useEffect(() => {
     void loadSettings()
@@ -30,14 +33,31 @@ export default function App(): React.JSX.Element {
     const offProgress = api.onModelsProgress(({ name, progress }) => {
       setProgress(name, progress)
     })
+    const offConfigLog = api.onConfigLog((line) => {
+      appendConfigLog(line)
+    })
+    const offConfigProgress = api.onConfigProgress(({ name, progress }) => {
+      setConfigProgress(name, progress)
+    })
 
     return () => {
       offSettings()
       offHistory()
       offLog()
       offProgress()
+      offConfigLog()
+      offConfigProgress()
     }
-  }, [loadSettings, replaceSettings, loadHistory, replaceHistory, appendLog, setProgress])
+  }, [
+    loadSettings,
+    replaceSettings,
+    loadHistory,
+    replaceHistory,
+    appendLog,
+    setProgress,
+    appendConfigLog,
+    setConfigProgress
+  ])
 
   useTheme(settings?.theme)
 
