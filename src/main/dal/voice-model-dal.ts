@@ -5,12 +5,12 @@ import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 
 import { settingsDalSingleton } from '@src/main/dal/settings-dal'
 import { langUtil } from '@src/main/util/lang-util'
-import { pathsUtil } from '@src/main/util/paths-util'
+import { pathUtil } from '@src/main/util/path-util'
 import type { Voice } from '@src/shared/types'
 
 export class VoiceModelDal {
   public listVoices(): Voice[] {
-    const dir = pathsUtil.modelsDir()
+    const dir = pathUtil.modelsDir()
     const settings = settingsDalSingleton().get()
     let entries: string[] = []
     try {
@@ -49,7 +49,7 @@ export class VoiceModelDal {
   }
 
   public deleteVoice(params: { name: string }): void {
-    const dir = pathsUtil.modelsDir()
+    const dir = pathUtil.modelsDir()
     ;['onnx', 'onnx.json'].forEach((ext) => {
       const file = path.join(dir, `${params.name}.${ext}`)
       try {

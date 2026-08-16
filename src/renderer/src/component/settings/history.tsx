@@ -27,7 +27,7 @@ export function HistorySettings(): React.JSX.Element {
 
   const onReplay = (entry: HistoryEntry): void => {
     const lang = entry.voice.split('_')[0]
-    void api.speak(lang, entry.text)
+    void api.speak(lang, entry.text, { recordHistory: false })
   }
 
   const limitLabel = getLimitLabel({ historyLimit: settings.historyLimit })

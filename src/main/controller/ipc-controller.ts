@@ -7,7 +7,7 @@ import { voiceModelDalSingleton } from '@src/main/dal/voice-model-dal'
 import { piperEngineSingleton } from '@src/main/lib/piper/engine'
 import { shortcutsSingleton } from '@src/main/lib/shortcuts'
 import { traySingleton } from '@src/main/lib/tray'
-import type { HistoryEntry, Lang } from '@src/shared/types'
+import type { HistoryEntry, Lang, TtsSpeakOptions } from '@src/shared/types'
 
 const handledChannels = [
   'settings:get',
@@ -73,8 +73,13 @@ export const ipcController = {
       return piperEngineSingleton().searchVoices({ query })
     })
 
-    ipcMain.handle('tts:speak', (_e, lang: Lang, text?: string) => {
-      void ttsServiceSingleton().speak({ lang, text, settings: settingsDalSingleton().get() })
+    ipcMain.handle('tts:speak', (_e, lang: Lang, text?: string, options?: TtsSpeakOptions) => {
+      void ttsServiceSingleton().speak({
+        lang,
+        text,
+        recordHistory: options?.recordHistory,
+        settings: settingsDalSingleton().get()
+      })
       return true
     })
     ipcMain.handle('tts:stop', () => {

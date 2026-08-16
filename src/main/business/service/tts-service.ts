@@ -10,7 +10,7 @@ import { piperServerSingleton } from '@src/main/lib/piper/server'
 import { Selection } from '@src/main/lib/selection'
 import { constant } from '@src/main/util/constants'
 import { langUtil } from '@src/main/util/lang-util'
-import { pathsUtil } from '@src/main/util/paths-util'
+import { pathUtil } from '@src/main/util/path-util'
 import type { Lang, Settings, TtsStatus } from '@src/shared/types'
 
 export class TtsService {
@@ -33,7 +33,12 @@ export class TtsService {
     } catch {}
   }
 
-  public async speak(params: { lang: Lang; text?: string; settings: Settings }): Promise<void> {
+  public async speak(params: {
+    lang: Lang
+    text?: string
+    recordHistory?: boolean
+    settings: Settings
+  }): Promise<void> {
     await this.stop()
 
     let rawText: string
@@ -72,7 +77,9 @@ export class TtsService {
     const token: object = {}
     this._active = token
     this._emitTtsStatus({ state: 'synthesizing', voice })
-    historyDalSingleton().add({ text: capped, voice })
+    if (params.recordHistory !== false) {
+      historyDalSingleton().add({ text: capped, voice })
+    }
 
     let sampleRate: number
     try {
@@ -164,8 +171,8 @@ export class TtsService {
   }
 
   protected _voiceModelPaths(params: { voice: string }): { onnx: string; json: string } {
-    const onnx = path.join(pathsUtil.modelsDir(), `${params.voice}.onnx`)
-    const json = path.join(pathsUtil.modelsDir(), `${params.voice}.onnx.json`)
+    const onnx = path.join(pathUtil.modelsDir(), `${params.voice}.onnx`)
+    const json = path.join(pathUtil.modelsDir(), `${params.voice}.onnx.json`)
     return { onnx, json }
   }
 

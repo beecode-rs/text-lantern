@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { app } from 'electron'
 
-export const pathsUtil = {
+export const pathUtil = {
   projectRoot(): string {
     return process.env.APP_ROOT || process.cwd()
   },

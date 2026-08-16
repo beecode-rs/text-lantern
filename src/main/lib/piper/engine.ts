@@ -6,7 +6,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 
 import { constant } from '@src/main/util/constants'
-import { pathsUtil } from '@src/main/util/paths-util'
+import { pathUtil } from '@src/main/util/path-util'
 import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import type { RemoteVoice } from '@src/shared/types'
 
@@ -20,7 +20,7 @@ interface HfTreeEntry {
 export class PiperEngine {
   public isEngineInstalled(): boolean {
     try {
-      return fs.existsSync(pathsUtil.piperBin())
+      return fs.existsSync(pathUtil.piperBin())
     } catch {
       return false
     }
@@ -50,7 +50,7 @@ export class PiperEngine {
     name: string
     onProgress: (p: number) => void
   }): Promise<void> {
-    fs.mkdirSync(pathsUtil.modelsDir(), { recursive: true })
+    fs.mkdirSync(pathUtil.modelsDir(), { recursive: true })
     const prefix = this._resolveVoiceDownloadUrlPrefix({ name: params.name })
     const files = [
       { ext: 'onnx', weight: 0.97 },
@@ -59,7 +59,7 @@ export class PiperEngine {
     let base = 0
     await files.reduce(async (acc, f) => {
       await acc
-      const dest = path.join(pathsUtil.modelsDir(), `${params.name}.${f.ext}`)
+      const dest = path.join(pathUtil.modelsDir(), `${params.name}.${f.ext}`)
       const url = `${prefix}/${params.name}.${f.ext}`
       await this._downloadFileWithProgress({
         url,
@@ -177,7 +177,7 @@ export class PiperEngine {
   }
 
   protected _venvPipBinPath(): string {
-    return path.join(pathsUtil.venvDir(), 'bin', 'pip')
+    return path.join(pathUtil.venvDir(), 'bin', 'pip')
   }
 
   protected _forwardCommandOutputLineByLine(params: {
@@ -202,7 +202,7 @@ export class PiperEngine {
   }): Promise<number> {
     return new Promise((resolve) => {
       const child: ChildProcess = spawn(params.cmd, params.args, {
-        cwd: pathsUtil.projectRoot(),
+        cwd: pathUtil.projectRoot(),
         env: { ...process.env, ...(params.env ?? {}) }
       })
       const onStdout = (d: Buffer): void => {
@@ -234,8 +234,8 @@ export class PiperEngine {
 
   protected _verifyVoiceProducesAudio(voice: string): Promise<boolean> {
     return new Promise((resolve) => {
-      const onnx = path.join(pathsUtil.modelsDir(), `${voice}.onnx`)
-      const json = path.join(pathsUtil.modelsDir(), `${voice}.onnx.json`)
+      const onnx = path.join(pathUtil.modelsDir(), `${voice}.onnx`)
+      const json = path.join(pathUtil.modelsDir(), `${voice}.onnx.json`)
       if (!fs.existsSync(onnx) || !fs.existsSync(json)) {
         resolve(false)
         return
@@ -243,7 +243,7 @@ export class PiperEngine {
       const wav = path.join(os.tmpdir(), `tts-verify-${process.pid}.wav`)
       let child: ChildProcess
       try {
-        child = spawn(pathsUtil.piperBin(), ['-m', onnx, '-c', json, '-f', wav], {
+        child = spawn(pathUtil.piperBin(), ['-m', onnx, '-c', json, '-f', wav], {
           stdio: ['pipe', 'ignore', 'ignore']
         })
       } catch {
@@ -320,7 +320,7 @@ export class PiperEngine {
     log('Creating virtualenv…')
     const venvExit = await this._runCommandStreamingOutput({
       cmd: 'python3',
-      args: ['-m', 'venv', pathsUtil.venvDir()],
+      args: ['-m', 'venv', pathUtil.venvDir()],
       onLog: log
     })
     if (venvExit !== 0) {
@@ -357,10 +357,10 @@ export class PiperEngine {
     onLog: (line: string) => void
   }): Promise<void> {
     const log = params.onLog
-    fs.mkdirSync(pathsUtil.modelsDir(), { recursive: true })
+    fs.mkdirSync(pathUtil.modelsDir(), { recursive: true })
     await constant().piperEngine.defaultInstallVoiceNames.reduce(async (acc, voice) => {
       await acc
-      const onnx = path.join(pathsUtil.modelsDir(), `${voice}.onnx`)
+      const onnx = path.join(pathUtil.modelsDir(), `${voice}.onnx`)
       if (fs.existsSync(onnx)) {
         log(`  present: ${voice}`)
         return

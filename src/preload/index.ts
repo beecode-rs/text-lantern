@@ -30,8 +30,8 @@ const api: TtsApi = {
     return ipcRenderer.invoke('models:search', query)
   },
 
-  speak: (lang, text) => {
-    return ipcRenderer.invoke('tts:speak', lang, text)
+  speak: (lang, text, options) => {
+    return ipcRenderer.invoke('tts:speak', lang, text, options)
   },
   stop: () => {
     return ipcRenderer.invoke('tts:stop')

@@ -99,7 +99,7 @@ export function TestSettings(): React.JSX.Element {
       return
     }
     if (canSpeak) {
-      void api.speak(activeLang, text)
+      void api.speak(activeLang, text, { recordHistory: false })
     }
   }
 

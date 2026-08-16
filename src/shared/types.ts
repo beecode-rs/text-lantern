@@ -52,6 +52,10 @@ export interface HistoryEntry {
   createdAt: number
 }
 
+export interface TtsSpeakOptions {
+  recordHistory?: boolean
+}
+
 export interface TtsApi {
   getSettings(): Promise<Settings>
   updateSettings(patch: Partial<Settings>): Promise<Settings>
@@ -63,7 +67,7 @@ export interface TtsApi {
   deleteVoice(name: string): Promise<Voice[]>
   searchVoices(query: string): Promise<RemoteVoice[]>
 
-  speak(lang: Lang, text?: string): Promise<boolean>
+  speak(lang: Lang, text?: string, options?: TtsSpeakOptions): Promise<boolean>
   stop(): Promise<boolean>
   playbackEnded(): Promise<boolean>
 

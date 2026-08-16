@@ -4,7 +4,7 @@ import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 
 import { FrameReader, type Frame } from '@src/main/lib/piper/_frame-reader'
 import { constant } from '@src/main/util/constants'
-import { pathsUtil } from '@src/main/util/paths-util'
+import { pathUtil } from '@src/main/util/path-util'
 
 const MSG_READY = 0x01
 const MSG_AUDIO = 0x02
@@ -196,8 +196,8 @@ export class PiperServer {
       this._handleFrame(frame)
     })
     const proc = spawn(
-      pathsUtil.venvPython(),
-      [pathsUtil.piperServerScript(), modelPath],
+      pathUtil.venvPython(),
+      [pathUtil.piperServerScript(), modelPath],
       { stdio: ['pipe', 'pipe', 'pipe'] }
     )
     this._child = proc
