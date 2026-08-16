@@ -4,7 +4,7 @@ import { ttsServiceSingleton } from '@src/main/business/service/tts-service'
 import { settingsDalSingleton } from '@src/main/dal/settings-dal'
 import { logger } from '@src/main/util/logger'
 
-export class ShortcutsService {
+export class Shortcuts {
   public registerAll(): void {
     globalShortcut.unregisterAll()
     const settings = settingsDalSingleton().get()

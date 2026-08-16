@@ -3,14 +3,14 @@ import type { ThemePreference } from '@src/shared/types'
 
 const DARK_MEDIA_QUERY = '(prefers-color-scheme: dark)'
 
-function applyDarkTheme(isDark: boolean): void {
-  document.documentElement.classList.toggle('dark', isDark)
-}
-
 export function useTheme(theme: ThemePreference | undefined): void {
   useEffect(() => {
     if (theme === undefined) {
       return
+    }
+
+    const applyDarkTheme = (isDark: boolean): void => {
+      document.documentElement.classList.toggle('dark', isDark)
     }
 
     const systemPrefersDark = window.matchMedia(DARK_MEDIA_QUERY)

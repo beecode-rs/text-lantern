@@ -1,3 +1,5 @@
+import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
+
 type AcceleratorResult = { accel: string } | { cancel: true } | null
 
 const MODIFIER_KEYS = ['Meta', 'Control', 'Alt', 'Shift', 'Fn']
@@ -35,7 +37,7 @@ const CODE_TO_KEY: Record<string, string> = {
   Slash: '/'
 }
 
-export class AcceleratorService {
+export class Accelerator {
   public fromKeyboardEvent(e: KeyboardEvent): AcceleratorResult {
     if (e.key === 'Escape') {
       return { cancel: true }
@@ -114,3 +116,4 @@ export class AcceleratorService {
   }
 }
 
+export const acceleratorSingleton = singletonPattern(() => new Accelerator())

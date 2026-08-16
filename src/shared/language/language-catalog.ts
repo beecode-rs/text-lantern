@@ -2,7 +2,7 @@ import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 
 import { LANGUAGES_RAW, type LanguageInfo } from '@src/shared/language/languages-raw'
 
-export class LanguageService {
+export class LanguageCatalog {
   protected readonly _languages: readonly LanguageInfo[]
 
   public constructor() {
@@ -83,4 +83,4 @@ export class LanguageService {
   }
 }
 
-export const languageServiceSingleton = singletonPattern(() => new LanguageService())
+export const languageCatalogSingleton = singletonPattern(() => new LanguageCatalog())

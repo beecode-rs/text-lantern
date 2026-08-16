@@ -71,7 +71,9 @@ export function NowPlaying(): React.JSX.Element {
           {busy && (
             <button
               type="button"
-              onClick={() => api.stop()}
+              onClick={() => {
+                void api.stop()
+              }}
               className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md bg-white/20 hover:bg-white/30 transition-colors"
             >
               <Square size={11} className="fill-current" /> Stop

@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import { BookOpen, Cpu, History, Languages, Volume2, Info } from 'lucide-react'
-import iconUrl from '@src/renderer/src/assets/icon.png'
+import iconUrl from '@src/renderer/src/asset/icon.png'
 
 export type Section = 'general' | 'models' | 'languages' | 'test' | 'history' | 'about'
 
@@ -20,6 +20,15 @@ export function Sidebar({
   active: Section
   onChange: (s: Section) => void
 }): React.JSX.Element {
+  const getItemClassName = (params: { isActive: boolean }): string => {
+    const base =
+      'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors'
+    if (params.isActive) {
+      return `${base} bg-logo-primary text-logo-stroke`
+    }
+    return `${base} text-text/85 hover:bg-mid-gray/20`
+  }
+
   return (
     <nav className="flex flex-col w-44 h-full border-r border-mid-gray/20 items-stretch px-2 pt-4 pb-2 select-none">
       <div className="flex items-center gap-2 px-2 mb-5">
@@ -30,16 +39,15 @@ export function Sidebar({
       <div className="flex flex-col gap-1">
         {ITEMS.map(({ id, label, icon: Icon }) => {
           const isActive = active === id
+          const itemClassName = getItemClassName({ isActive })
           return (
             <button
               key={id}
               type="button"
-              onClick={() => onChange(id)}
-              className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-logo-primary text-logo-stroke'
-                  : 'text-text/85 hover:bg-mid-gray/20'
-              }`}
+              onClick={() => {
+                onChange(id)
+              }}
+              className={itemClassName}
             >
               <Icon size={17} />
               {label}

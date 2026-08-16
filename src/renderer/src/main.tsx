@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client'
-import App from '@src/renderer/src/App'
-import '@src/renderer/src/styles/theme.css'
+import App from '@src/renderer/src/app'
+import '@src/renderer/src/style/theme.css'
 
 const container = document.getElementById('root')
 if (!container) {

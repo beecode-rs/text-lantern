@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 
+import { FrameReader, type Frame } from '@src/main/lib/piper/_frame-reader'
 import { constant } from '@src/main/util/constants'
 import { pathsUtil } from '@src/main/util/paths-util'
 
@@ -10,38 +11,7 @@ const MSG_AUDIO = 0x02
 const MSG_END = 0x03
 const MSG_ERROR = 0x04
 
-interface Frame {
-  type: number
-  payload: Buffer
-}
-
-class FrameReader {
-  private buffer: Buffer = Buffer.alloc(0)
-  private readonly onFrame: (frame: Frame) => void
-
-  constructor(onFrame: (frame: Frame) => void) {
-    this.onFrame = onFrame
-  }
-
-  push(chunk: Buffer): void {
-    this.buffer = Buffer.concat([this.buffer, chunk])
-    this._drain()
-  }
-
-  private _drain(): void {
-    while (this.buffer.length >= 4) {
-      const length = this.buffer.readUInt32BE(0)
-      if (length <= 0 || this.buffer.length < 4 + length) {
-        return
-      }
-      const body = this.buffer.subarray(4, 4 + length)
-      this.buffer = this.buffer.subarray(4 + length)
-      this.onFrame({ type: body[0], payload: Buffer.from(body.subarray(1)) })
-    }
-  }
-}
-
-export class PiperServerService {
+export class PiperServer {
   private _child: ChildProcess | null = null
   private _currentModelPath: string | null = null
   private _sampleRate: number = constant().piperServer.defaultSampleRateHz
@@ -352,4 +322,4 @@ export class PiperServerService {
   }
 }
 
-export const piperServerServiceSingleton = singletonPattern(() => new PiperServerService())
+export const piperServerSingleton = singletonPattern(() => new PiperServer())

@@ -8,8 +8,8 @@ import { pathsUtil } from '@src/main/util/paths-util'
 import { ttsServiceSingleton } from '@src/main/business/service/tts-service'
 import { historyDalSingleton } from '@src/main/dal/history-dal'
 import { settingsDalSingleton } from '@src/main/dal/settings-dal'
-import { ShortcutsService } from '@src/main/lib/shortcuts-service'
-import { trayServiceSingleton } from '@src/main/lib/tray-service'
+import { Shortcuts } from '@src/main/lib/shortcuts'
+import { traySingleton } from '@src/main/lib/tray'
 import { ipcController } from '@src/main/controller/ipc-controller'
 import type { ThemePreference, TtsStatus } from '@src/shared/types'
 
@@ -54,9 +54,10 @@ function _resolveBackgroundColor(params: { theme: ThemePreference }): string {
   if (theme === 'light') {
     return constant().mainWindow.lightBackground
   }
-  return nativeTheme.shouldUseDarkColors
-    ? constant().mainWindow.darkBackground
-    : constant().mainWindow.lightBackground
+  if (nativeTheme.shouldUseDarkColors) {
+    return constant().mainWindow.darkBackground
+  }
+  return constant().mainWindow.lightBackground
 }
 
 function _createWindow(params: { theme: ThemePreference }): BrowserWindow {
@@ -117,7 +118,7 @@ function _createWindow(params: { theme: ThemePreference }): BrowserWindow {
 }
 
 function _reflectReadingStateInTray(s: TtsStatus): void {
-  trayServiceSingleton().setReading(s.state === 'synthesizing' || s.state === 'reading')
+  traySingleton().setReading(s.state === 'synthesizing' || s.state === 'reading')
 }
 
 app.whenReady().then(() => {
@@ -132,8 +133,8 @@ app.whenReady().then(() => {
 
   _applyAppIcon()
   mainWindow = _createWindow({ theme: settings.theme })
-  trayServiceSingleton().create(mainWindow)
-  new ShortcutsService().registerAll()
+  traySingleton().create({ window: mainWindow })
+  new Shortcuts().registerAll()
   ipcController.register(() => mainWindow)
 
   ttsServiceSingleton().events.on('status', _reflectReadingStateInTray)
@@ -157,12 +158,12 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   isQuitting = true
   ttsServiceSingleton().dispose()
-  new ShortcutsService().unregisterAll()
-  trayServiceSingleton().destroy()
+  new Shortcuts().unregisterAll()
+  traySingleton().destroy()
 })
 
 app.on('will-quit', () => {
-  new ShortcutsService().unregisterAll()
+  new Shortcuts().unregisterAll()
 })
 
 const gotLock = app.requestSingleInstanceLock()

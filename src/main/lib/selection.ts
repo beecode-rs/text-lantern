@@ -24,7 +24,7 @@ repeat ${COPY_MAX_POLLS} times
 end repeat
 return didChange as string`
 
-export class SelectionService {
+export class Selection {
   public async grab(): Promise<string> {
     const saved = clipboard.readText()
 

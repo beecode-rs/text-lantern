@@ -1,17 +1,3 @@
-/**
- * Languages this app recognizes, aligned with the set the `tinyld` language
- * detector can identify. String values are the codes `tinyld`'s `detect()`
- * returns: ISO 639-1 where one exists (e.g. `en`, `sr`, `de`), otherwise the
- * ISO 639-3 code (`ber`, `tlh`).
- *
- * Not every language here has a downloadable Piper voice model — voice
- * availability is resolved at runtime from installed/downloaded voices
- * (see `models-service`). This list drives language recognition and
- * auto-detection rather than guaranteeing a voice for each entry.
- *
- * Declared in display order, app defaults (English, Serbian) first;
- * `languageServiceSingleton().list()` preserves that order for selectors.
- */
 export const LANGUAGES_RAW = [
   { code: 'en', name: 'English' },
   { code: 'sr', name: 'Serbian' },
@@ -77,16 +63,9 @@ export const LANGUAGES_RAW = [
   { code: 'yi', name: 'Yiddish' }
 ] as const
 
-/** Code returned by `tinyld`'s `detect()` for a recognized language (matches the Piper voice-name prefix). */
 export type Language = (typeof LANGUAGES_RAW)[number]['code']
 
 export interface LanguageInfo {
-  /**
-   * Any ISO 639 code for a recognized language — either one of the built-in
-   * codes in the `Language` union or a user-supplied code added at runtime
-   * via the `languages` environment variable. Codes are lowercase.
-   */
   code: string
-  /** Human-readable name for selectors / menus. */
   name: string
 }

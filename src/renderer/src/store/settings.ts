@@ -19,5 +19,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     const s = await api.updateSettings(patch)
     set({ settings: s })
   },
-  replace: (s) => set({ settings: s })
+  replace: (s) => {
+    set({ settings: s })
+  }
 }))

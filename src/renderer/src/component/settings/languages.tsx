@@ -2,55 +2,83 @@ import { useEffect } from 'react'
 import { AlertTriangle, Plus, Trash2 } from 'lucide-react'
 import { useSettingsStore } from '@src/renderer/src/store/settings'
 import { useModelsStore } from '@src/renderer/src/store/models'
-import { SettingsGroup, Row } from '@src/renderer/src/components/ui/SettingsGroup'
-import { ShortcutInput } from '@src/renderer/src/components/ui/ShortcutInput'
-import { StarBadge } from '@src/renderer/src/components/ui/StarBadge'
-import { languageServiceSingleton } from '@src/shared/language/language-service'
+import { SettingsGroup } from '@src/renderer/src/component/ui/settings-group'
+import { Row } from '@src/renderer/src/component/ui/row'
+import { ShortcutInput } from '@src/renderer/src/component/ui/shortcut-input'
+import { StarBadge } from '@src/renderer/src/component/ui/star-badge'
+import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import type { LanguageBinding } from '@src/shared/types'
 
 const BINDING_GRID = 'grid grid-cols-[minmax(130px,170px)_minmax(120px,190px)_minmax(150px,160px)_minmax(0,1fr)] items-center gap-2 px-4'
 
 export function LanguagesSettings(): React.JSX.Element {
-  const settings = useSettingsStore((s) => { return s.settings })
-  const update = useSettingsStore((s) => { return s.update })
-  const voices = useModelsStore((s) => { return s.voices })
-  const load = useModelsStore((s) => { return s.load })
+  const settings = useSettingsStore((s) => {
+    return s.settings
+  })
+  const update = useSettingsStore((s) => {
+    return s.update
+  })
+  const voices = useModelsStore((s) => {
+    return s.voices
+  })
+  const load = useModelsStore((s) => {
+    return s.load
+  })
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   if (!settings) {
     return <></>
   }
 
   const conflictCounts = [
-    ...settings.languageBindings.map((b) => { return b.shortcut }),
+    ...settings.languageBindings.map((b) => {
+      return b.shortcut
+    }),
     settings.autoShortcut,
     settings.stopShortcut
   ]
-    .filter((accel) => { return accel !== '' })
+    .filter((accel) => {
+      return accel !== ''
+    })
     .reduce<Record<string, number>>((acc, accel) => {
       acc[accel] = (acc[accel] ?? 0) + 1
       return acc
     }, {})
 
-  const hasConflict = Object.values(conflictCounts).some((n) => { return n > 1 })
+  const hasConflict = Object.values(conflictCounts).some((n) => {
+    return n > 1
+  })
 
   const conflictFor = (accel: string): boolean => {
     return accel !== '' && (conflictCounts[accel] ?? 0) > 1
   }
 
   const fallbackOptions = settings.languageBindings.map((binding) => {
-    return { code: binding.langCode, name: languageServiceSingleton().getDisplayName({ code: binding.langCode }) }
+    return {
+      code: binding.langCode,
+      name: languageCatalogSingleton().getDisplayName({ code: binding.langCode })
+    }
   })
   const fallbackMissing = !settings.languageBindings.some((binding) => {
     return binding.langCode === settings.fallbackLang
   })
   const autoDisabled = settings.languageBindings.length === 0
 
+  const fallbackSelectValue = getFallbackSelectValue({ autoDisabled, fallbackLang: settings.fallbackLang })
+  const fallbackSelectOptions = buildFallbackSelectOptions({
+    autoDisabled,
+    fallbackMissing,
+    fallbackLang: settings.fallbackLang,
+    fallbackOptions
+  })
+
   const setBinding = (id: string, patch: Partial<LanguageBinding>): void => {
     void update({
       languageBindings: settings.languageBindings.map((b) => {
-        return b.id === id ? { ...b, ...patch } : b
+        return mergeBindingPatch({ binding: b, id, patch })
       })
     })
   }
@@ -64,13 +92,16 @@ export function LanguagesSettings(): React.JSX.Element {
   }
 
   const addBinding = (): void => {
-    const usedCodes = settings.languageBindings.map((b) => { return b.langCode })
-    const langCode = languageServiceSingleton().list().find((l) => {
-      return !usedCodes.includes(l.code)
-    })?.code ?? ''
-    const voice = voices.find((v) => { return v.lang === langCode })?.name
-      ?? voices[0]?.name
-      ?? ''
+    const usedCodes = settings.languageBindings.map((b) => {
+      return b.langCode
+    })
+    const langCode =
+      languageCatalogSingleton()
+        .list()
+        .find((l) => {
+          return !usedCodes.includes(l.code)
+        })?.code ?? ''
+    const voice = findVoiceForLangCode({ voices, langCode })
     const newBinding: LanguageBinding = {
       id: crypto.randomUUID(),
       langCode,
@@ -107,17 +138,23 @@ export function LanguagesSettings(): React.JSX.Element {
             </div>
             {settings.languageBindings.map((binding) => {
               const usedByOthers = settings.languageBindings
-                .filter((b) => { return b.id !== binding.id })
-                .map((b) => { return b.langCode })
-              const langOptions = languageServiceSingleton().list().filter((l) => {
+                .filter((b) => {
+                  return b.id !== binding.id
+                })
+                .map((b) => {
+                  return b.langCode
+                })
+              const langOptions = languageCatalogSingleton().list().filter((l) => {
                 return !usedByOthers.includes(l.code)
               })
               const rowVoices = [...voices].sort((a, b) => {
-                const aRank = a.lang === binding.langCode ? 0 : 1
-                const bRank = b.lang === binding.langCode ? 0 : 1
+                const aRank = langMatchRank({ lang: a.lang, langCode: binding.langCode })
+                const bRank = langMatchRank({ lang: b.lang, langCode: binding.langCode })
                 return aRank - bRank
               })
-              const voiceMissing = !voices.some((v) => { return v.name === binding.voice })
+              const voiceMissing = !voices.some((v) => {
+                return v.name === binding.voice
+              })
               return (
                 <div key={binding.id} className={`${BINDING_GRID} py-3`}>
                   <div className="relative">
@@ -126,7 +163,9 @@ export function LanguagesSettings(): React.JSX.Element {
                     )}
                     <select
                       value={binding.langCode}
-                      onChange={(e) => { return setBinding(binding.id, { langCode: e.target.value }) }}
+                      onChange={(e) => {
+                        setBinding(binding.id, { langCode: e.target.value })
+                      }}
                       className="w-full min-w-0 truncate px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors"
                     >
                       {langOptions.map((l) => {
@@ -140,7 +179,9 @@ export function LanguagesSettings(): React.JSX.Element {
                   </div>
                   <select
                     value={binding.voice}
-                    onChange={(e) => { return setBinding(binding.id, { voice: e.target.value }) }}
+                    onChange={(e) => {
+                      setBinding(binding.id, { voice: e.target.value })
+                    }}
                     className="w-full max-w-[190px] min-w-0 truncate px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors"
                   >
                     {voiceMissing && (
@@ -157,11 +198,15 @@ export function LanguagesSettings(): React.JSX.Element {
                   <ShortcutInput
                     value={binding.shortcut}
                     conflict={conflictFor(binding.shortcut)}
-                    onChange={(accel) => { return setBinding(binding.id, { shortcut: accel }) }}
+                    onChange={(accel) => {
+                      setBinding(binding.id, { shortcut: accel })
+                    }}
                   />
                   <button
                     type="button"
-                    onClick={() => { return removeBinding(binding.id) }}
+                    onClick={() => {
+                      removeBinding(binding.id)
+                    }}
                     title="Remove language"
                     className="justify-self-end p-1.5 rounded-md text-text/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
                   >
@@ -174,7 +219,7 @@ export function LanguagesSettings(): React.JSX.Element {
               <button
                 type="button"
                 onClick={addBinding}
-                disabled={settings.languageBindings.length >= languageServiceSingleton().list().length}
+                disabled={settings.languageBindings.length >= languageCatalogSingleton().list().length}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-mid-gray/10 hover:bg-mid-gray/25 transition-colors disabled:opacity-50"
               >
                 <Plus size={14} />
@@ -194,7 +239,9 @@ export function LanguagesSettings(): React.JSX.Element {
             value={settings.autoShortcut}
             conflict={conflictFor(settings.autoShortcut)}
             disabled={autoDisabled}
-            onChange={(accel) => { void update({ autoShortcut: accel }) }}
+            onChange={(accel) => {
+              void update({ autoShortcut: accel })
+            }}
           />
         </Row>
         <Row
@@ -202,36 +249,23 @@ export function LanguagesSettings(): React.JSX.Element {
           description="Used when language detection fails."
         >
           <select
-            value={autoDisabled ? '' : settings.fallbackLang}
+            value={fallbackSelectValue}
             disabled={autoDisabled}
-            onChange={(e) => { void update({ fallbackLang: e.target.value }) }}
+            onChange={(e) => {
+              void update({ fallbackLang: e.target.value })
+            }}
             className="min-w-[150px] truncate px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {autoDisabled ? (
-              <option value="">No languages</option>
-            ) : (
-              <>
-                {fallbackMissing && (
-                  <option value={settings.fallbackLang}>
-                    {languageServiceSingleton().getDisplayName({ code: settings.fallbackLang })} (missing)
-                  </option>
-                )}
-                {fallbackOptions.map((l) => {
-                  return (
-                    <option key={l.code} value={l.code}>
-                      {l.name}
-                    </option>
-                  )
-                })}
-              </>
-            )}
+            {fallbackSelectOptions}
           </select>
         </Row>
         <Row title="Stop" description="Stop reading immediately.">
           <ShortcutInput
             value={settings.stopShortcut}
             conflict={conflictFor(settings.stopShortcut)}
-            onChange={(accel) => { void update({ stopShortcut: accel }) }}
+            onChange={(accel) => {
+              void update({ stopShortcut: accel })
+            }}
           />
         </Row>
       </SettingsGroup>
@@ -244,4 +278,66 @@ export function LanguagesSettings(): React.JSX.Element {
       </p>
     </div>
   )
+
+  function getFallbackSelectValue(params: { autoDisabled: boolean; fallbackLang: string }): string {
+    if (params.autoDisabled) {
+      return ''
+    }
+    return params.fallbackLang
+  }
+
+  function buildFallbackSelectOptions(params: {
+    autoDisabled: boolean
+    fallbackMissing: boolean
+    fallbackLang: string
+    fallbackOptions: { code: string; name: string }[]
+  }): React.JSX.Element {
+    if (params.autoDisabled) {
+      return <option value="">No languages</option>
+    }
+    return (
+      <>
+        {params.fallbackMissing && (
+          <option value={params.fallbackLang}>
+            {languageCatalogSingleton().getDisplayName({ code: params.fallbackLang })} (missing)
+          </option>
+        )}
+        {params.fallbackOptions.map((l) => {
+          return (
+            <option key={l.code} value={l.code}>
+              {l.name}
+            </option>
+          )
+        })}
+      </>
+    )
+  }
+
+  function mergeBindingPatch(params: {
+    binding: LanguageBinding
+    id: string
+    patch: Partial<LanguageBinding>
+  }): LanguageBinding {
+    if (params.binding.id !== params.id) {
+      return params.binding
+    }
+    return { ...params.binding, ...params.patch }
+  }
+
+  function findVoiceForLangCode(params: { voices: { name: string; lang: string }[]; langCode: string }): string {
+    const matched = params.voices.find((v) => {
+      return v.lang === params.langCode
+    })
+    if (matched) {
+      return matched.name
+    }
+    return params.voices[0]?.name ?? ''
+  }
+
+  function langMatchRank(params: { lang: string; langCode: string }): number {
+    if (params.lang === params.langCode) {
+      return 0
+    }
+    return 1
+  }
 }

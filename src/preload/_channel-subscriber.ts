@@ -1,6 +1,6 @@
 import { ipcRenderer, type IpcRendererEvent } from 'electron'
 
-export const channelSubscriberService = {
+export const channelSubscriber = {
   createForChannel<P>(params: { channel: string }) {
     return (cb: (payload: P) => void): (() => void) => {
       const listener = (_e: IpcRendererEvent, payload: P): void => {

@@ -4,9 +4,9 @@ import { ttsServiceSingleton } from '@src/main/business/service/tts-service'
 import { historyDalSingleton } from '@src/main/dal/history-dal'
 import { settingsDalSingleton } from '@src/main/dal/settings-dal'
 import { voiceModelDalSingleton } from '@src/main/dal/voice-model-dal'
-import { ShortcutsService } from '@src/main/lib/shortcuts-service'
-import { piperEngineServiceSingleton } from '@src/main/lib/piper-engine-service'
-import { trayServiceSingleton } from '@src/main/lib/tray-service'
+import { piperEngineSingleton } from '@src/main/lib/piper/engine'
+import { Shortcuts } from '@src/main/lib/shortcuts'
+import { traySingleton } from '@src/main/lib/tray'
 import type { HistoryEntry, Lang } from '@src/shared/types'
 
 export const ipcController = {
@@ -26,10 +26,10 @@ export const ipcController = {
       return voiceModelDalSingleton().listVoices()
     })
     ipcMain.handle('models:engineInstalled', () => {
-      return piperEngineServiceSingleton().isEngineInstalled()
+      return piperEngineSingleton().isEngineInstalled()
     })
     ipcMain.handle('models:installEngine', async (e) => {
-      const ok = await piperEngineServiceSingleton().installEngine({
+      const ok = await piperEngineSingleton().installEngine({
         onLog: (line) => {
           e.sender.send('models:log', line)
         }
@@ -37,7 +37,7 @@ export const ipcController = {
       return ok
     })
     ipcMain.handle('models:download', async (e, name: string) => {
-      await piperEngineServiceSingleton().downloadVoice({
+      await piperEngineSingleton().downloadVoice({
         name,
         onProgress: (p) => {
           e.sender.send('models:progress', { name, progress: p })
@@ -50,7 +50,7 @@ export const ipcController = {
       return voiceModelDalSingleton().listVoices()
     })
     ipcMain.handle('models:search', (_e, query: string) => {
-      return piperEngineServiceSingleton().searchVoices({ query })
+      return piperEngineSingleton().searchVoices({ query })
     })
 
     ipcMain.handle('tts:speak', (_e, lang: Lang, text?: string) => {
@@ -67,7 +67,7 @@ export const ipcController = {
     })
 
     ipcMain.handle('shortcuts:reregister', () => {
-      new ShortcutsService().registerAll()
+      new Shortcuts().registerAll()
       return true
     })
     ipcMain.handle('app:showSettings', () => {
@@ -107,8 +107,8 @@ export const ipcController = {
     })
 
     settingsDalSingleton().onChange(() => {
-      new ShortcutsService().registerAll()
-      trayServiceSingleton().refreshMenu()
+      new Shortcuts().registerAll()
+      traySingleton().refreshMenu()
       historyDalSingleton().prune()
       send('settings:changed', settingsDalSingleton().get())
     })

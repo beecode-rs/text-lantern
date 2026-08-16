@@ -1,33 +1,33 @@
 const SILENCE_SCALE = 32768
 
 export class StreamPlayer {
-  private ctx: AudioContext | null = null
-  private gain: GainNode | null = null
-  private nextTime = 0
-  private sampleRate = 16000
-  private activeSources = new Set<AudioBufferSourceNode>()
-  private inputEnded = false
-  private streaming = false
-  private generation = 0
+  private _ctx: AudioContext | null = null
+  private _gain: GainNode | null = null
+  private _nextTime = 0
+  private _sampleRate = 16000
+  private _activeSources = new Set<AudioBufferSourceNode>()
+  private _inputEnded = false
+  private _streaming = false
+  private _generation = 0
   onDone: (() => void) | null = null
 
   start(params: { sampleRate: number }): void {
-    this.generation += 1
-    this.streaming = true
-    this.inputEnded = false
-    this.activeSources.clear()
-    this.nextTime = 0
-    this.sampleRate = params.sampleRate
+    this._generation += 1
+    this._streaming = true
+    this._inputEnded = false
+    this._activeSources.clear()
+    this._nextTime = 0
+    this._sampleRate = params.sampleRate
     this._ensureContext()
-    void this.ctx?.resume()
+    void this._ctx?.resume()
   }
 
   feed(samples: Uint8Array): void {
-    if (!this.streaming) {
+    if (!this._streaming) {
       return
     }
-    const ctx = this.ctx
-    const gain = this.gain
+    const ctx = this._ctx
+    const gain = this._gain
     if (!ctx || !gain) {
       return
     }
@@ -35,68 +35,68 @@ export class StreamPlayer {
     if (evenLength === 0) {
       return
     }
-    const capturedGeneration = this.generation
+    const capturedGeneration = this._generation
     const int16 = new Int16Array(samples.buffer, samples.byteOffset, evenLength / 2)
     const floats = Float32Array.from(int16, (sample) => {
       return sample / SILENCE_SCALE
     })
-    const buffer = ctx.createBuffer(1, floats.length, this.sampleRate)
+    const buffer = ctx.createBuffer(1, floats.length, this._sampleRate)
     buffer.copyToChannel(floats, 0)
     const source = ctx.createBufferSource()
     source.buffer = buffer
-    const startAt = Math.max(ctx.currentTime, this.nextTime)
+    const startAt = Math.max(ctx.currentTime, this._nextTime)
     source.connect(gain)
     source.start(startAt)
-    this.nextTime = startAt + buffer.duration
+    this._nextTime = startAt + buffer.duration
     source.onended = () => {
-      if (this.generation !== capturedGeneration) {
+      if (this._generation !== capturedGeneration) {
         return
       }
-      this.activeSources.delete(source)
+      this._activeSources.delete(source)
       this._maybeFireDone()
     }
-    this.activeSources.add(source)
+    this._activeSources.add(source)
   }
 
   end(): void {
-    if (!this.streaming) {
+    if (!this._streaming) {
       return
     }
-    this.inputEnded = true
+    this._inputEnded = true
     this._maybeFireDone()
   }
 
   stop(): void {
-    this.generation += 1
-    this.streaming = false
+    this._generation += 1
+    this._streaming = false
     this.onDone = null
-    this.inputEnded = false
-    this.activeSources.forEach((source) => {
+    this._inputEnded = false
+    this._activeSources.forEach((source) => {
       source.onended = null
       try {
         source.stop()
       } catch {}
     })
-    this.activeSources.clear()
-    this.nextTime = 0
+    this._activeSources.clear()
+    this._nextTime = 0
   }
 
   private _ensureContext(): void {
-    if (this.ctx) {
+    if (this._ctx) {
       return
     }
     const ctx = new AudioContext()
     const gain = ctx.createGain()
     gain.connect(ctx.destination)
-    this.ctx = ctx
-    this.gain = gain
+    this._ctx = ctx
+    this._gain = gain
   }
 
   private _maybeFireDone(): void {
-    if (!this.inputEnded) {
+    if (!this._inputEnded) {
       return
     }
-    if (this.activeSources.size > 0) {
+    if (this._activeSources.size > 0) {
       return
     }
     if (!this.onDone) {

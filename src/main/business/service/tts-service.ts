@@ -6,8 +6,8 @@ import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 
 import { TextService } from '@src/main/business/service/text-service'
 import { historyDalSingleton } from '@src/main/dal/history-dal'
-import { piperServerServiceSingleton } from '@src/main/lib/piper-server-service'
-import { SelectionService } from '@src/main/lib/selection-service'
+import { piperServerSingleton } from '@src/main/lib/piper/server'
+import { Selection } from '@src/main/lib/selection'
 import { constant } from '@src/main/util/constants'
 import { langUtil } from '@src/main/util/lang-util'
 import { pathsUtil } from '@src/main/util/paths-util'
@@ -29,7 +29,7 @@ export class TtsService {
     }
     const { onnx } = this._voiceModelPaths({ voice: params.voice })
     try {
-      await piperServerServiceSingleton().ensureReady({ modelPath: onnx })
+      await piperServerSingleton().ensureReady({ modelPath: onnx })
     } catch {}
   }
 
@@ -76,7 +76,7 @@ export class TtsService {
 
     let sampleRate: number
     try {
-      const ready = await piperServerServiceSingleton().ensureReady({
+      const ready = await piperServerSingleton().ensureReady({
         modelPath: this._voiceModelPaths({ voice }).onnx
       })
       sampleRate = ready.sampleRate
@@ -105,7 +105,7 @@ export class TtsService {
     this._active = null
     this.events.emit('stopPlayback')
     this._emitIdle()
-    await piperServerServiceSingleton().cancelActive()
+    await piperServerSingleton().cancelActive()
   }
 
   public playbackEnded(): void {
@@ -117,7 +117,7 @@ export class TtsService {
   }
 
   public dispose(): void {
-    piperServerServiceSingleton().dispose()
+    piperServerSingleton().dispose()
   }
 
   protected _emitTtsStatus(status: TtsStatus): void {
@@ -136,7 +136,7 @@ export class TtsService {
     if (params.text) {
       return params.text
     }
-    return new SelectionService().grab()
+    return new Selection().grab()
   }
 
   protected _selectionErrorMessage(error: unknown): string {
@@ -221,7 +221,7 @@ export class TtsService {
     }
 
     try {
-      await piperServerServiceSingleton().synthesize(
+      await piperServerSingleton().synthesize(
         { text: params.text, lengthScale: params.lengthScale },
         { onChunk }
       )

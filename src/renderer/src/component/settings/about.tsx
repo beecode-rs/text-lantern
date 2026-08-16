@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
 import { api } from '@src/renderer/src/api'
-import { languageServiceSingleton } from '@src/shared/language/language-service'
+import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import type { Settings } from '@src/shared/types'
-import iconUrl from '@src/renderer/src/assets/icon.png'
+import iconUrl from '@src/renderer/src/asset/icon.png'
 
 export function AboutSettings(): React.JSX.Element {
   const [settings, setSettings] = useState<Settings | null>(null)
   useEffect(() => {
-    api.getSettings().then(setSettings)
+    void api.getSettings().then(setSettings)
   }, [])
+
+  const bindingList = getBindingList({ settings })
 
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
@@ -30,19 +32,7 @@ export function AboutSettings(): React.JSX.Element {
           runs on your device — nothing is sent anywhere. Language is auto-detected from the text or
           chosen via a per-language shortcut.
         </p>
-        {settings && settings.languageBindings.length > 0 && (
-          <div className="text-xs text-text/55 mt-1">
-            {settings.languageBindings.map((binding, index) => {
-              return (
-                <span key={binding.id}>
-                  {index > 0 ? ' · ' : ''}
-                  {languageServiceSingleton().getDisplayName({ code: binding.langCode })}:{' '}
-                  <span className="selectable">{binding.voice}</span>
-                </span>
-              )
-            })}
-          </div>
-        )}
+        {bindingList}
       </section>
 
       <section className="rounded-xl border border-mid-gray/25 bg-mid-gray/5 p-5 flex flex-col gap-2 text-sm">
@@ -50,32 +40,66 @@ export function AboutSettings(): React.JSX.Element {
         <a
           className="text-logo-primary hover:underline"
           href="https://github.com/rhasspy/piper"
-          onClick={(e) => e.preventDefault()}
+          onClick={(e) => {
+            e.preventDefault()
+          }}
         >
           Piper TTS engine
         </a>
         <a
           className="text-logo-primary hover:underline"
           href="https://huggingface.co/rhasspy/piper-voices"
-          onClick={(e) => e.preventDefault()}
+          onClick={(e) => {
+            e.preventDefault()
+          }}
         >
           rhasspy/piper-voices (English + more)
         </a>
         <a
           className="text-logo-primary hover:underline"
           href="https://huggingface.co/phantom9623/piper-serbian-tts"
-          onClick={(e) => e.preventDefault()}
+          onClick={(e) => {
+            e.preventDefault()
+          }}
         >
           phantom9623/piper-serbian-tts (Serbian voice)
         </a>
         <a
           className="text-logo-primary hover:underline"
           href="https://handy.computer"
-          onClick={(e) => e.preventDefault()}
+          onClick={(e) => {
+            e.preventDefault()
+          }}
         >
           Handy — the dictation app this UI takes after
         </a>
       </section>
     </div>
   )
+
+  function getBindingList(params: { settings: Settings | null }): React.JSX.Element | null {
+    if (!params.settings || params.settings.languageBindings.length === 0) {
+      return null
+    }
+    return (
+      <div className="text-xs text-text/55 mt-1">
+        {params.settings.languageBindings.map((binding, index) => {
+          return (
+            <span key={binding.id}>
+              {getSeparator({ index })}
+              {languageCatalogSingleton().getDisplayName({ code: binding.langCode })}:{' '}
+              <span className="selectable">{binding.voice}</span>
+            </span>
+          )
+        })}
+      </div>
+    )
+  }
+
+  function getSeparator(params: { index: number }): string {
+    if (params.index > 0) {
+      return ' · '
+    }
+    return ''
+  }
 }

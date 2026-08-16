@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Download, Search, AlertTriangle, RefreshCw } from 'lucide-react'
 import { useModelsStore } from '@src/renderer/src/store/models'
-import { ModelCard, DownloadRow } from '@src/renderer/src/components/ui/ModelCard'
-import { DownloadModels } from '@src/renderer/src/components/settings/DownloadModels'
+import { ModelCard } from '@src/renderer/src/component/ui/model-card'
+import { DownloadRow } from '@src/renderer/src/component/ui/download-row'
+import { DownloadModels } from '@src/renderer/src/component/settings/download-models'
 
 export function ModelsSettings(): React.JSX.Element {
   const {
@@ -41,8 +42,19 @@ export function ModelsSettings(): React.JSX.Element {
   }, [downloadingNames, progress])
 
   if (view === 'download') {
-    return <DownloadModels onBack={() => { setView('installed') }} />
+    return (
+      <DownloadModels
+        onBack={() => {
+          setView('installed')
+        }}
+      />
+    )
   }
+
+  const installButtonIcon = getInstallButtonIcon({ installing })
+  const installButtonLabel = getInstallButtonLabel({ installing })
+  const installedCountLabel = getInstalledCountLabel({ count: voices.length })
+  const voiceList = getVoiceList({ filtered, voices, query, remove })
 
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
@@ -51,7 +63,9 @@ export function ModelsSettings(): React.JSX.Element {
           <h1 className="text-xl font-semibold">Models</h1>
           <button
             type="button"
-            onClick={() => { setView('download') }}
+            onClick={() => {
+              setView('download')
+            }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-logo-primary text-logo-stroke"
           >
             <Download size={14} /> Download voices
@@ -76,11 +90,13 @@ export function ModelsSettings(): React.JSX.Element {
               <button
                 type="button"
                 disabled={installing}
-                onClick={() => installEngine()}
+                onClick={() => {
+                  installEngine()
+                }}
                 className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-logo-primary text-logo-stroke disabled:opacity-60"
               >
-                {installing ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
-                {installing ? 'Installing…' : 'Install engine'}
+                {installButtonIcon}
+                {installButtonLabel}
               </button>
               {logs.length > 0 && (
                 <pre className="selectable mt-3 text-[11px] leading-relaxed text-text/65 bg-mid-gray/10 rounded-lg p-2 max-h-40 overflow-auto whitespace-pre-wrap">
@@ -103,34 +119,80 @@ export function ModelsSettings(): React.JSX.Element {
 
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between px-1">
-          <h2 className="text-sm font-medium text-text/60">
-            Installed {voices.length > 0 && `(${voices.length})`}
-          </h2>
+          <h2 className="text-sm font-medium text-text/60">Installed {installedCountLabel}</h2>
           <div className="relative">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text/40" />
             <input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value)
+              }}
               placeholder="Filter"
               className="pl-7 pr-2 py-1 text-xs rounded-md border border-mid-gray/40 bg-mid-gray/10 w-40 focus:outline-none focus:ring-1 focus:ring-logo-primary"
             />
           </div>
         </div>
 
-        {filtered.length === 0 ? (
-          <p className="text-sm text-text/50 px-1 py-6 text-center">
-            {voices.length === 0
-              ? 'No voices yet — download one to get started.'
-              : 'No voices match your filter.'}
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {filtered.map((voice) => (
-              <ModelCard key={voice.name} voice={voice} onDelete={() => remove(voice.name)} />
-            ))}
-          </div>
-        )}
+        {voiceList}
       </section>
     </div>
   )
+
+  function getInstallButtonIcon(params: { installing: boolean }): React.JSX.Element {
+    if (params.installing) {
+      return <RefreshCw size={14} className="animate-spin" />
+    }
+    return <Download size={14} />
+  }
+
+  function getInstallButtonLabel(params: { installing: boolean }): string {
+    if (params.installing) {
+      return 'Installing…'
+    }
+    return 'Install engine'
+  }
+
+  function getInstalledCountLabel(params: { count: number }): string {
+    if (params.count > 0) {
+      return `(${params.count})`
+    }
+    return ''
+  }
+
+  function getVoiceList(params: {
+    filtered: typeof voices
+    voices: typeof voices
+    query: string
+    remove: (name: string) => Promise<void>
+  }): React.JSX.Element {
+    if (params.filtered.length === 0) {
+      return (
+        <p className="text-sm text-text/50 px-1 py-6 text-center">
+          {getEmptyVoicesMessage({ voices: params.voices })}
+        </p>
+      )
+    }
+    return (
+      <div className="flex flex-col gap-2">
+        {params.filtered.map((voice) => {
+          return (
+            <ModelCard
+              key={voice.name}
+              voice={voice}
+              onDelete={() => {
+                void params.remove(voice.name)
+              }}
+            />
+          )
+        })}
+      </div>
+    )
+  }
+
+  function getEmptyVoicesMessage(params: { voices: typeof voices }): string {
+    if (params.voices.length === 0) {
+      return 'No voices yet — download one to get started.'
+    }
+    return 'No voices match your filter.'
+  }
 }

@@ -1,3 +1,5 @@
+import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
+
 const ACCELERATOR_MAP_MAC: Record<string, string> = {
   CommandOrControl: '⌘',
   CmdOrCtrl: '⌘',
@@ -26,7 +28,7 @@ const ACCELERATOR_MAP_DEFAULT: Record<string, string> = {
   Shift: 'Shift'
 }
 
-export class FormatService {
+export class Format {
   protected readonly _isMac: boolean
 
   public constructor() {
@@ -38,10 +40,10 @@ export class FormatService {
       return '0 B'
     }
     const units = ['B', 'KB', 'MB', 'GB']
-    const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)))
-    const value = bytes / Math.pow(1024, i)
-    const decimals = this._bytesToDecimals(value, i)
-    return `${value.toFixed(decimals)} ${units[i]}`
+    const unitIndex = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)))
+    const value = bytes / Math.pow(1024, unitIndex)
+    const decimals = this._bytesToDecimals({ value, unitIndex })
+    return `${value.toFixed(decimals)} ${units[unitIndex]}`
   }
 
   public formatAccelerator(accel: string): string {
@@ -70,8 +72,8 @@ export class FormatService {
     return /Mac|iPhone|iPad/.test(navigator.platform)
   }
 
-  protected _bytesToDecimals(value: number, i: number): number {
-    if (value >= 10 || i === 0) {
+  protected _bytesToDecimals(params: { value: number; unitIndex: number }): number {
+    if (params.value >= 10 || params.unitIndex === 0) {
       return 0
     }
     return 1
@@ -85,3 +87,4 @@ export class FormatService {
   }
 }
 
+export const formatSingleton = singletonPattern(() => new Format())

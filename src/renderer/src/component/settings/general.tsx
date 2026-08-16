@@ -1,8 +1,9 @@
 import { useSettingsStore } from '@src/renderer/src/store/settings'
-import { SettingsGroup, Row } from '@src/renderer/src/components/ui/SettingsGroup'
-import { Toggle } from '@src/renderer/src/components/ui/Toggle'
-import { Select, type SelectOption } from '@src/renderer/src/components/ui/Select'
-import { Slider } from '@src/renderer/src/components/ui/Slider'
+import { SettingsGroup } from '@src/renderer/src/component/ui/settings-group'
+import { Row } from '@src/renderer/src/component/ui/row'
+import { Toggle } from '@src/renderer/src/component/ui/toggle'
+import { Select, type SelectOption } from '@src/renderer/src/component/ui/select'
+import { Slider } from '@src/renderer/src/component/ui/slider'
 import type { ThemePreference } from '@src/shared/types'
 
 const THEME_OPTIONS: SelectOption<ThemePreference>[] = [
@@ -17,12 +18,6 @@ export function GeneralSettings(): React.JSX.Element {
 
   if (!settings) {
     return <></>
-  }
-
-  const rateLabel = (r: number): string => {
-    if (r > 1.001) return 'Faster'
-    if (r < 0.999) return 'Slower'
-    return 'Normal'
   }
 
   return (
@@ -46,14 +41,18 @@ export function GeneralSettings(): React.JSX.Element {
       </SettingsGroup>
 
       <SettingsGroup title="Speech" description="Higher reads faster. 1.0× is normal speed.">
-        <Row title="Speed" description={`${settings.rate.toFixed(2)}× · ${rateLabel(settings.rate)}`}>
+        <Row title="Speed" description={getSpeedDescription({ rate: settings.rate })}>
           <Slider
             value={settings.rate}
             min={0.5}
             max={3}
             step={0.05}
-            onChange={(v) => update({ rate: v })}
-            format={(v) => `${v.toFixed(2)}×`}
+            onChange={(v) => {
+              update({ rate: v })
+            }}
+            format={(v) => {
+              return `${v.toFixed(2)}×`
+            }}
           />
         </Row>
       </SettingsGroup>
@@ -62,14 +61,18 @@ export function GeneralSettings(): React.JSX.Element {
         <Row title="Clean text" description="Strip URLs, markdown, code, citations and brackets.">
           <Toggle
             checked={settings.cleanText}
-            onChange={(v) => update({ cleanText: v })}
+            onChange={(v) => {
+              update({ cleanText: v })
+            }}
             ariaLabel="Clean text"
           />
         </Row>
         <Row title="Strip bracketed content" description="Delete the text inside ( ) [ ] { } entirely.">
           <Toggle
             checked={settings.stripBrackets}
-            onChange={(v) => update({ stripBrackets: v })}
+            onChange={(v) => {
+              update({ stripBrackets: v })
+            }}
             ariaLabel="Strip brackets"
           />
         </Row>
@@ -78,7 +81,9 @@ export function GeneralSettings(): React.JSX.Element {
             type="number"
             min={0}
             value={settings.maxChars}
-            onChange={(e) => update({ maxChars: Number(e.target.value) || 0 })}
+            onChange={(e) => {
+              update({ maxChars: Number(e.target.value) || 0 })
+            }}
             className="w-24 px-2 py-1 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 text-right"
           />
         </Row>
@@ -88,11 +93,23 @@ export function GeneralSettings(): React.JSX.Element {
         <Row title="Start hidden" description="Keep the window hidden until opened from the tray.">
           <Toggle
             checked={settings.startHidden}
-            onChange={(v) => update({ startHidden: v })}
+            onChange={(v) => {
+              update({ startHidden: v })
+            }}
             ariaLabel="Start hidden"
           />
         </Row>
       </SettingsGroup>
     </div>
   )
+
+  function getSpeedDescription(params: { rate: number }): string {
+    if (params.rate > 1.001) {
+      return `${params.rate.toFixed(2)}× · Faster`
+    }
+    if (params.rate < 0.999) {
+      return `${params.rate.toFixed(2)}× · Slower`
+    }
+    return `${params.rate.toFixed(2)}× · Normal`
+  }
 }

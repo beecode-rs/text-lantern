@@ -1,34 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Sidebar, type Section } from '@src/renderer/src/components/Sidebar'
-import { NowPlaying } from '@src/renderer/src/components/NowPlaying'
-import { GeneralSettings } from '@src/renderer/src/components/settings/General'
-import { ModelsSettings } from '@src/renderer/src/components/settings/Models'
-import { LanguagesSettings } from '@src/renderer/src/components/settings/Languages'
-import { TestSettings } from '@src/renderer/src/components/settings/Test'
-import { HistorySettings } from '@src/renderer/src/components/settings/History'
-import { AboutSettings } from '@src/renderer/src/components/settings/About'
+import { Sidebar, type Section } from '@src/renderer/src/component/sidebar'
+import { NowPlaying } from '@src/renderer/src/component/now-playing'
+import { SettingsSection } from '@src/renderer/src/component/settings-section'
 import { useSettingsStore } from '@src/renderer/src/store/settings'
 import { useHistoryStore } from '@src/renderer/src/store/history'
 import { useModelsStore } from '@src/renderer/src/store/models'
 import { api } from '@src/renderer/src/api'
 import { useTheme } from '@src/renderer/src/lib/use-theme'
-
-function Section({ active }: { active: Section }): React.JSX.Element {
-  switch (active) {
-    case 'general':
-      return <GeneralSettings />
-    case 'models':
-      return <ModelsSettings />
-    case 'languages':
-      return <LanguagesSettings />
-    case 'test':
-      return <TestSettings />
-    case 'history':
-      return <HistorySettings />
-    case 'about':
-      return <AboutSettings />
-  }
-}
 
 export default function App(): React.JSX.Element {
   const [section, setSection] = useState<Section>('general')
@@ -46,10 +24,12 @@ export default function App(): React.JSX.Element {
 
     const offSettings = api.onSettingsChanged(replaceSettings)
     const offHistory = api.onHistoryChanged(replaceHistory)
-    const offLog = api.onModelsLog((line) => appendLog(line))
-    const offProgress = api.onModelsProgress(({ name, progress }) =>
+    const offLog = api.onModelsLog((line) => {
+      appendLog(line)
+    })
+    const offProgress = api.onModelsProgress(({ name, progress }) => {
       setProgress(name, progress)
-    )
+    })
 
     return () => {
       offSettings()
@@ -75,7 +55,7 @@ export default function App(): React.JSX.Element {
         <Sidebar active={section} onChange={setSection} />
         <main className="flex-1 overflow-y-auto">
           <div className="p-6">
-            <Section active={section} />
+            <SettingsSection active={section} />
           </div>
         </main>
       </div>

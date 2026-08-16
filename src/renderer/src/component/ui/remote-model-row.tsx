@@ -1,7 +1,7 @@
 import { Download } from 'lucide-react'
-import { StarBadge } from '@src/renderer/src/components/ui/StarBadge'
-import { FormatService } from '@src/renderer/src/lib/format'
-import { languageServiceSingleton } from '@src/shared/language/language-service'
+import { StarBadge } from '@src/renderer/src/component/ui/star-badge'
+import { formatSingleton } from '@src/renderer/src/lib/format'
+import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import type { RemoteVoice } from '@src/shared/types'
 
 export function RemoteModelRow({
@@ -15,6 +15,11 @@ export function RemoteModelRow({
   downloading: boolean
   onDownload: () => void
 }): React.JSX.Element {
+  let downloadLabel = 'Download'
+  if (downloading) {
+    downloadLabel = 'Downloading…'
+  }
+
   return (
     <div className="flex items-center gap-3 px-4 py-3 border border-mid-gray/25 rounded-xl bg-mid-gray/5">
       <div className="min-w-0 flex-1">
@@ -23,8 +28,8 @@ export function RemoteModelRow({
           {installed && <StarBadge>installed</StarBadge>}
         </div>
         <div className="text-xs text-text/55 mt-0.5">
-          {languageServiceSingleton().getDisplayName({ code: voice.lang })} · {voice.quality} ·{' '}
-          {new FormatService().formatBytes(voice.sizeBytes)}
+          {languageCatalogSingleton().getDisplayName({ code: voice.lang })} · {voice.quality} ·{' '}
+          {formatSingleton().formatBytes(voice.sizeBytes)}
         </div>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
@@ -35,7 +40,7 @@ export function RemoteModelRow({
           className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-logo-primary text-logo-stroke disabled:opacity-50"
         >
           <Download size={13} />
-          {downloading ? 'Downloading…' : 'Download'}
+          {downloadLabel}
         </button>
       </div>
     </div>

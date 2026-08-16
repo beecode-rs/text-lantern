@@ -7,7 +7,7 @@ import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 
 import { constant } from '@src/main/util/constants'
 import { pathsUtil } from '@src/main/util/paths-util'
-import { languageServiceSingleton } from '@src/shared/language/language-service'
+import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import type { RemoteVoice } from '@src/shared/types'
 
 interface HfTreeEntry {
@@ -17,7 +17,7 @@ interface HfTreeEntry {
   lfs?: { size: number }
 }
 
-export class PiperEngineService {
+export class PiperEngine {
   public isEngineInstalled(): boolean {
     try {
       return fs.existsSync(pathsUtil.piperBin())
@@ -142,13 +142,13 @@ export class PiperEngineService {
     if (!q) {
       return null
     }
-    const byCode = languageServiceSingleton().list().find((language) => {
+    const byCode = languageCatalogSingleton().list().find((language) => {
       return language.code === q
     })
     if (byCode) {
       return byCode.code
     }
-    const byName = languageServiceSingleton().list().find((language) => {
+    const byName = languageCatalogSingleton().list().find((language) => {
       return language.name.toLowerCase() === q
     })
     if (byName) {
@@ -388,6 +388,6 @@ export class PiperEngineService {
   }
 }
 
-export const piperEngineServiceSingleton = singletonPattern(() => {
-  return new PiperEngineService()
+export const piperEngineSingleton = singletonPattern(() => {
+  return new PiperEngine()
 })

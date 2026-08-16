@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { TtsApi } from '@src/shared/types'
 
-import { channelSubscriberService } from '@src/preload/_channel-subscriber-service'
+import { channelSubscriber } from '@src/preload/_channel-subscriber'
 
 const api: TtsApi = {
   getSettings: () => {
@@ -54,15 +54,15 @@ const api: TtsApi = {
     return ipcRenderer.invoke('history:clear')
   },
 
-  onSettingsChanged: channelSubscriberService.createForChannel({ channel: 'settings:changed' }),
-  onTtsStatus: channelSubscriberService.createForChannel({ channel: 'tts:status' }),
-  onAudioStart: channelSubscriberService.createForChannel({ channel: 'tts:audioStart' }),
-  onAudioChunk: channelSubscriberService.createForChannel({ channel: 'tts:audioChunk' }),
-  onAudioEnd: channelSubscriberService.createForChannel<void>({ channel: 'tts:audioEnd' }),
-  onStopPlayback: channelSubscriberService.createForChannel<void>({ channel: 'tts:stopPlayback' }),
-  onModelsLog: channelSubscriberService.createForChannel({ channel: 'models:log' }),
-  onModelsProgress: channelSubscriberService.createForChannel({ channel: 'models:progress' }),
-  onHistoryChanged: channelSubscriberService.createForChannel({ channel: 'history:changed' })
+  onSettingsChanged: channelSubscriber.createForChannel({ channel: 'settings:changed' }),
+  onTtsStatus: channelSubscriber.createForChannel({ channel: 'tts:status' }),
+  onAudioStart: channelSubscriber.createForChannel({ channel: 'tts:audioStart' }),
+  onAudioChunk: channelSubscriber.createForChannel({ channel: 'tts:audioChunk' }),
+  onAudioEnd: channelSubscriber.createForChannel<void>({ channel: 'tts:audioEnd' }),
+  onStopPlayback: channelSubscriber.createForChannel<void>({ channel: 'tts:stopPlayback' }),
+  onModelsLog: channelSubscriber.createForChannel({ channel: 'models:log' }),
+  onModelsProgress: channelSubscriber.createForChannel({ channel: 'models:progress' }),
+  onHistoryChanged: channelSubscriber.createForChannel({ channel: 'history:changed' })
 }
 
 contextBridge.exposeInMainWorld('api', api)

@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { ArrowLeft, Download, Search, Loader2 } from 'lucide-react'
 import { useModelsStore } from '@src/renderer/src/store/models'
-import { DownloadRow } from '@src/renderer/src/components/ui/ModelCard'
-import { RemoteModelRow } from '@src/renderer/src/components/ui/RemoteModelRow'
+import { DownloadRow } from '@src/renderer/src/component/ui/download-row'
+import { RemoteModelRow } from '@src/renderer/src/component/ui/remote-model-row'
 
 export function DownloadModels({
   onBack
@@ -39,6 +39,7 @@ export function DownloadModels({
 
   const hasSearched = submittedQuery.length > 0
   const showEmpty = !searching && !searchError && hasSearched && remote.length === 0
+  const searchButtonIcon = getSearchButtonIcon({ searching })
 
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
@@ -66,7 +67,9 @@ export function DownloadModels({
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text/40" />
             <input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value)
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   runSearch()
@@ -82,7 +85,7 @@ export function DownloadModels({
             onClick={runSearch}
             className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-logo-primary text-logo-stroke disabled:opacity-50"
           >
-            {searching ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+            {searchButtonIcon}
             Search
           </button>
         </div>
@@ -132,7 +135,9 @@ export function DownloadModels({
         <div className="flex gap-2">
           <input
             value={addName}
-            onChange={(e) => setAddName(e.target.value)}
+            onChange={(e) => {
+              setAddName(e.target.value)
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && addName.trim()) {
                 void download(addName.trim())
@@ -163,4 +168,11 @@ export function DownloadModels({
       </section>
     </div>
   )
+
+  function getSearchButtonIcon(params: { searching: boolean }): React.JSX.Element {
+    if (params.searching) {
+      return <Loader2 size={14} className="animate-spin" />
+    }
+    return <Search size={14} />
+  }
 }
