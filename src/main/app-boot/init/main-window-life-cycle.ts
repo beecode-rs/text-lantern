@@ -38,7 +38,7 @@ export class MainWindowLifeCycle extends LifeCycle {
   protected async _createFn(): Promise<void> {
     const settings = settingsDalSingleton().get()
     this._win = this._buildWindow({ theme: settings.theme })
-    if (!settings.startHidden || !app.isPackaged) {
+    if (!settings.shouldStartHidden || !app.isPackaged) {
       this._win.show()
     }
   }

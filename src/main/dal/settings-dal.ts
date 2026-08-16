@@ -18,6 +18,9 @@ interface LegacySettings {
   voiceSr?: string
   voiceEn?: string
   shortcuts?: LegacyShortcuts
+  cleanText?: boolean
+  stripBrackets?: boolean
+  startHidden?: boolean
 }
 
 export class SettingsDal {
@@ -126,9 +129,10 @@ export class SettingsDal {
       autoShortcut,
       stopShortcut,
       rate,
-      cleanText: parsed.cleanText ?? defaults.cleanText,
-      stripBrackets: parsed.stripBrackets ?? defaults.stripBrackets,
-      startHidden: parsed.startHidden ?? defaults.startHidden,
+      shouldCleanText: parsed.shouldCleanText ?? parsed.cleanText ?? defaults.shouldCleanText,
+      shouldStripBrackets:
+        parsed.shouldStripBrackets ?? parsed.stripBrackets ?? defaults.shouldStripBrackets,
+      shouldStartHidden: parsed.shouldStartHidden ?? parsed.startHidden ?? defaults.shouldStartHidden,
       theme: parsed.theme ?? defaults.theme,
       maxChars: parsed.maxChars ?? defaults.maxChars,
       historyLimit: parsed.historyLimit ?? defaults.historyLimit,

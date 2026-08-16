@@ -60,18 +60,18 @@ export function GeneralSettings(): React.JSX.Element {
       <SettingsGroup title="Text cleaning" description="Applied before speaking.">
         <Row title="Clean text" description="Strip URLs, markdown, code, citations and brackets.">
           <Toggle
-            checked={settings.cleanText}
+            checked={settings.shouldCleanText}
             onChange={(v) => {
-              update({ cleanText: v })
+              update({ shouldCleanText: v })
             }}
             ariaLabel="Clean text"
           />
         </Row>
         <Row title="Strip bracketed content" description="Delete the text inside ( ) [ ] { } entirely.">
           <Toggle
-            checked={settings.stripBrackets}
+            checked={settings.shouldStripBrackets}
             onChange={(v) => {
-              update({ stripBrackets: v })
+              update({ shouldStripBrackets: v })
             }}
             ariaLabel="Strip brackets"
           />
@@ -92,9 +92,9 @@ export function GeneralSettings(): React.JSX.Element {
       <SettingsGroup title="Window">
         <Row title="Start hidden" description="Keep the window hidden until opened from the tray.">
           <Toggle
-            checked={settings.startHidden}
+            checked={settings.shouldStartHidden}
             onChange={(v) => {
-              update({ startHidden: v })
+              update({ shouldStartHidden: v })
             }}
             ariaLabel="Start hidden"
           />

@@ -14,7 +14,7 @@ const api: TtsApi = {
   listVoices: () => {
     return ipcRenderer.invoke('models:list')
   },
-  engineInstalled: () => {
+  isEngineInstalled: () => {
     return ipcRenderer.invoke('models:engineInstalled')
   },
   installEngine: () => {

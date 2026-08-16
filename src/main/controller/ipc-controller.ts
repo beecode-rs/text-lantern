@@ -77,7 +77,7 @@ export const ipcController = {
       void ttsServiceSingleton().speak({
         lang,
         text,
-        recordHistory: options?.recordHistory,
+        shouldSkipHistory: options?.shouldSkipHistory,
         settings: settingsDalSingleton().get()
       })
       return true

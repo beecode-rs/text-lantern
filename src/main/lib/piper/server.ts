@@ -35,15 +35,15 @@ export class PiperServer {
     handlers: { onChunk: (chunk: Buffer) => void }
   ): Promise<void> {
     this._setBusy(true)
-    let synthesizing = true
+    let isSynthesizing = true
     try {
       this._writeRequest(params)
-      while (synthesizing) {
+      while (isSynthesizing) {
         const frame = await this._nextFrame()
         if (frame.type === MSG_AUDIO) {
           handlers.onChunk(Buffer.from(frame.payload))
         } else if (frame.type === MSG_END) {
-          synthesizing = false
+          isSynthesizing = false
         } else if (frame.type === MSG_ERROR) {
           throw new Error(frame.payload.toString('utf8') || 'Piper synthesis failed')
         }

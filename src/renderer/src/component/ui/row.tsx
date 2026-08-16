@@ -4,14 +4,14 @@ export function Row({
   title,
   description,
   children,
-  stacked
+  isStacked
 }: {
   title?: string
   description?: string
   children: ReactNode
-  stacked?: boolean
+  isStacked?: boolean
 }): React.JSX.Element {
-  if (stacked) {
+  if (isStacked) {
     return (
       <div className="px-4 py-3">
         {title && <div className="text-sm font-medium mb-2">{title}</div>}

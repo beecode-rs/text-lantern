@@ -76,36 +76,36 @@ export function TestSettings(): React.JSX.Element {
   }
 
   const hasConnected = connectedBindings.length > 0
-  const busy = status.state === 'synthesizing' || status.state === 'reading'
+  const isBusy = status.state === 'synthesizing' || status.state === 'reading'
   const canSpeak = hasConnected && text.trim().length > 0 && activeLang !== ''
 
   const fallbackBinding = settings.languageBindings.find((binding) => {
     return binding.langCode === settings.fallbackLang
   })
-  const fallbackVoiceConnected =
+  const isFallbackVoiceConnected =
     fallbackBinding !== undefined &&
     voices.some((voice) => {
       return voice.name === fallbackBinding.voice
     })
   const autoLabel = getAutoLabel({
-    fallbackVoiceConnected,
+    isFallbackVoiceConnected,
     fallbackBinding,
     fallbackLang: settings.fallbackLang
   })
 
   const onButtonClick = (): void => {
-    if (busy) {
+    if (isBusy) {
       void api.stop()
       return
     }
     if (canSpeak) {
-      void api.speak(activeLang, text, { recordHistory: false })
+      void api.speak(activeLang, text, { shouldSkipHistory: true })
     }
   }
 
   const body = getBody({
     hasConnected,
-    busy,
+    isBusy,
     activeLang,
     autoLabel,
     connectedBindings,
@@ -131,7 +131,7 @@ export function TestSettings(): React.JSX.Element {
 
   function getBody(params: {
     hasConnected: boolean
-    busy: boolean
+    isBusy: boolean
     activeLang: string
     autoLabel: string
     connectedBindings: { id: string; langCode: string; voice: string }[]
@@ -153,8 +153,8 @@ export function TestSettings(): React.JSX.Element {
         </div>
       )
     }
-    const speakButtonIcon = getSpeakButtonIcon({ busy })
-    const speakButtonLabel = getSpeakButtonLabel({ busy })
+    const speakButtonIcon = getSpeakButtonIcon({ isBusy })
+    const speakButtonLabel = getSpeakButtonLabel({ isBusy })
 
     return (
       <SettingsGroup title="Voice" description="Uses the voice bound to each language under Languages.">
@@ -166,7 +166,7 @@ export function TestSettings(): React.JSX.Element {
               onChange={(e) => {
                 params.setLang(e.target.value)
               }}
-              disabled={params.busy}
+              disabled={params.isBusy}
               className="px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors disabled:opacity-60"
             >
               <option value="auto">{params.autoLabel}</option>
@@ -187,7 +187,7 @@ export function TestSettings(): React.JSX.Element {
               onChange={(e) => {
                 params.setText(e.target.value)
               }}
-              disabled={params.busy}
+              disabled={params.isBusy}
               rows={4}
               className="px-3 py-2 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 placeholder:text-text/40 focus:outline-none focus:ring-1 focus:ring-logo-primary resize-none disabled:opacity-60"
             />
@@ -197,7 +197,7 @@ export function TestSettings(): React.JSX.Element {
             <button
               type="button"
               onClick={params.onButtonClick}
-              disabled={!params.busy && !params.canSpeak}
+              disabled={!params.isBusy && !params.canSpeak}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-logo-primary text-logo-stroke disabled:opacity-50"
             >
               {speakButtonIcon}
@@ -210,25 +210,25 @@ export function TestSettings(): React.JSX.Element {
   }
 
   function getAutoLabel(params: {
-    fallbackVoiceConnected: boolean
+    isFallbackVoiceConnected: boolean
     fallbackBinding: { voice: string } | undefined
     fallbackLang: string
   }): string {
-    if (params.fallbackVoiceConnected && params.fallbackBinding) {
+    if (params.isFallbackVoiceConnected && params.fallbackBinding) {
       return `Auto-detect · ${params.fallbackBinding.voice}`
     }
     return `Auto-detect · fallback: ${languageCatalogSingleton().getDisplayName({ code: params.fallbackLang })}`
   }
 
-  function getSpeakButtonIcon(params: { busy: boolean }): React.JSX.Element {
-    if (params.busy) {
+  function getSpeakButtonIcon(params: { isBusy: boolean }): React.JSX.Element {
+    if (params.isBusy) {
       return <Square size={13} className="fill-current" />
     }
     return <Volume2 size={14} />
   }
 
-  function getSpeakButtonLabel(params: { busy: boolean }): string {
-    if (params.busy) {
+  function getSpeakButtonLabel(params: { isBusy: boolean }): string {
+    if (params.isBusy) {
       return 'Stop'
     }
     return 'Speak'

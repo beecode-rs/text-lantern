@@ -6,17 +6,17 @@ import type { RemoteVoice } from '@src/shared/types'
 
 export function RemoteModelRow({
   voice,
-  installed,
-  downloading,
+  isInstalled,
+  isDownloading,
   onDownload
 }: {
   voice: RemoteVoice
-  installed: boolean
-  downloading: boolean
+  isInstalled: boolean
+  isDownloading: boolean
   onDownload: () => void
 }): React.JSX.Element {
   let downloadLabel = 'Download'
-  if (downloading) {
+  if (isDownloading) {
     downloadLabel = 'Downloading…'
   }
 
@@ -25,7 +25,7 @@ export function RemoteModelRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium truncate selectable">{voice.name}</span>
-          {installed && <StarBadge>installed</StarBadge>}
+          {isInstalled && <StarBadge>installed</StarBadge>}
         </div>
         <div className="text-xs text-text/55 mt-0.5">
           {languageCatalogSingleton().getDisplayName({ code: voice.lang })} · {voice.quality} ·{' '}
@@ -35,7 +35,7 @@ export function RemoteModelRow({
       <div className="flex items-center gap-1.5 shrink-0">
         <button
           type="button"
-          disabled={installed || downloading}
+          disabled={isInstalled || isDownloading}
           onClick={onDownload}
           className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-logo-primary text-logo-stroke disabled:opacity-50"
         >

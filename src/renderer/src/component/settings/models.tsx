@@ -8,8 +8,8 @@ import { DownloadModels } from '@src/renderer/src/component/settings/download-mo
 export function ModelsSettings(): React.JSX.Element {
   const {
     voices,
-    engineInstalled,
-    installing,
+    isEngineInstalled,
+    isInstalling,
     logs,
     progress,
     load,
@@ -51,8 +51,8 @@ export function ModelsSettings(): React.JSX.Element {
     )
   }
 
-  const installButtonIcon = getInstallButtonIcon({ installing })
-  const installButtonLabel = getInstallButtonLabel({ installing })
+  const installButtonIcon = getInstallButtonIcon({ isInstalling })
+  const installButtonLabel = getInstallButtonLabel({ isInstalling })
   const installedCountLabel = getInstalledCountLabel({ count: voices.length })
   const voiceList = getVoiceList({ filtered, voices, query, remove })
 
@@ -77,7 +77,7 @@ export function ModelsSettings(): React.JSX.Element {
         </p>
       </header>
 
-      {!engineInstalled && (
+      {!isEngineInstalled && (
         <section className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
           <div className="flex items-start gap-3">
             <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
@@ -89,7 +89,7 @@ export function ModelsSettings(): React.JSX.Element {
               </p>
               <button
                 type="button"
-                disabled={installing}
+                disabled={isInstalling}
                 onClick={() => {
                   installEngine()
                 }}
@@ -138,15 +138,15 @@ export function ModelsSettings(): React.JSX.Element {
     </div>
   )
 
-  function getInstallButtonIcon(params: { installing: boolean }): React.JSX.Element {
-    if (params.installing) {
+  function getInstallButtonIcon(params: { isInstalling: boolean }): React.JSX.Element {
+    if (params.isInstalling) {
       return <RefreshCw size={14} className="animate-spin" />
     }
     return <Download size={14} />
   }
 
-  function getInstallButtonLabel(params: { installing: boolean }): string {
-    if (params.installing) {
+  function getInstallButtonLabel(params: { isInstalling: boolean }): string {
+    if (params.isInstalling) {
       return 'Installing…'
     }
     return 'Install engine'

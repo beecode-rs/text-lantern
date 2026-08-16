@@ -4,13 +4,13 @@ import { api } from '@src/renderer/src/api'
 
 interface ModelsStore {
   voices: Voice[]
-  engineInstalled: boolean
-  installing: boolean
+  isEngineInstalled: boolean
+  isInstalling: boolean
   logs: string[]
   progress: Record<string, number>
-  loading: boolean
+  isLoading: boolean
   remote: RemoteVoice[]
-  searching: boolean
+  isSearching: boolean
   searchError: string | null
 
   load: () => Promise<void>
@@ -32,22 +32,22 @@ export const useModelsStore = create<ModelsStore>((set, get) => {
 
   return {
     voices: [],
-    engineInstalled: false,
-    installing: false,
+    isEngineInstalled: false,
+    isInstalling: false,
     logs: [],
     progress: {},
-    loading: false,
+    isLoading: false,
     remote: [],
-    searching: false,
+    isSearching: false,
     searchError: null,
 
     load: async () => {
-      set({ loading: true })
-      const [voices, engineInstalled] = await Promise.all([api.listVoices(), api.engineInstalled()])
-      set({ voices, engineInstalled, loading: false })
+      set({ isLoading: true })
+      const [voices, isEngineInstalled] = await Promise.all([api.listVoices(), api.isEngineInstalled()])
+      set({ voices, isEngineInstalled, isLoading: false })
     },
     refreshEngine: async () => {
-      set({ engineInstalled: await api.engineInstalled() })
+      set({ isEngineInstalled: await api.isEngineInstalled() })
     },
     download: async (name) => {
       try {
@@ -63,22 +63,22 @@ export const useModelsStore = create<ModelsStore>((set, get) => {
       set({ voices })
     },
     installEngine: async () => {
-      set({ installing: true, logs: [] })
+      set({ isInstalling: true, logs: [] })
       const ok = await api.installEngine()
-      const engineInstalled = await api.engineInstalled()
+      const isEngineInstalled = await api.isEngineInstalled()
       const voices = await api.listVoices()
-      set({ installing: false, engineInstalled, voices })
+      set({ isInstalling: false, isEngineInstalled, voices })
       if (!ok) {
         get().appendLog('Engine install finished but did not verify.')
       }
     },
     search: async (query) => {
-      set({ searching: true, searchError: null, remote: [] })
+      set({ isSearching: true, searchError: null, remote: [] })
       try {
         const remote = await api.searchVoices(query)
-        set({ remote, searching: false })
+        set({ remote, isSearching: false })
       } catch (err) {
-        set({ searching: false, searchError: String(err) })
+        set({ isSearching: false, searchError: String(err) })
       }
     },
     appendLog: (line) => {

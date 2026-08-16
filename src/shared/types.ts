@@ -15,9 +15,9 @@ export interface Settings {
   autoShortcut: string
   stopShortcut: string
   rate: number
-  cleanText: boolean
-  stripBrackets: boolean
-  startHidden: boolean
+  shouldCleanText: boolean
+  shouldStripBrackets: boolean
+  shouldStartHidden: boolean
   theme: ThemePreference
   maxChars: number
   historyLimit: number
@@ -29,7 +29,7 @@ export interface Voice {
   hasJson: boolean
   sizeBytes: number
   lang: string
-  inUse: boolean
+  isInUse: boolean
 }
 
 export interface RemoteVoice {
@@ -53,7 +53,7 @@ export interface HistoryEntry {
 }
 
 export interface TtsSpeakOptions {
-  recordHistory?: boolean
+  shouldSkipHistory?: boolean
 }
 
 export interface TtsApi {
@@ -61,7 +61,7 @@ export interface TtsApi {
   updateSettings(patch: Partial<Settings>): Promise<Settings>
 
   listVoices(): Promise<Voice[]>
-  engineInstalled(): Promise<boolean>
+  isEngineInstalled(): Promise<boolean>
   installEngine(): Promise<boolean>
   downloadVoice(name: string): Promise<Voice[]>
   deleteVoice(name: string): Promise<Voice[]>

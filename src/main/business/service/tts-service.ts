@@ -24,7 +24,7 @@ export class TtsService {
   }
 
   public async prewarmVoice(params: { voice: string }): Promise<void> {
-    if (!params.voice || !this._voiceModelFilesExist({ voice: params.voice })) {
+    if (!params.voice || !this._hasVoiceModelFiles({ voice: params.voice })) {
       return
     }
     const { onnx } = this._voiceModelPaths({ voice: params.voice })
@@ -36,7 +36,7 @@ export class TtsService {
   public async speak(params: {
     lang: Lang
     text?: string
-    recordHistory?: boolean
+    shouldSkipHistory?: boolean
     settings: Settings
   }): Promise<void> {
     await this.stop()
@@ -66,7 +66,7 @@ export class TtsService {
       settings: params.settings
     })
 
-    if (!this._voiceModelFilesExist({ voice })) {
+    if (!this._hasVoiceModelFiles({ voice })) {
       this._emitTtsStatus({
         state: 'error',
         error: `Voice "${voice}" is not downloaded. Open Settings → Models.`
@@ -77,7 +77,7 @@ export class TtsService {
     const token: object = {}
     this._active = token
     this._emitTtsStatus({ state: 'synthesizing', voice })
-    if (params.recordHistory !== false) {
+    if (!params.shouldSkipHistory) {
       historyDalSingleton().add({ text: capped, voice })
     }
 
@@ -154,10 +154,10 @@ export class TtsService {
   }
 
   protected _cleanTextIfEnabled(params: { text: string; settings: Settings }): string {
-    if (params.settings.cleanText) {
+    if (params.settings.shouldCleanText) {
       return new TextService().cleanText({
         input: params.text,
-        stripBrackets: params.settings.stripBrackets
+        shouldStripBrackets: params.settings.shouldStripBrackets
       })
     }
     return params.text.trim()
@@ -176,7 +176,7 @@ export class TtsService {
     return { onnx, json }
   }
 
-  protected _voiceModelFilesExist(params: { voice: string }): boolean {
+  protected _hasVoiceModelFiles(params: { voice: string }): boolean {
     const { onnx, json } = this._voiceModelPaths({ voice: params.voice })
     return fs.existsSync(onnx) && fs.existsSync(json)
   }
@@ -212,15 +212,15 @@ export class TtsService {
     voice: string
     token: object
   }): Promise<void> {
-    let started = false
+    let isStarted = false
     let remainder: Buffer = Buffer.alloc(0)
 
     const onChunk = (chunk: Buffer): void => {
       if (this._active !== params.token) {
         return
       }
-      if (!started) {
-        started = true
+      if (!isStarted) {
+        isStarted = true
         this._emitTtsStatus({ state: 'reading', voice: params.voice })
         this.events.emit('audioStart', { sampleRate: params.sampleRate, voice: params.voice })
       }
@@ -235,7 +235,7 @@ export class TtsService {
       if (this._active !== params.token) {
         return
       }
-      if (started) {
+      if (isStarted) {
         if (remainder.length > 0) {
           this.events.emit('audioChunk', Buffer.from(remainder))
         }

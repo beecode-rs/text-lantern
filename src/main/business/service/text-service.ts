@@ -1,6 +1,6 @@
 export class TextService {
-  public cleanText(params: { input: string; stripBrackets?: boolean }): string {
-    const { input, stripBrackets = false } = params
+  public cleanText(params: { input: string; shouldStripBrackets?: boolean }): string {
+    const { input, shouldStripBrackets = false } = params
     const steps = [
       this._stripCodeBlocks,
       this._stripInlineCode,
@@ -11,7 +11,7 @@ export class TextService {
       this._stripUrls,
       this._stripCitations,
       this._stripListMarkers,
-      this._resolveBracketStep(stripBrackets),
+      this._resolveBracketStep(shouldStripBrackets),
       this._decorationToSpace,
       this._tidyWhitespace
     ]
@@ -75,8 +75,8 @@ export class TextService {
     return s.replace(/[()[\]{}]/g, '')
   }
 
-  protected _resolveBracketStep(stripContent: boolean): (s: string) => string {
-    if (stripContent) {
+  protected _resolveBracketStep(shouldStripContent: boolean): (s: string) => string {
+    if (shouldStripContent) {
       return this._stripBracketContent
     }
     return this._dropBracketChars

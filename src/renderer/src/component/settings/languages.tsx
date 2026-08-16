@@ -52,7 +52,7 @@ export function LanguagesSettings(): React.JSX.Element {
     return n > 1
   })
 
-  const conflictFor = (accel: string): boolean => {
+  const hasConflictFor = (accel: string): boolean => {
     return accel !== '' && (conflictCounts[accel] ?? 0) > 1
   }
 
@@ -62,15 +62,15 @@ export function LanguagesSettings(): React.JSX.Element {
       name: languageCatalogSingleton().getDisplayName({ code: binding.langCode })
     }
   })
-  const fallbackMissing = !settings.languageBindings.some((binding) => {
+  const isFallbackMissing = !settings.languageBindings.some((binding) => {
     return binding.langCode === settings.fallbackLang
   })
-  const autoDisabled = settings.languageBindings.length === 0
+  const isAutoDisabled = settings.languageBindings.length === 0
 
-  const fallbackSelectValue = getFallbackSelectValue({ autoDisabled, fallbackLang: settings.fallbackLang })
+  const fallbackSelectValue = getFallbackSelectValue({ isAutoDisabled, fallbackLang: settings.fallbackLang })
   const fallbackSelectOptions = buildFallbackSelectOptions({
-    autoDisabled,
-    fallbackMissing,
+    isAutoDisabled,
+    isFallbackMissing,
     fallbackLang: settings.fallbackLang,
     fallbackOptions
   })
@@ -197,7 +197,7 @@ export function LanguagesSettings(): React.JSX.Element {
                   </select>
                   <ShortcutInput
                     value={binding.shortcut}
-                    conflict={conflictFor(binding.shortcut)}
+                    hasConflict={hasConflictFor(binding.shortcut)}
                     onChange={(accel) => {
                       setBinding(binding.id, { shortcut: accel })
                     }}
@@ -237,8 +237,8 @@ export function LanguagesSettings(): React.JSX.Element {
         >
           <ShortcutInput
             value={settings.autoShortcut}
-            conflict={conflictFor(settings.autoShortcut)}
-            disabled={autoDisabled}
+            hasConflict={hasConflictFor(settings.autoShortcut)}
+            disabled={isAutoDisabled}
             onChange={(accel) => {
               void update({ autoShortcut: accel })
             }}
@@ -250,7 +250,7 @@ export function LanguagesSettings(): React.JSX.Element {
         >
           <select
             value={fallbackSelectValue}
-            disabled={autoDisabled}
+            disabled={isAutoDisabled}
             onChange={(e) => {
               void update({ fallbackLang: e.target.value })
             }}
@@ -262,7 +262,7 @@ export function LanguagesSettings(): React.JSX.Element {
         <Row title="Stop" description="Stop reading immediately.">
           <ShortcutInput
             value={settings.stopShortcut}
-            conflict={conflictFor(settings.stopShortcut)}
+            hasConflict={hasConflictFor(settings.stopShortcut)}
             onChange={(accel) => {
               void update({ stopShortcut: accel })
             }}
@@ -279,25 +279,25 @@ export function LanguagesSettings(): React.JSX.Element {
     </div>
   )
 
-  function getFallbackSelectValue(params: { autoDisabled: boolean; fallbackLang: string }): string {
-    if (params.autoDisabled) {
+  function getFallbackSelectValue(params: { isAutoDisabled: boolean; fallbackLang: string }): string {
+    if (params.isAutoDisabled) {
       return ''
     }
     return params.fallbackLang
   }
 
   function buildFallbackSelectOptions(params: {
-    autoDisabled: boolean
-    fallbackMissing: boolean
+    isAutoDisabled: boolean
+    isFallbackMissing: boolean
     fallbackLang: string
     fallbackOptions: { code: string; name: string }[]
   }): React.JSX.Element {
-    if (params.autoDisabled) {
+    if (params.isAutoDisabled) {
       return <option value="">No languages</option>
     }
     return (
       <>
-        {params.fallbackMissing && (
+        {params.isFallbackMissing && (
           <option value={params.fallbackLang}>
             {languageCatalogSingleton().getDisplayName({ code: params.fallbackLang })} (missing)
           </option>

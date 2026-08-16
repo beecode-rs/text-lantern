@@ -9,7 +9,7 @@ export function DownloadModels({
 }: {
   onBack: () => void
 }): React.JSX.Element {
-  const { voices, remote, searching, searchError, progress, search, download } = useModelsStore()
+  const { voices, remote, isSearching, searchError, progress, search, download } = useModelsStore()
 
   const [query, setQuery] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState('')
@@ -38,8 +38,8 @@ export function DownloadModels({
   }
 
   const hasSearched = submittedQuery.length > 0
-  const showEmpty = !searching && !searchError && hasSearched && remote.length === 0
-  const searchButtonIcon = getSearchButtonIcon({ searching })
+  const showEmpty = !isSearching && !searchError && hasSearched && remote.length === 0
+  const searchButtonIcon = getSearchButtonIcon({ isSearching })
 
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
@@ -81,7 +81,7 @@ export function DownloadModels({
           </div>
           <button
             type="button"
-            disabled={!query.trim() || searching}
+            disabled={!query.trim() || isSearching}
             onClick={runSearch}
             className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-logo-primary text-logo-stroke disabled:opacity-50"
           >
@@ -101,9 +101,9 @@ export function DownloadModels({
       )}
 
       <section className="flex flex-col gap-2">
-        {searching && <p className="text-sm text-text/50 px-1 py-6 text-center">Searching…</p>}
+        {isSearching && <p className="text-sm text-text/50 px-1 py-6 text-center">Searching…</p>}
 
-        {!searching && searchError && (
+        {!isSearching && searchError && (
           <p className="text-sm text-red-500 px-1 py-6 text-center">{searchError}</p>
         )}
 
@@ -113,14 +113,14 @@ export function DownloadModels({
           </p>
         )}
 
-        {!searching && remote.length > 0 && (
+        {!isSearching && remote.length > 0 && (
           <div className="flex flex-col gap-2">
             {remote.map((voice) => (
               <RemoteModelRow
                 key={voice.name}
                 voice={voice}
-                installed={installedNames.has(voice.name)}
-                downloading={downloadingNames.includes(voice.name)}
+                isInstalled={installedNames.has(voice.name)}
+                isDownloading={downloadingNames.includes(voice.name)}
                 onDownload={() => {
                   void download(voice.name)
                 }}
@@ -169,8 +169,8 @@ export function DownloadModels({
     </div>
   )
 
-  function getSearchButtonIcon(params: { searching: boolean }): React.JSX.Element {
-    if (params.searching) {
+  function getSearchButtonIcon(params: { isSearching: boolean }): React.JSX.Element {
+    if (params.isSearching) {
       return <Loader2 size={14} className="animate-spin" />
     }
     return <Search size={14} />

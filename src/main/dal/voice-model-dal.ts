@@ -41,7 +41,7 @@ export class VoiceModelDal {
           hasJson: fs.existsSync(path.join(dir, `${name}.onnx.json`)),
           sizeBytes,
           lang: langUtil.voiceLang({ name }),
-          inUse: settings.languageBindings.some((binding) => {
+          isInUse: settings.languageBindings.some((binding) => {
             return binding.voice === name
           })
         }

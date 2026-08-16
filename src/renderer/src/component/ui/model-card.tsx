@@ -16,7 +16,7 @@ export function ModelCard({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium truncate selectable">{voice.name}</span>
-          {voice.inUse && <StarBadge>in use</StarBadge>}
+          {voice.isInUse && <StarBadge>in use</StarBadge>}
         </div>
         <div className="text-xs text-text/55 mt-0.5">
           {languageCatalogSingleton().getDisplayName({ code: voice.lang })} ·{' '}

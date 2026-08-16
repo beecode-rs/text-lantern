@@ -32,7 +32,7 @@ export class Format {
   protected readonly _isMac: boolean
 
   public constructor() {
-    this._isMac = this._detectMac()
+    this._isMac = this._isMacPlatform()
   }
 
   public formatBytes(bytes: number): string {
@@ -65,7 +65,7 @@ export class Format {
     return parts.join(joiner)
   }
 
-  protected _detectMac(): boolean {
+  protected _isMacPlatform(): boolean {
     if (typeof navigator === 'undefined') {
       return false
     }

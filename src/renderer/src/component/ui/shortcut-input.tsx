@@ -5,18 +5,18 @@ import { formatSingleton } from '@src/renderer/src/lib/format'
 export function ShortcutInput({
   value,
   onChange,
-  conflict,
+  hasConflict,
   disabled
 }: {
   value: string
   onChange: (accel: string) => void
-  conflict?: boolean
+  hasConflict?: boolean
   disabled?: boolean
 }): React.JSX.Element {
-  const [listening, setListening] = useState(false)
+  const [isListening, setIsListening] = useState(false)
 
   useEffect(() => {
-    if (!listening) {
+    if (!isListening) {
       return
     }
     const onKey = (e: KeyboardEvent): void => {
@@ -25,27 +25,27 @@ export function ShortcutInput({
         return
       }
       if ('cancel' in result) {
-        setListening(false)
+        setIsListening(false)
         return
       }
       onChange(result.accel)
-      setListening(false)
+      setIsListening(false)
     }
     window.addEventListener('keydown', onKey, true)
     return () => {
       window.removeEventListener('keydown', onKey, true)
     }
-  }, [listening, onChange])
+  }, [isListening, onChange])
 
   const baseClassName =
     'min-w-[150px] px-3 py-1.5 text-sm rounded-lg border transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed'
-  const buttonClassName = getButtonClassName({ baseClassName, conflict, listening })
+  const buttonClassName = getButtonClassName({ baseClassName, hasConflict, isListening })
   const formatted = formatSingleton().formatAccelerator(value)
 
   let content: React.JSX.Element
-  if (listening) {
+  if (isListening) {
     content = <span className="text-logo-primary">Press a shortcut…</span>
-  } else if (conflict) {
+  } else if (hasConflict) {
     content = <span className="text-red-600 dark:text-red-400">{formatted || 'Not set'}</span>
   } else {
     content = <span>{formatted || 'Not set'}</span>
@@ -56,12 +56,12 @@ export function ShortcutInput({
       type="button"
       disabled={disabled}
       onClick={() => {
-        setListening((v) => {
+        setIsListening((v) => {
           return !v
         })
       }}
       onBlur={() => {
-        setListening(false)
+        setIsListening(false)
       }}
       className={buttonClassName}
     >
@@ -71,13 +71,13 @@ export function ShortcutInput({
 
   function getButtonClassName(params: {
     baseClassName: string
-    conflict?: boolean
-    listening: boolean
+    hasConflict?: boolean
+    isListening: boolean
   }): string {
-    if (params.conflict) {
+    if (params.hasConflict) {
       return `${params.baseClassName} border-red-500/70 bg-red-500/10`
     }
-    if (params.listening) {
+    if (params.isListening) {
       return `${params.baseClassName} border-logo-primary bg-logo-primary/10`
     }
     return `${params.baseClassName} border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20`
