@@ -9,8 +9,8 @@ import { historyDalSingleton } from '@src/main/dal/history-dal'
 import { piperServerServiceSingleton } from '@src/main/lib/piper-server-service'
 import { SelectionService } from '@src/main/lib/selection-service'
 import { constant } from '@src/main/util/constants'
-import { langService } from '@src/main/util/lang-service'
-import { pathsService } from '@src/main/util/paths-service'
+import { langUtil } from '@src/main/util/lang-util'
+import { pathsUtil } from '@src/main/util/paths-util'
 import type { Lang, Settings, TtsStatus } from '@src/shared/types'
 
 export class TtsService {
@@ -55,7 +55,7 @@ export class TtsService {
     }
 
     const capped = this._capTextToMaxLength({ text: cleaned, maxChars: params.settings.maxChars })
-    const voice = langService.resolveVoice({
+    const voice = langUtil.resolveVoice({
       lang: params.lang,
       text: cleaned,
       settings: params.settings
@@ -164,8 +164,8 @@ export class TtsService {
   }
 
   protected _voiceModelPaths(params: { voice: string }): { onnx: string; json: string } {
-    const onnx = path.join(pathsService.modelsDir(), `${params.voice}.onnx`)
-    const json = path.join(pathsService.modelsDir(), `${params.voice}.onnx.json`)
+    const onnx = path.join(pathsUtil.modelsDir(), `${params.voice}.onnx`)
+    const json = path.join(pathsUtil.modelsDir(), `${params.voice}.onnx.json`)
     return { onnx, json }
   }
 

@@ -3,6 +3,7 @@ import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 
 import packageJson from '#packageJson' with { type: 'json' }
 
+import { objectUtil } from '@src/main/util/object-util'
 import type { LanguageBinding, Settings } from '@src/shared/types'
 
 export const APP_NAME = 'Text Lantern'
@@ -40,46 +41,46 @@ export const constant = singletonPattern(() => {
     historyLimit: defaultHistoryEntryLimit,
     schemaVersion: currentSettingsSchemaVersion
   }
-  return Object.freeze({
+  return objectUtil.deepFreeze({
     projectName: packageJson.name,
     projectVersion: packageJson.version,
-    history: Object.freeze({
+    history: {
       defaultEntryLimit: defaultHistoryEntryLimit
-    }),
-    logger: Object.freeze({
+    },
+    logger: {
       defaultLogLevel: LogLevel.INFO
-    }),
-    mainWindow: Object.freeze({
+    },
+    mainWindow: {
       lightBackground: '#F5F6FA',
       darkBackground: '#12131C'
-    }),
-    piperEngine: Object.freeze({
+    },
+    piperEngine: {
       serbianVoiceName,
       englishVoiceName,
       defaultInstallVoiceNames: [serbianVoiceName, englishVoiceName],
       serbianVoicesRepoUrl: 'https://huggingface.co/phantom9623/piper-serbian-tts/resolve/main',
       piperVoicesBaseUrl: 'https://huggingface.co/rhasspy/piper-voices/resolve/main',
       piperVoicesTreeApiUrl: 'https://huggingface.co/api/models/rhasspy/piper-voices/tree/main'
-    }),
-    piperServer: Object.freeze({
+    },
+    piperServer: {
       defaultSampleRateHz: 16000,
       cancelGraceMs: 800,
       startupMaxAttempts: 3,
       startupTimeoutMs: 15000,
       stderrTailChars: 2000
-    }),
-    settings: Object.freeze({
+    },
+    settings: {
       currentSchemaVersion: currentSettingsSchemaVersion,
       defaultLanguageBindings,
       defaultSettings
-    }),
-    textSelection: Object.freeze({
+    },
+    textSelection: {
       copyTimeoutMs: 1000,
       copyPollStepMs: 10,
       permissionDeniedMarkers: ['-1743', 'not authorized', 'assistive', 'apple events', 'not allowed']
-    }),
-    tts: Object.freeze({
+    },
+    tts: {
       audioFrameBytes: 4096
-    })
+    }
   })
 })

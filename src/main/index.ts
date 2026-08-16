@@ -4,7 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { APP_NAME, constant } from '@src/main/util/constants'
 import { logger } from '@src/main/util/logger'
-import { pathsService } from '@src/main/util/paths-service'
+import { pathsUtil } from '@src/main/util/paths-util'
 import { ttsServiceSingleton } from '@src/main/business/service/tts-service'
 import { historyDalSingleton } from '@src/main/dal/history-dal'
 import { settingsDalSingleton } from '@src/main/dal/settings-dal'
@@ -37,7 +37,7 @@ function _migrateLegacyUserData(): void {
 }
 
 function _applyAppIcon(): void {
-  const icon = nativeImage.createFromPath(path.join(pathsService.projectRoot(), 'resource', 'icon.png'))
+  const icon = nativeImage.createFromPath(path.join(pathsUtil.projectRoot(), 'resource', 'icon.png'))
   if (icon.isEmpty()) {
     return
   }

@@ -7,7 +7,7 @@ import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 import { settingsDalSingleton } from '@src/main/dal/settings-dal'
 import { constant } from '@src/main/util/constants'
 import { logger } from '@src/main/util/logger'
-import { pathsService } from '@src/main/util/paths-service'
+import { pathsUtil } from '@src/main/util/paths-util'
 import type { HistoryEntry } from '@src/shared/types'
 
 export class HistoryDal {
@@ -71,7 +71,7 @@ export class HistoryDal {
   }
 
   protected _historyFilePath(): string {
-    return pathsService.userDataFile('history.json')
+    return pathsUtil.userDataFile('history.json')
   }
 
   protected _resolveHistoryLimit(): number {

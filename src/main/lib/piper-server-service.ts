@@ -3,7 +3,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 
 import { constant } from '@src/main/util/constants'
-import { pathsService } from '@src/main/util/paths-service'
+import { pathsUtil } from '@src/main/util/paths-util'
 
 const MSG_READY = 0x01
 const MSG_AUDIO = 0x02
@@ -226,8 +226,8 @@ export class PiperServerService {
       this._handleFrame(frame)
     })
     const proc = spawn(
-      pathsService.venvPython(),
-      [pathsService.piperServerScript(), modelPath],
+      pathsUtil.venvPython(),
+      [pathsUtil.piperServerScript(), modelPath],
       { stdio: ['pipe', 'pipe', 'pipe'] }
     )
     this._child = proc

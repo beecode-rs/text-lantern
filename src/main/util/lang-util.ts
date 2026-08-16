@@ -9,7 +9,7 @@ const TTS_LANGUAGE_CODES = new Set<string>(
   })
 )
 
-export const langService = {
+export const langUtil = {
   detectLang(params: { text: string }): string | null {
     const code = detect(params.text)
     if (!TTS_LANGUAGE_CODES.has(code)) {

@@ -4,7 +4,7 @@ import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 
 import { constant } from '@src/main/util/constants'
 import { logger } from '@src/main/util/logger'
-import { pathsService } from '@src/main/util/paths-service'
+import { pathsUtil } from '@src/main/util/paths-util'
 import type { LanguageBinding, Settings } from '@src/shared/types'
 
 interface LegacyShortcuts {
@@ -64,7 +64,7 @@ export class SettingsDal {
   }
 
   protected _settingsFilePath(): string {
-    return pathsService.userDataFile('settings.json')
+    return pathsUtil.userDataFile('settings.json')
   }
 
   protected _migrateLegacyBindings(params: { parsed: LegacySettings }): LanguageBinding[] | null {

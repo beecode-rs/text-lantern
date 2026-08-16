@@ -6,7 +6,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 
 import { constant } from '@src/main/util/constants'
-import { pathsService } from '@src/main/util/paths-service'
+import { pathsUtil } from '@src/main/util/paths-util'
 import { languageServiceSingleton } from '@src/shared/language/language-service'
 import type { RemoteVoice } from '@src/shared/types'
 
@@ -20,7 +20,7 @@ interface HfTreeEntry {
 export class PiperEngineService {
   public isEngineInstalled(): boolean {
     try {
-      return fs.existsSync(pathsService.piperBin())
+      return fs.existsSync(pathsUtil.piperBin())
     } catch {
       return false
     }
@@ -50,7 +50,7 @@ export class PiperEngineService {
     name: string
     onProgress: (p: number) => void
   }): Promise<void> {
-    fs.mkdirSync(pathsService.modelsDir(), { recursive: true })
+    fs.mkdirSync(pathsUtil.modelsDir(), { recursive: true })
     const prefix = this._resolveVoiceDownloadUrlPrefix({ name: params.name })
     const files = [
       { ext: 'onnx', weight: 0.97 },
@@ -59,7 +59,7 @@ export class PiperEngineService {
     let base = 0
     await files.reduce(async (acc, f) => {
       await acc
-      const dest = path.join(pathsService.modelsDir(), `${params.name}.${f.ext}`)
+      const dest = path.join(pathsUtil.modelsDir(), `${params.name}.${f.ext}`)
       const url = `${prefix}/${params.name}.${f.ext}`
       await this._downloadFileWithProgress({
         url,
@@ -177,7 +177,7 @@ export class PiperEngineService {
   }
 
   protected _venvPipBinPath(): string {
-    return path.join(pathsService.venvDir(), 'bin', 'pip')
+    return path.join(pathsUtil.venvDir(), 'bin', 'pip')
   }
 
   protected _forwardCommandOutputLineByLine(params: {
@@ -202,7 +202,7 @@ export class PiperEngineService {
   }): Promise<number> {
     return new Promise((resolve) => {
       const child: ChildProcess = spawn(params.cmd, params.args, {
-        cwd: pathsService.projectRoot(),
+        cwd: pathsUtil.projectRoot(),
         env: { ...process.env, ...(params.env ?? {}) }
       })
       const onStdout = (d: Buffer): void => {
@@ -234,8 +234,8 @@ export class PiperEngineService {
 
   protected _verifyVoiceProducesAudio(voice: string): Promise<boolean> {
     return new Promise((resolve) => {
-      const onnx = path.join(pathsService.modelsDir(), `${voice}.onnx`)
-      const json = path.join(pathsService.modelsDir(), `${voice}.onnx.json`)
+      const onnx = path.join(pathsUtil.modelsDir(), `${voice}.onnx`)
+      const json = path.join(pathsUtil.modelsDir(), `${voice}.onnx.json`)
       if (!fs.existsSync(onnx) || !fs.existsSync(json)) {
         resolve(false)
         return
@@ -243,7 +243,7 @@ export class PiperEngineService {
       const wav = path.join(os.tmpdir(), `tts-verify-${process.pid}.wav`)
       let child: ChildProcess
       try {
-        child = spawn(pathsService.piperBin(), ['-m', onnx, '-c', json, '-f', wav], {
+        child = spawn(pathsUtil.piperBin(), ['-m', onnx, '-c', json, '-f', wav], {
           stdio: ['pipe', 'ignore', 'ignore']
         })
       } catch {
@@ -320,7 +320,7 @@ export class PiperEngineService {
     log('Creating virtualenv…')
     const venvExit = await this._runCommandStreamingOutput({
       cmd: 'python3',
-      args: ['-m', 'venv', pathsService.venvDir()],
+      args: ['-m', 'venv', pathsUtil.venvDir()],
       onLog: log
     })
     if (venvExit !== 0) {
@@ -357,10 +357,10 @@ export class PiperEngineService {
     onLog: (line: string) => void
   }): Promise<void> {
     const log = params.onLog
-    fs.mkdirSync(pathsService.modelsDir(), { recursive: true })
+    fs.mkdirSync(pathsUtil.modelsDir(), { recursive: true })
     await constant().piperEngine.defaultInstallVoiceNames.reduce(async (acc, voice) => {
       await acc
-      const onnx = path.join(pathsService.modelsDir(), `${voice}.onnx`)
+      const onnx = path.join(pathsUtil.modelsDir(), `${voice}.onnx`)
       if (fs.existsSync(onnx)) {
         log(`  present: ${voice}`)
         return
