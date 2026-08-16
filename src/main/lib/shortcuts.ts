@@ -1,5 +1,7 @@
 import { app, globalShortcut } from 'electron'
 
+import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
+
 import { ttsServiceSingleton } from '@src/main/business/service/tts-service'
 import { settingsDalSingleton } from '@src/main/dal/settings-dal'
 import { logger } from '@src/main/util/logger'
@@ -65,4 +67,6 @@ export class Shortcuts {
     }
   }
 }
+
+export const shortcutsSingleton = singletonPattern(() => new Shortcuts())
 

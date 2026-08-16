@@ -6,6 +6,7 @@ models/
 # scratch
 *.wav
 tmp/
+.tmp/
 
 # Node / Electron / electron-vite
 node_modules/

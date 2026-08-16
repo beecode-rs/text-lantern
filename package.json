@@ -23,6 +23,7 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web"
   },
   "dependencies": {
+    "@beecode/msh-app-boot": "^2.0.2",
     "@beecode/msh-env": "^2.0.3",
     "@beecode/msh-logger": "^2.0.2",
     "@beecode/msh-util": "^3.0.1",

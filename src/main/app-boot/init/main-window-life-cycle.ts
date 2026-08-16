@@ -1,0 +1,137 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { LifeCycle } from '@beecode/msh-app-boot'
+import { app, BrowserWindow, nativeTheme, shell } from 'electron'
+
+import { settingsDalSingleton } from '@src/main/dal/settings-dal'
+import { constant } from '@src/main/util/constants'
+import { logger } from '@src/main/util/logger'
+import type { ThemePreference } from '@src/shared/types'
+
+export class MainWindowLifeCycle extends LifeCycle {
+  private _win: BrowserWindow | null = null
+
+  private _destroying = false
+
+  public constructor() {
+    super({ name: 'Main window' })
+  }
+
+  public getWindow(): BrowserWindow | null {
+    return this._win
+  }
+
+  public show(): void {
+    this._win?.show()
+    this._win?.focus()
+  }
+
+  public beginDestroy(): void {
+    this._destroying = true
+  }
+
+  public isDestroying(): boolean {
+    return this._destroying
+  }
+
+  protected async _createFn(): Promise<void> {
+    const settings = settingsDalSingleton().get()
+    this._win = this._buildWindow({ theme: settings.theme })
+    if (!settings.startHidden || !app.isPackaged) {
+      this._win.show()
+    }
+  }
+
+  protected async _destroyFn(): Promise<void> {
+    this.beginDestroy()
+    this._win?.destroy()
+    this._win = null
+  }
+
+  protected _buildWindow(params: { theme: ThemePreference }): BrowserWindow {
+    const win = new BrowserWindow({
+      width: 900,
+      height: 620,
+      minWidth: 640,
+      minHeight: 480,
+      show: false,
+      titleBarStyle: 'hiddenInset',
+      trafficLightPosition: { x: 16, y: 18 },
+      backgroundColor: this._resolveBackgroundColor({ theme: params.theme }),
+      webPreferences: {
+        preload: path.join(this._bundleDir(), '../preload/index.mjs'),
+        sandbox: false,
+        contextIsolation: true
+      }
+    })
+
+    win.on('close', (e) => {
+      if (this._destroying) {
+        return
+      }
+      if (!app.isPackaged) {
+        return
+      }
+      e.preventDefault()
+      win.hide()
+    })
+
+    this._attachDevDiagnostics({ win })
+
+    win.webContents.setWindowOpenHandler(({ url }) => {
+      void shell.openExternal(url)
+      return { action: 'deny' }
+    })
+
+    this._loadRenderer({ win })
+
+    return win
+  }
+
+  protected _attachDevDiagnostics(params: { win: BrowserWindow }): void {
+    if (app.isPackaged) {
+      return
+    }
+    const { win } = params
+    win.webContents.on('console-message', (_e, _level, message) => {
+      logger().debug(`renderer console: ${message}`)
+    })
+    win.webContents.on('did-finish-load', () => {
+      logger().debug('renderer finished loading')
+    })
+    win.webContents.on('did-fail-load', (_e, code, desc) => {
+      logger().error(`renderer load failed ${code}: ${desc}`)
+    })
+    win.webContents.on('preload-error', (_e, p, err) => {
+      logger().error(`preload error in ${p}: ${String(err)}`)
+    })
+  }
+
+  protected _loadRenderer(params: { win: BrowserWindow }): void {
+    const { win } = params
+    if (process.env['ELECTRON_RENDERER_URL']) {
+      void win.loadURL(process.env['ELECTRON_RENDERER_URL'])
+      return
+    }
+    void win.loadFile(path.join(this._bundleDir(), '../renderer/index.html'))
+  }
+
+  protected _resolveBackgroundColor(params: { theme: ThemePreference }): string {
+    const { theme } = params
+    if (theme === 'dark') {
+      return constant().mainWindow.darkBackground
+    }
+    if (theme === 'light') {
+      return constant().mainWindow.lightBackground
+    }
+    if (nativeTheme.shouldUseDarkColors) {
+      return constant().mainWindow.darkBackground
+    }
+    return constant().mainWindow.lightBackground
+  }
+
+  protected _bundleDir(): string {
+    return path.dirname(fileURLToPath(import.meta.url))
+  }
+}

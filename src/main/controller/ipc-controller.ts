@@ -5,14 +5,34 @@ import { historyDalSingleton } from '@src/main/dal/history-dal'
 import { settingsDalSingleton } from '@src/main/dal/settings-dal'
 import { voiceModelDalSingleton } from '@src/main/dal/voice-model-dal'
 import { piperEngineSingleton } from '@src/main/lib/piper/engine'
-import { Shortcuts } from '@src/main/lib/shortcuts'
+import { shortcutsSingleton } from '@src/main/lib/shortcuts'
 import { traySingleton } from '@src/main/lib/tray'
 import type { HistoryEntry, Lang } from '@src/shared/types'
 
+const handledChannels = [
+  'settings:get',
+  'settings:update',
+  'models:list',
+  'models:engineInstalled',
+  'models:installEngine',
+  'models:download',
+  'models:delete',
+  'models:search',
+  'tts:speak',
+  'tts:stop',
+  'tts:playbackEnded',
+  'shortcuts:reregister',
+  'app:showSettings',
+  'history:get',
+  'history:clear'
+]
+
+let teardownFns: Array<() => void> = []
+
 export const ipcController = {
-  register(getWindow: () => BrowserWindow | null): void {
+  register(params: { getWindow: () => BrowserWindow | null }): void {
     const send = (channel: string, ...args: unknown[]): void => {
-      getWindow()?.webContents.send(channel, ...args)
+      params.getWindow()?.webContents.send(channel, ...args)
     }
 
     ipcMain.handle('settings:get', () => {
@@ -67,11 +87,11 @@ export const ipcController = {
     })
 
     ipcMain.handle('shortcuts:reregister', () => {
-      new Shortcuts().registerAll()
+      shortcutsSingleton().registerAll()
       return true
     })
     ipcMain.handle('app:showSettings', () => {
-      const win = getWindow()
+      const win = params.getWindow()
       if (win) {
         win.show()
         win.focus()
@@ -86,31 +106,69 @@ export const ipcController = {
       return true
     })
 
-    ttsServiceSingleton().events.on('status', (s) => {
+    const onTtsStatus = (s: unknown): void => {
       send('tts:status', s)
-    })
-    ttsServiceSingleton().events.on('audioStart', (p: { sampleRate: number; voice: string }) => {
+    }
+    const onTtsAudioStart = (p: { sampleRate: number; voice: string }): void => {
       send('tts:audioStart', p)
-    })
-    ttsServiceSingleton().events.on('audioChunk', (buf: Buffer) => {
+    }
+    const onTtsAudioChunk = (buf: Buffer): void => {
       send('tts:audioChunk', buf)
-    })
-    ttsServiceSingleton().events.on('audioEnd', () => {
+    }
+    const onTtsAudioEnd = (): void => {
       send('tts:audioEnd')
-    })
-    ttsServiceSingleton().events.on('stopPlayback', () => {
+    }
+    const onTtsStopPlayback = (): void => {
       send('tts:stopPlayback')
-    })
+    }
+    ttsServiceSingleton().events.on('status', onTtsStatus)
+    ttsServiceSingleton().events.on('audioStart', onTtsAudioStart)
+    ttsServiceSingleton().events.on('audioChunk', onTtsAudioChunk)
+    ttsServiceSingleton().events.on('audioEnd', onTtsAudioEnd)
+    ttsServiceSingleton().events.on('stopPlayback', onTtsStopPlayback)
 
-    historyDalSingleton().events.on('changed', (entries: HistoryEntry[]) => {
+    const onHistoryChanged = (entries: HistoryEntry[]): void => {
       send('history:changed', entries)
-    })
+    }
+    historyDalSingleton().events.on('changed', onHistoryChanged)
 
-    settingsDalSingleton().onChange(() => {
-      new Shortcuts().registerAll()
+    const unsubscribeSettingsChanged = settingsDalSingleton().onChange(() => {
+      shortcutsSingleton().registerAll()
       traySingleton().refreshMenu()
       historyDalSingleton().prune()
       send('settings:changed', settingsDalSingleton().get())
     })
+
+    teardownFns = [
+      () => {
+        ttsServiceSingleton().events.off('status', onTtsStatus)
+      },
+      () => {
+        ttsServiceSingleton().events.off('audioStart', onTtsAudioStart)
+      },
+      () => {
+        ttsServiceSingleton().events.off('audioChunk', onTtsAudioChunk)
+      },
+      () => {
+        ttsServiceSingleton().events.off('audioEnd', onTtsAudioEnd)
+      },
+      () => {
+        ttsServiceSingleton().events.off('stopPlayback', onTtsStopPlayback)
+      },
+      () => {
+        historyDalSingleton().events.off('changed', onHistoryChanged)
+      },
+      unsubscribeSettingsChanged
+    ]
+  },
+
+  unregister(): void {
+    handledChannels.forEach((channel) => {
+      ipcMain.removeHandler(channel)
+    })
+    teardownFns.forEach((teardownFn) => {
+      teardownFn()
+    })
+    teardownFns = []
   }
 }
