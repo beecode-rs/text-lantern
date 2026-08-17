@@ -26,7 +26,10 @@ export class PiperEngine {
     }
   }
 
-  public async installEngine(params: { onLog: (line: string) => void }): Promise<boolean> {
+  public async installEngine(params: {
+    voiceNames: string[]
+    onLog: (line: string) => void
+  }): Promise<boolean> {
     const log = params.onLog
 
     const pythonOk = await this._ensurePythonVersionMeetsMinimum({ onLog: log })
@@ -39,9 +42,9 @@ export class PiperEngine {
       return false
     }
 
-    await this._downloadEachMissingDefaultVoice({ onLog: log })
+    await this._downloadEachMissingVoice({ voiceNames: params.voiceNames, onLog: log })
 
-    await this._verifySynthesisProducesAudio({ onLog: log })
+    await this._verifySynthesisProducesAudio({ voiceNames: params.voiceNames, onLog: log })
     log('[done]')
     return this.isEngineInstalled()
   }
@@ -232,18 +235,29 @@ export class PiperEngine {
     }
   }
 
+  protected _voiceModelFilePaths(params: { name: string }): { onnx: string; json: string } {
+    return {
+      onnx: path.join(pathUtil.modelsDir(), `${params.name}.onnx`),
+      json: path.join(pathUtil.modelsDir(), `${params.name}.onnx.json`)
+    }
+  }
+
+  protected _voiceModelFilesExist(params: { name: string }): boolean {
+    const paths = this._voiceModelFilePaths({ name: params.name })
+    return fs.existsSync(paths.onnx) && fs.existsSync(paths.json)
+  }
+
   protected _verifyVoiceProducesAudio(voice: string): Promise<boolean> {
     return new Promise((resolve) => {
-      const onnx = path.join(pathUtil.modelsDir(), `${voice}.onnx`)
-      const json = path.join(pathUtil.modelsDir(), `${voice}.onnx.json`)
-      if (!fs.existsSync(onnx) || !fs.existsSync(json)) {
+      const paths = this._voiceModelFilePaths({ name: voice })
+      if (!fs.existsSync(paths.onnx) || !fs.existsSync(paths.json)) {
         resolve(false)
         return
       }
       const wav = path.join(os.tmpdir(), `tts-verify-${process.pid}.wav`)
       let child: ChildProcess
       try {
-        child = spawn(pathUtil.piperBin(), ['-m', onnx, '-c', json, '-f', wav], {
+        child = spawn(pathUtil.piperBin(), ['-m', paths.onnx, '-c', paths.json, '-f', wav], {
           stdio: ['pipe', 'ignore', 'ignore']
         })
       } catch {
@@ -265,30 +279,47 @@ export class PiperEngine {
     dest: string
     onProgress: (p: number) => void
   }): Promise<void> {
-    const res = await fetch(params.url)
+    const res = await fetch(params.url, {
+      signal: AbortSignal.timeout(constant().piperEngine.downloadTimeoutMs)
+    })
     if (!res.ok || !res.body) {
       throw new Error(`Download failed (${res.status} ${res.statusText}): ${params.url}`)
     }
     const total = Number(res.headers.get('content-length')) || 0
     const reader = res.body.getReader()
     const out = fs.createWriteStream(params.dest)
-    let received = 0
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) {
-        break
-      }
-      out.write(Buffer.from(value))
-      received += value.byteLength
-      if (total > 0) {
-        params.onProgress(received / total)
-      }
-    }
-    await new Promise<void>((resolve) => {
-      out.end(() => {
+    const streamSettled = new Promise<void>((resolve, reject) => {
+      out.on('error', (err) => {
+        reject(err)
+      })
+      out.on('finish', () => {
         resolve()
       })
     })
+    streamSettled.catch(() => {})
+    try {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) {
+          break
+        }
+        out.write(Buffer.from(value))
+        if (total > 0) {
+          params.onProgress(out.bytesWritten / total)
+        }
+      }
+      out.end()
+      await streamSettled
+    } catch (err) {
+      try {
+        await reader.cancel()
+      } catch {}
+      out.destroy()
+      try {
+        fs.rmSync(params.dest, { force: true })
+      } catch {}
+      throw err
+    }
   }
 
   protected async _ensurePythonVersionMeetsMinimum(params: {
@@ -353,15 +384,19 @@ export class PiperEngine {
     return true
   }
 
-  protected async _downloadEachMissingDefaultVoice(params: {
+  protected async _downloadEachMissingVoice(params: {
+    voiceNames: string[]
     onLog: (line: string) => void
   }): Promise<void> {
     const log = params.onLog
     fs.mkdirSync(pathUtil.modelsDir(), { recursive: true })
-    await constant().piperEngine.defaultInstallVoiceNames.reduce(async (acc, voice) => {
+    if (params.voiceNames.length === 0) {
+      log('No voices selected — installing engine only.')
+      return
+    }
+    await params.voiceNames.reduce(async (acc, voice) => {
       await acc
-      const onnx = path.join(pathUtil.modelsDir(), `${voice}.onnx`)
-      if (fs.existsSync(onnx)) {
+      if (this._voiceModelFilesExist({ name: voice })) {
         log(`  present: ${voice}`)
         return
       }
@@ -376,10 +411,18 @@ export class PiperEngine {
   }
 
   protected async _verifySynthesisProducesAudio(params: {
+    voiceNames: string[]
     onLog: (line: string) => void
   }): Promise<void> {
-    params.onLog('Verifying synthesis…')
-    const verified = await this._verifyVoiceProducesAudio(constant().piperEngine.serbianVoiceName)
+    const voice = params.voiceNames.find((name) => {
+      return this._voiceModelFilesExist({ name })
+    })
+    if (voice === undefined) {
+      params.onLog('Skipping synthesis verification (no selected voice on disk).')
+      return
+    }
+    params.onLog(`Verifying synthesis with ${voice}…`)
+    const verified = await this._verifyVoiceProducesAudio(voice)
     if (verified) {
       params.onLog('  ok')
     } else {

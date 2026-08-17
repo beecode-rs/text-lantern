@@ -3,13 +3,16 @@ import { ArrowLeft, Download, Search, Loader2 } from 'lucide-react'
 import { useModelsStore } from '@src/renderer/src/store/models'
 import { DownloadRow } from '@src/renderer/src/component/ui/download-row'
 import { RemoteModelRow } from '@src/renderer/src/component/ui/remote-model-row'
+import { DefaultVoiceRow } from '@src/renderer/src/component/ui/default-voice-row'
+import { DEFAULT_VOICE_OPTIONS } from '@src/shared/voice/default-voice'
 
 export function DownloadModels({
   onBack
 }: {
   onBack: () => void
 }): React.JSX.Element {
-  const { voices, remote, isSearching, searchError, progress, search, download } = useModelsStore()
+  const { voices, remote, isSearching, searchError, downloads, search, download, dismissDownload } =
+    useModelsStore()
 
   const [query, setQuery] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState('')
@@ -21,12 +24,18 @@ export function DownloadModels({
     }))
   }, [voices])
 
-  const downloadingNames = Object.keys(progress)
-  const downloadingRows = useMemo(() => {
-    return downloadingNames.map((name) => {
-      return { name, progress: progress[name] }
+  const downloadingNames = Object.entries(downloads)
+    .filter(([, download]) => {
+      return download.state === 'downloading'
     })
-  }, [downloadingNames, progress])
+    .map(([name]) => {
+      return name
+    })
+  const downloadRows = useMemo(() => {
+    return Object.entries(downloads).map(([name, download]) => {
+      return { name, download }
+    })
+  }, [downloads])
 
   const runSearch = (): void => {
     const q = query.trim()
@@ -62,6 +71,23 @@ export function DownloadModels({
       </header>
 
       <section className="flex flex-col gap-2">
+        <h2 className="text-sm font-medium text-text/60 px-1">Default voices</h2>
+        {DEFAULT_VOICE_OPTIONS.map((option) => {
+          return (
+            <DefaultVoiceRow
+              key={option.voiceName}
+              option={option}
+              isInstalled={installedNames.has(option.voiceName)}
+              isDownloading={downloadingNames.includes(option.voiceName)}
+              onDownload={() => {
+                void download(option.voiceName)
+              }}
+            />
+          )
+        })}
+      </section>
+
+      <section className="flex flex-col gap-2">
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text/40" />
@@ -91,12 +117,24 @@ export function DownloadModels({
         </div>
       </section>
 
-      {downloadingRows.length > 0 && (
+      {downloadRows.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-medium text-text/60 px-1">Downloading</h2>
-          {downloadingRows.map((d) => (
-            <DownloadRow key={d.name} name={d.name} progress={d.progress} />
-          ))}
+          <h2 className="text-sm font-medium text-text/60 px-1">Downloads</h2>
+          {downloadRows.map((d) => {
+            return (
+              <DownloadRow
+                key={d.name}
+                name={d.name}
+                download={d.download}
+                onRetry={() => {
+                  void download(d.name)
+                }}
+                onDismiss={() => {
+                  dismissDownload(d.name)
+                }}
+              />
+            )
+          })}
         </section>
       )}
 

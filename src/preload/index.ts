@@ -17,8 +17,8 @@ const api: TtsApi = {
   isEngineInstalled: () => {
     return ipcRenderer.invoke('models:engineInstalled')
   },
-  installEngine: () => {
-    return ipcRenderer.invoke('models:installEngine')
+  installEngine: (voiceNames) => {
+    return ipcRenderer.invoke('models:installEngine', voiceNames)
   },
   downloadVoice: (name) => {
     return ipcRenderer.invoke('models:download', name)

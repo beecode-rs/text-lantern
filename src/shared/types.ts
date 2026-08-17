@@ -39,6 +39,13 @@ export interface RemoteVoice {
   sizeBytes: number
 }
 
+export type VoiceDownloadState = 'downloading' | 'done' | 'error'
+
+export interface VoiceDownload {
+  progress: number
+  state: VoiceDownloadState
+}
+
 export type TtsStatus =
   | { state: 'idle' }
   | { state: 'synthesizing'; voice: string }
@@ -77,7 +84,7 @@ export interface TtsApi {
 
   listVoices(): Promise<Voice[]>
   isEngineInstalled(): Promise<boolean>
-  installEngine(): Promise<boolean>
+  installEngine(voiceNames: string[]): Promise<boolean>
   downloadVoice(name: string): Promise<Voice[]>
   deleteVoice(name: string): Promise<Voice[]>
   searchVoices(query: string): Promise<RemoteVoice[]>

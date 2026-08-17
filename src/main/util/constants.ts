@@ -5,12 +5,16 @@ import packageJson from '#packageJson' with { type: 'json' }
 
 import { objectUtil } from '@src/main/util/object-util'
 import type { LanguageBinding, Settings } from '@src/shared/types'
+import {
+  DEFAULT_ENGLISH_VOICE_NAME,
+  DEFAULT_SERBIAN_VOICE_NAME
+} from '@src/shared/voice/default-voice'
 
 export const APP_NAME = 'Text Lantern'
 
 export const constant = singletonPattern(() => {
-  const serbianVoiceName = 'sr_Marko_medium'
-  const englishVoiceName = 'en_US-lessac-medium'
+  const serbianVoiceName = DEFAULT_SERBIAN_VOICE_NAME
+  const englishVoiceName = DEFAULT_ENGLISH_VOICE_NAME
   const defaultHistoryEntryLimit = 5
   const currentSettingsSchemaVersion = 3
   const defaultLanguageBindings: LanguageBinding[] = [
@@ -60,9 +64,9 @@ export const constant = singletonPattern(() => {
       darkBackground: '#12131C'
     },
     piperEngine: {
+      downloadTimeoutMs: 900000,
       serbianVoiceName,
       englishVoiceName,
-      defaultInstallVoiceNames: [serbianVoiceName, englishVoiceName],
       serbianVoicesRepoUrl: 'https://huggingface.co/phantom9623/piper-serbian-tts/resolve/main',
       piperVoicesBaseUrl: 'https://huggingface.co/rhasspy/piper-voices/resolve/main',
       piperVoicesTreeApiUrl: 'https://huggingface.co/api/models/rhasspy/piper-voices/tree/main'

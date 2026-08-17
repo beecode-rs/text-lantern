@@ -15,6 +15,7 @@
     "preinstall": "node -e \"if(!/pnpm/.test(process.env.npm_execpath||'')){console.error('This project uses pnpm only. Run: pnpm install');process.exit(1)}\"",
     "postinstall": "node resource/script/install-electron.cjs",
     "dev": "electron-vite dev",
+    "clean-app-cache": "node resource/script/clean-app-cache.cjs",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "start": "electron-vite preview",

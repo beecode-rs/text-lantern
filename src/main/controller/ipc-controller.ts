@@ -52,8 +52,9 @@ export const ipcController = {
     ipcMain.handle('models:engineInstalled', () => {
       return piperEngineSingleton().isEngineInstalled()
     })
-    ipcMain.handle('models:installEngine', async (e) => {
+    ipcMain.handle('models:installEngine', async (e, voiceNames: string[]) => {
       const ok = await piperEngineSingleton().installEngine({
+        voiceNames,
         onLog: (line) => {
           e.sender.send('models:log', line)
         }

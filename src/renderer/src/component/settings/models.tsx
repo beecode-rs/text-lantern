@@ -4,6 +4,8 @@ import { useModelsStore } from '@src/renderer/src/store/models'
 import { ModelCard } from '@src/renderer/src/component/ui/model-card'
 import { DownloadRow } from '@src/renderer/src/component/ui/download-row'
 import { DownloadModels } from '@src/renderer/src/component/settings/download-models'
+import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
+import { DEFAULT_VOICE_OPTIONS } from '@src/shared/voice/default-voice'
 
 export function ModelsSettings(): React.JSX.Element {
   const {
@@ -11,14 +13,21 @@ export function ModelsSettings(): React.JSX.Element {
     isEngineInstalled,
     isInstalling,
     logs,
-    progress,
+    downloads,
     load,
     installEngine,
-    remove
+    remove,
+    download,
+    dismissDownload
   } = useModelsStore()
 
   const [query, setQuery] = useState('')
   const [view, setView] = useState<'installed' | 'download'>('installed')
+  const [selectedVoiceNames, setSelectedVoiceNames] = useState<string[]>(() => {
+    return DEFAULT_VOICE_OPTIONS.map((option) => {
+      return option.voiceName
+    })
+  })
 
   useEffect(() => {
     load()
@@ -34,12 +43,11 @@ export function ModelsSettings(): React.JSX.Element {
     })
   }, [voices, query])
 
-  const downloadingNames = Object.keys(progress)
-  const downloadingRows = useMemo(() => {
-    return downloadingNames.map((name) => {
-      return { name, progress: progress[name] }
+  const downloadRows = useMemo(() => {
+    return Object.entries(downloads).map(([name, download]) => {
+      return { name, download }
     })
-  }, [downloadingNames, progress])
+  }, [downloads])
 
   if (view === 'download') {
     return (
@@ -85,13 +93,18 @@ export function ModelsSettings(): React.JSX.Element {
               <p className="text-sm font-medium">Piper engine not found</p>
               <p className="text-xs text-text/60 mt-1">
                 Install the Piper engine — it creates a private virtualenv (Python <code>piper-tts</code>)
-                and downloads the default Serbian and English voices.
+                and downloads the selected default voices.
               </p>
+              {getDefaultVoiceCheckboxes({
+                selectedVoiceNames,
+                isInstalling,
+                onToggle: toggleVoiceSelected
+              })}
               <button
                 type="button"
                 disabled={isInstalling}
                 onClick={() => {
-                  installEngine()
+                  installEngine(selectedVoiceNames)
                 }}
                 className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-logo-primary text-logo-stroke disabled:opacity-60"
               >
@@ -108,12 +121,24 @@ export function ModelsSettings(): React.JSX.Element {
         </section>
       )}
 
-      {downloadingRows.length > 0 && (
+      {downloadRows.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-medium text-text/60 px-1">Downloading</h2>
-          {downloadingRows.map((d) => (
-            <DownloadRow key={d.name} name={d.name} progress={d.progress} />
-          ))}
+          <h2 className="text-sm font-medium text-text/60 px-1">Downloads</h2>
+          {downloadRows.map((d) => {
+            return (
+              <DownloadRow
+                key={d.name}
+                name={d.name}
+                download={d.download}
+                onRetry={() => {
+                  void download(d.name)
+                }}
+                onDismiss={() => {
+                  dismissDownload(d.name)
+                }}
+              />
+            )
+          })}
         </section>
       )}
 
@@ -137,6 +162,48 @@ export function ModelsSettings(): React.JSX.Element {
       </section>
     </div>
   )
+
+  function toggleVoiceSelected(voiceName: string): void {
+    setSelectedVoiceNames((prev) => {
+      if (prev.includes(voiceName)) {
+        return prev.filter((name) => {
+          return name !== voiceName
+        })
+      }
+      return [...prev, voiceName]
+    })
+  }
+
+  function getDefaultVoiceCheckboxes(params: {
+    selectedVoiceNames: string[]
+    isInstalling: boolean
+    onToggle: (voiceName: string) => void
+  }): React.JSX.Element {
+    return (
+      <div className="mt-3 flex flex-col gap-1.5">
+        {DEFAULT_VOICE_OPTIONS.map((option) => {
+          return (
+            <label
+              key={option.voiceName}
+              className="flex items-center gap-2 text-sm cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                checked={params.selectedVoiceNames.includes(option.voiceName)}
+                disabled={params.isInstalling}
+                onChange={() => {
+                  params.onToggle(option.voiceName)
+                }}
+                className="h-3.5 w-3.5 accent-logo-primary"
+              />
+              <span>{languageCatalogSingleton().getDisplayName({ code: option.langCode })}</span>
+              <code className="text-[11px] text-text/55 selectable">{option.voiceName}</code>
+            </label>
+          )
+        })}
+      </div>
+    )
+  }
 
   function getInstallButtonIcon(params: { isInstalling: boolean }): React.JSX.Element {
     if (params.isInstalling) {

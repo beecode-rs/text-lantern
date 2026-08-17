@@ -7,7 +7,7 @@ import { Toggle } from '@src/renderer/src/component/ui/toggle'
 import { Select, type SelectOption } from '@src/renderer/src/component/ui/select'
 import { Slider } from '@src/renderer/src/component/ui/slider'
 import { DownloadRow } from '@src/renderer/src/component/ui/download-row'
-import type { ThemePreference } from '@src/shared/types'
+import type { ThemePreference, VoiceDownload } from '@src/shared/types'
 
 const THEME_OPTIONS: SelectOption<ThemePreference>[] = [
   { value: 'system', label: 'System' },
@@ -29,8 +29,10 @@ export function GeneralSettings(): React.JSX.Element {
     return <></>
   }
 
-  const downloadingRows = Object.keys(progress).map((name) => {
-    return { name, progress: progress[name] }
+  const downloadingRows: Array<{ name: string; download: VoiceDownload }> = Object.keys(
+    progress
+  ).map((name) => {
+    return { name, download: { progress: progress[name], state: 'downloading' } }
   })
 
   return (
@@ -152,7 +154,7 @@ export function GeneralSettings(): React.JSX.Element {
           <Row isStacked>
             <div className="flex flex-col gap-2">
               {downloadingRows.map((d) => {
-                return <DownloadRow key={d.name} name={d.name} progress={d.progress} />
+                return <DownloadRow key={d.name} name={d.name} download={d.download} />
               })}
             </div>
           </Row>
