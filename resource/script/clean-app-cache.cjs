@@ -11,7 +11,7 @@ class CleanAppCache {
     const cleanTargets = [
       { label: 'app data', dirPath: path.join(appDataDir, APP_NAME) },
       { label: 'voice models', dirPath: path.join(projectRoot, 'models') },
-      { label: 'piper venv', dirPath: path.join(projectRoot, 'bin', 'venv') }
+      { label: 'piper venv', dirPath: path.join(projectRoot, 'bin', 'venv') },
     ]
 
     cleanTargets.forEach((cleanTarget) => {

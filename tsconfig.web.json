@@ -1,29 +1,35 @@
 {
-  "include": [
-    "src/renderer/src/**/*.ts",
-    "src/renderer/src/**/*.tsx",
-    "src/renderer/src/**/*.d.ts",
-    "src/preload/**/*.ts",
-    "src/shared/**/*.ts"
-  ],
-  "compilerOptions": {
-    "composite": true,
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "jsx": "react-jsx",
-    "types": [],
-    "strict": true,
-    "noEmit": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "forceConsistentCasingInFileNames": true,
-    "paths": {
-      "@src/*": ["./src/*"]
-    }
-  }
+	"compilerOptions": {
+		"allowSyntheticDefaultImports": true,
+		"composite": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"isolatedModules": true,
+		"jsx": "react-jsx",
+		"lib": [
+			"ES2022",
+			"DOM",
+			"DOM.Iterable"
+		],
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"noEmit": true,
+		"paths": {
+			"@src/*": [
+				"./src/*"
+			]
+		},
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"target": "ES2022",
+		"types": []
+	},
+	"include": [
+		"src/renderer/src/**/*.ts",
+		"src/renderer/src/**/*.tsx",
+		"src/renderer/src/**/*.d.ts",
+		"src/preload/**/*.ts",
+		"src/shared/**/*.ts"
+	]
 }

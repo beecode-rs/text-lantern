@@ -12,11 +12,11 @@ interface TestStore {
 
 export const useTestStore = create<TestStore>((set) => ({
   selectedLang: 'auto',
-  text: DEFAULT_TEXT,
   setLang: (selectedLang) => {
     set({ selectedLang })
   },
   setText: (text) => {
     set({ text })
-  }
+  },
+  text: DEFAULT_TEXT,
 }))

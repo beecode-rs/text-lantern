@@ -1,13 +1,11 @@
-import { app, globalShortcut } from 'electron'
-
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-
 import { ttsServiceSingleton } from '@src/main/business/service/tts-service'
 import { settingsDalSingleton } from '@src/main/dal/settings-dal'
 import { logger } from '@src/main/util/logger'
+import { app, globalShortcut } from 'electron'
 
 export class Shortcuts {
-  public registerAll(): void {
+  registerAll(): void {
     globalShortcut.unregisterAll()
     const settings = settingsDalSingleton().get()
     settings.languageBindings.forEach((binding) => {
@@ -16,33 +14,33 @@ export class Shortcuts {
       }
       this._registerShortcut({
         accel: binding.shortcut,
-        label: `lang:${binding.langCode}`,
         action: () => {
           void ttsServiceSingleton().speak({ lang: binding.langCode, settings: settingsDalSingleton().get() })
-        }
+        },
+        label: `lang:${binding.langCode}`,
       })
     })
     if (settings.autoShortcut) {
       this._registerShortcut({
         accel: settings.autoShortcut,
-        label: 'auto',
         action: () => {
           void ttsServiceSingleton().speak({ lang: 'auto', settings: settingsDalSingleton().get() })
-        }
+        },
+        label: 'auto',
       })
     }
     if (settings.stopShortcut) {
       this._registerShortcut({
         accel: settings.stopShortcut,
-        label: 'stop',
         action: () => {
           void ttsServiceSingleton().stop()
-        }
+        },
+        label: 'stop',
       })
     }
   }
 
-  public unregisterAll(): void {
+  unregisterAll(): void {
     this._unregisterGlobalShortcutsIfAppReady()
   }
 
@@ -59,9 +57,7 @@ export class Shortcuts {
       if (registered) {
         return
       }
-      logger().warn(
-        `could not register "${params.label}" = ${params.accel} (conflict with another app?)`
-      )
+      logger().warn(`could not register "${params.label}" = ${params.accel} (conflict with another app?)`)
     } catch (err) {
       logger().warn(`skipped invalid "${params.label}" = ${params.accel}:`, err)
     }
@@ -69,4 +65,3 @@ export class Shortcuts {
 }
 
 export const shortcutsSingleton = singletonPattern(() => new Shortcuts())
-

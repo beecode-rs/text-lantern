@@ -1,16 +1,10 @@
-import { Trash2 } from 'lucide-react'
 import { StarBadge } from '@src/renderer/src/component/ui/star-badge'
 import { formatSingleton } from '@src/renderer/src/lib/format'
 import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import type { Voice } from '@src/shared/types'
+import { Trash2 } from 'lucide-react'
 
-export function ModelCard({
-  voice,
-  onDelete
-}: {
-  voice: Voice
-  onDelete: () => void
-}): React.JSX.Element {
+export function ModelCard({ voice, onDelete }: { voice: Voice; onDelete: () => void }): React.JSX.Element {
   return (
     <div className="flex items-center gap-3 px-4 py-3 border border-mid-gray/25 rounded-xl bg-mid-gray/5">
       <div className="min-w-0 flex-1">

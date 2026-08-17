@@ -1,14 +1,13 @@
 import { LifeCycle } from '@beecode/msh-app-boot'
-
 import { ttsServiceSingleton } from '@src/main/business/service/tts-service'
 import { settingsDalSingleton } from '@src/main/dal/settings-dal'
 import { traySingleton } from '@src/main/lib/tray'
 import type { TtsStatus } from '@src/shared/types'
 
 export class TtsLifeCycle extends LifeCycle {
-  private _reflectReadingState: ((status: TtsStatus) => void) | null = null
+  protected _reflectReadingState: ((status: TtsStatus) => void) | null = null
 
-  public constructor() {
+  constructor() {
     super({ name: 'TTS service' })
   }
 
@@ -20,12 +19,14 @@ export class TtsLifeCycle extends LifeCycle {
     await this._prewarmVoice()
   }
 
-  protected async _destroyFn(): Promise<void> {
+  protected _destroyFn(): Promise<void> {
     if (this._reflectReadingState) {
       ttsServiceSingleton().events.off('status', this._reflectReadingState)
       this._reflectReadingState = null
     }
     ttsServiceSingleton().dispose()
+
+    return Promise.resolve()
   }
 
   protected async _prewarmVoice(): Promise<void> {

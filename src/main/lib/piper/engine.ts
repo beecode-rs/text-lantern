@@ -1,14 +1,12 @@
-import fs from 'node:fs'
-import os from 'node:os'
-import path from 'node:path'
-import { spawn, type ChildProcess } from 'node:child_process'
-
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-
 import { constant } from '@src/main/util/constants'
 import { pathUtil } from '@src/main/util/path-util'
 import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import type { RemoteVoice } from '@src/shared/types'
+import { type ChildProcess, spawn } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 
 interface HfTreeEntry {
   type: 'file' | 'directory'
@@ -18,7 +16,7 @@ interface HfTreeEntry {
 }
 
 export class PiperEngine {
-  public isEngineInstalled(): boolean {
+  isEngineInstalled(): boolean {
     try {
       return fs.existsSync(pathUtil.piperBin())
     } catch {
@@ -26,10 +24,7 @@ export class PiperEngine {
     }
   }
 
-  public async installEngine(params: {
-    voiceNames: string[]
-    onLog: (line: string) => void
-  }): Promise<boolean> {
+  async installEngine(params: { voiceNames: string[]; onLog: (line: string) => void }): Promise<boolean> {
     const log = params.onLog
 
     const pythonOk = await this._ensurePythonVersionMeetsMinimum({ onLog: log })
@@ -42,22 +37,20 @@ export class PiperEngine {
       return false
     }
 
-    await this._downloadEachMissingVoice({ voiceNames: params.voiceNames, onLog: log })
+    await this._downloadEachMissingVoice({ onLog: log, voiceNames: params.voiceNames })
 
-    await this._verifySynthesisProducesAudio({ voiceNames: params.voiceNames, onLog: log })
+    await this._verifySynthesisProducesAudio({ onLog: log, voiceNames: params.voiceNames })
     log('[done]')
+
     return this.isEngineInstalled()
   }
 
-  public async downloadVoice(params: {
-    name: string
-    onProgress: (p: number) => void
-  }): Promise<void> {
+  async downloadVoice(params: { name: string; onProgress: (p: number) => void }): Promise<void> {
     fs.mkdirSync(pathUtil.modelsDir(), { recursive: true })
     const prefix = this._resolveVoiceDownloadUrlPrefix({ name: params.name })
     const files = [
       { ext: 'onnx', weight: 0.97 },
-      { ext: 'onnx.json', weight: 0.03 }
+      { ext: 'onnx.json', weight: 0.03 },
     ]
     let base = 0
     await files.reduce(async (acc, f) => {
@@ -65,11 +58,11 @@ export class PiperEngine {
       const dest = path.join(pathUtil.modelsDir(), `${params.name}.${f.ext}`)
       const url = `${prefix}/${params.name}.${f.ext}`
       await this._downloadFileWithProgress({
-        url,
         dest,
         onProgress: (p) => {
           params.onProgress(base + p * f.weight)
-        }
+        },
+        url,
       })
       base += f.weight
       params.onProgress(base)
@@ -77,7 +70,7 @@ export class PiperEngine {
     params.onProgress(1)
   }
 
-  public async searchVoices(params: { query: string }): Promise<RemoteVoice[]> {
+  async searchVoices(params: { query: string }): Promise<RemoteVoice[]> {
     const code = this._resolveLangCode({ query: params.query })
     if (!code) {
       return []
@@ -93,6 +86,7 @@ export class PiperEngine {
       return []
     }
     const entries = (await res.json()) as HfTreeEntry[]
+
     return entries
       .filter((entry) => {
         return entry.path.startsWith(`${code}/`)
@@ -129,7 +123,8 @@ export class PiperEngine {
       quality = rest.slice(lastDash + 1)
     }
     const lang = langRegion.split('_')[0] || langRegion
-    return { lang, langRegion, voice, quality }
+
+    return { lang, langRegion, quality, voice }
   }
 
   protected _resolveVoiceDownloadUrlPrefix(params: { name: string }): string {
@@ -137,6 +132,7 @@ export class PiperEngine {
       return constant().piperEngine.serbianVoicesRepoUrl
     }
     const { lang, langRegion, voice, quality } = this._splitVoiceNameIntoParts(params.name)
+
     return `${constant().piperEngine.piperVoicesBaseUrl}/${lang}/${langRegion}/${voice}/${quality}`
   }
 
@@ -145,21 +141,26 @@ export class PiperEngine {
     if (!q) {
       return null
     }
-    const byCode = languageCatalogSingleton().list().find((language) => {
-      return language.code === q
-    })
+    const byCode = languageCatalogSingleton()
+      .list()
+      .find((language) => {
+        return language.code === q
+      })
     if (byCode) {
       return byCode.code
     }
-    const byName = languageCatalogSingleton().list().find((language) => {
-      return language.name.toLowerCase() === q
-    })
+    const byName = languageCatalogSingleton()
+      .list()
+      .find((language) => {
+        return language.name.toLowerCase() === q
+      })
     if (byName) {
       return byName.code
     }
     if (/^[a-z]{1,3}$/.test(q)) {
       return q
     }
+
     return null
   }
 
@@ -171,11 +172,12 @@ export class PiperEngine {
     const fileName = entry.path.slice(entry.path.lastIndexOf('/') + 1)
     const name = fileName.slice(0, -'.onnx'.length)
     const { lang, quality } = this._splitVoiceNameIntoParts(name)
+
     return {
-      name,
       lang,
+      name,
       quality,
-      sizeBytes: entry.lfs?.size ?? entry.size
+      sizeBytes: entry.lfs?.size ?? entry.size,
     }
   }
 
@@ -183,10 +185,7 @@ export class PiperEngine {
     return path.join(pathUtil.venvDir(), 'bin', 'pip')
   }
 
-  protected _forwardCommandOutputLineByLine(params: {
-    output: Buffer
-    onLog?: (line: string) => void
-  }): void {
+  protected _forwardCommandOutputLineByLine(params: { output: Buffer; onLog?: (line: string) => void }): void {
     params.output
       .toString()
       .split('\n')
@@ -206,10 +205,10 @@ export class PiperEngine {
     return new Promise((resolve) => {
       const child: ChildProcess = spawn(params.cmd, params.args, {
         cwd: pathUtil.projectRoot(),
-        env: { ...process.env, ...(params.env ?? {}) }
+        env: { ...process.env, ...(params.env ?? {}) },
       })
       const onStdout = (d: Buffer): void => {
-        this._forwardCommandOutputLineByLine({ output: d, onLog: params.onLog })
+        this._forwardCommandOutputLineByLine({ onLog: params.onLog, output: d })
       }
       child.stdout?.on('data', onStdout)
       child.stderr?.on('data', onStdout)
@@ -223,27 +222,38 @@ export class PiperEngine {
     })
   }
 
+  protected _bestEffort(action: () => unknown): void {
+    try {
+      action()
+    } catch {
+      return undefined
+    }
+  }
+
   protected _wavFileHasAudio(params: { wavPath: string }): boolean {
     try {
       return fs.existsSync(params.wavPath) && fs.statSync(params.wavPath).size > 0
     } catch {
       return false
     } finally {
-      try {
+      this._bestEffort(() => {
         fs.rmSync(params.wavPath, { force: true })
-      } catch {}
+
+        return undefined
+      })
     }
   }
 
   protected _voiceModelFilePaths(params: { name: string }): { onnx: string; json: string } {
     return {
+      json: path.join(pathUtil.modelsDir(), `${params.name}.onnx.json`),
       onnx: path.join(pathUtil.modelsDir(), `${params.name}.onnx`),
-      json: path.join(pathUtil.modelsDir(), `${params.name}.onnx.json`)
     }
   }
 
   protected _voiceModelFilesExist(params: { name: string }): boolean {
     const paths = this._voiceModelFilePaths({ name: params.name })
+
     return fs.existsSync(paths.onnx) && fs.existsSync(paths.json)
   }
 
@@ -252,16 +262,18 @@ export class PiperEngine {
       const paths = this._voiceModelFilePaths({ name: voice })
       if (!fs.existsSync(paths.onnx) || !fs.existsSync(paths.json)) {
         resolve(false)
+
         return
       }
-      const wav = path.join(os.tmpdir(), `tts-verify-${process.pid}.wav`)
+      const wav = path.join(os.tmpdir(), `tts-verify-${String(process.pid)}.wav`)
       let child: ChildProcess
       try {
         child = spawn(pathUtil.piperBin(), ['-m', paths.onnx, '-c', paths.json, '-f', wav], {
-          stdio: ['pipe', 'ignore', 'ignore']
+          stdio: ['pipe', 'ignore', 'ignore'],
         })
       } catch {
         resolve(false)
+
         return
       }
       child.on('error', () => {
@@ -280,10 +292,10 @@ export class PiperEngine {
     onProgress: (p: number) => void
   }): Promise<void> {
     const res = await fetch(params.url, {
-      signal: AbortSignal.timeout(constant().piperEngine.downloadTimeoutMs)
+      signal: AbortSignal.timeout(constant().piperEngine.downloadTimeoutMs),
     })
     if (!res.ok || !res.body) {
-      throw new Error(`Download failed (${res.status} ${res.statusText}): ${params.url}`)
+      throw new Error(`Download failed (${String(res.status)} ${res.statusText}): ${params.url}`)
     }
     const total = Number(res.headers.get('content-length')) || 0
     const reader = res.body.getReader()
@@ -296,79 +308,91 @@ export class PiperEngine {
         resolve()
       })
     })
-    streamSettled.catch(() => {})
+    streamSettled.catch(() => {
+      return undefined
+    })
     try {
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) {
-          break
-        }
-        out.write(Buffer.from(value))
-        if (total > 0) {
-          params.onProgress(out.bytesWritten / total)
-        }
-      }
+      await this._pumpDownloadChunks({ onProgress: params.onProgress, out, reader, total })
       out.end()
       await streamSettled
     } catch (err) {
-      try {
-        await reader.cancel()
-      } catch {}
+      this._bestEffort(() => {
+        void reader.cancel()
+
+        return undefined
+      })
       out.destroy()
-      try {
+      this._bestEffort(() => {
         fs.rmSync(params.dest, { force: true })
-      } catch {}
+
+        return undefined
+      })
       throw err
     }
   }
 
-  protected async _ensurePythonVersionMeetsMinimum(params: {
-    onLog: (line: string) => void
-  }): Promise<boolean> {
+  protected async _pumpDownloadChunks(params: {
+    onProgress: (progress: number) => void
+    out: fs.WriteStream
+    reader: ReadableStreamDefaultReader<Uint8Array>
+    total: number
+  }): Promise<void> {
+    const { done, value } = await params.reader.read()
+    if (done) {
+      return Promise.resolve()
+    }
+    params.out.write(Buffer.from(value))
+    if (params.total > 0) {
+      params.onProgress(params.out.bytesWritten / params.total)
+    }
+
+    return this._pumpDownloadChunks(params)
+  }
+
+  protected async _ensurePythonVersionMeetsMinimum(params: { onLog: (line: string) => void }): Promise<boolean> {
     const exitCode = await this._runCommandStreamingOutput({
+      args: ['-c', 'import sys; sys.exit(0 if (sys.version_info.major, sys.version_info.minor) >= (3, 9) else 1)'],
       cmd: 'python3',
-      args: [
-        '-c',
-        'import sys; sys.exit(0 if (sys.version_info.major, sys.version_info.minor) >= (3, 9) else 1)'
-      ]
     })
     if (exitCode !== 0) {
       params.onLog('error: Python 3.9+ is required to run the Piper engine.')
+
       return false
     }
+
     return true
   }
 
-  protected async _createVenvAndInstallPiperIfMissing(params: {
-    onLog: (line: string) => void
-  }): Promise<boolean> {
+  protected async _createVenvAndInstallPiperIfMissing(params: { onLog: (line: string) => void }): Promise<boolean> {
     const log = params.onLog
     if (this.isEngineInstalled()) {
       log('piper-tts already installed.')
+
       return true
     }
 
     log('Creating virtualenv…')
     const venvExit = await this._runCommandStreamingOutput({
-      cmd: 'python3',
       args: ['-m', 'venv', pathUtil.venvDir()],
-      onLog: log
+      cmd: 'python3',
+      onLog: log,
     })
     if (venvExit !== 0) {
       log('python3 -m venv failed. On Debian/Ubuntu you may need: sudo apt install python3-venv')
+
       return false
     }
 
     log('Installing piper-tts (one-time, ~1 min)…')
     await this._runCommandStreamingOutput({
-      cmd: this._venvPipBinPath(),
       args: ['install', '-q', '--upgrade', 'pip'],
-      onLog: log
+      cmd: this._venvPipBinPath(),
+      onLog: log,
     })
     const installExit = await this._runCommandStreamingOutput({
-      cmd: this._venvPipBinPath(),
       args: ['install', 'piper-tts'],
-      onLog: log
+      cmd: this._venvPipBinPath(),
+      onLog: log,
     })
     if (installExit !== 0 || !this.isEngineInstalled()) {
       log('pip install piper-tts failed.')
@@ -377,10 +401,12 @@ export class PiperEngine {
       } else {
         log('On Linux try: sudo apt install espeak-ng-dev   then retry.')
       }
+
       return false
     }
 
     log('piper-tts installed.')
+
     return true
   }
 
@@ -392,17 +418,24 @@ export class PiperEngine {
     fs.mkdirSync(pathUtil.modelsDir(), { recursive: true })
     if (params.voiceNames.length === 0) {
       log('No voices selected — installing engine only.')
+
       return
     }
     await params.voiceNames.reduce(async (acc, voice) => {
       await acc
       if (this._voiceModelFilesExist({ name: voice })) {
         log(`  present: ${voice}`)
+
         return
       }
       log(`Downloading ${voice}…`)
       try {
-        await this.downloadVoice({ name: voice, onProgress: () => {} })
+        await this.downloadVoice({
+          name: voice,
+          onProgress: () => {
+            return undefined
+          },
+        })
         log(`  done: ${voice}`)
       } catch (err) {
         log(`  failed: ${voice}: ${String(err)}`)
@@ -419,6 +452,7 @@ export class PiperEngine {
     })
     if (voice === undefined) {
       params.onLog('Skipping synthesis verification (no selected voice on disk).')
+
       return
     }
     params.onLog(`Verifying synthesis with ${voice}…`)

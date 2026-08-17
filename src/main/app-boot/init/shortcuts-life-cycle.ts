@@ -1,17 +1,20 @@
 import { LifeCycle } from '@beecode/msh-app-boot'
-
 import { shortcutsSingleton } from '@src/main/lib/shortcuts'
 
 export class ShortcutsLifeCycle extends LifeCycle {
-  public constructor() {
+  constructor() {
     super({ name: 'Shortcuts' })
   }
 
-  protected async _createFn(): Promise<void> {
+  protected _createFn(): Promise<void> {
     shortcutsSingleton().registerAll()
+
+    return Promise.resolve()
   }
 
-  protected async _destroyFn(): Promise<void> {
+  protected _destroyFn(): Promise<void> {
     shortcutsSingleton().unregisterAll()
+
+    return Promise.resolve()
   }
 }

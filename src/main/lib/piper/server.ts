@@ -1,10 +1,8 @@
-import { spawn, type ChildProcess } from 'node:child_process'
-
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-
-import { FrameReader, type Frame } from '@src/main/lib/piper/_frame-reader'
+import { type Frame, FrameReader } from '@src/main/lib/piper/_frame-reader'
 import { constant } from '@src/main/util/constants'
 import { pathUtil } from '@src/main/util/path-util'
+import { type ChildProcess, spawn } from 'node:child_process'
 
 const MSG_READY = 0x01
 const MSG_AUDIO = 0x02
@@ -12,60 +10,69 @@ const MSG_END = 0x03
 const MSG_ERROR = 0x04
 
 export class PiperServer {
-  private _child: ChildProcess | null = null
-  private _currentModelPath: string | null = null
-  private _sampleRate: number = constant().piperServer.defaultSampleRateHz
-  private _busy = false
-  private _dead = false
-  private _stderrTail = ''
-  private _readyResolve: ((value: { sampleRate: number }) => void) | null = null
-  private _readyReject: ((error: Error) => void) | null = null
-  private _readyPromise: Promise<{ sampleRate: number }> | null = null
-  private _idleResolve: (() => void) | null = null
-  private _ensureChain: Promise<unknown> = Promise.resolve()
-  private readonly _queue: Frame[] = []
-  private readonly _waiters: Array<(frame: Frame) => void> = []
+  protected _child: ChildProcess | null = null
+  protected _currentModelPath: string | null = null
+  protected _sampleRate: number = constant().piperServer.defaultSampleRateHz
+  protected _busy = false
+  protected _dead = false
+  protected _stderrTail = ''
+  protected _readyResolve: ((value: { sampleRate: number }) => void) | null = null
+  protected _readyReject: ((error: Error) => void) | null = null
+  protected _readyPromise: Promise<{ sampleRate: number }> | null = null
+  protected _idleResolve: (() => void) | null = null
+  protected _ensureChain: Promise<unknown> = Promise.resolve()
+  protected readonly _queue: Frame[] = []
+  protected readonly _waiters: ((frame: Frame) => void)[] = []
 
-  public ensureReady(params: { modelPath: string }): Promise<{ sampleRate: number }> {
+  ensureReady(params: { modelPath: string }): Promise<{ sampleRate: number }> {
     return this._ensureReady(params)
   }
 
-  public async synthesize(
+  async synthesize(
     params: { text: string; lengthScale: number },
-    handlers: { onChunk: (chunk: Buffer) => void }
+    handlers: { onChunk: (chunk: Buffer) => void },
   ): Promise<void> {
     this._setBusy(true)
-    let isSynthesizing = true
     try {
       this._writeRequest(params)
-      while (isSynthesizing) {
-        const frame = await this._nextFrame()
-        if (frame.type === MSG_AUDIO) {
-          handlers.onChunk(Buffer.from(frame.payload))
-        } else if (frame.type === MSG_END) {
-          isSynthesizing = false
-        } else if (frame.type === MSG_ERROR) {
-          throw new Error(frame.payload.toString('utf8') || 'Piper synthesis failed')
-        }
-      }
+      await this._pumpAudioFrames(handlers)
     } finally {
       this._setBusy(false)
     }
   }
 
-  public cancelActive(): Promise<void> {
+  cancelActive(): Promise<void> {
     return this._cancelActive()
   }
 
-  public isBusy(): boolean {
+  isBusy(): boolean {
     return this._busy
   }
 
-  public dispose(): void {
+  dispose(): void {
     this._dispose()
   }
 
-  protected _noop(): void {}
+  protected async _pumpAudioFrames(handlers: { onChunk: (chunk: Buffer) => void }): Promise<void> {
+    const frame = await this._nextFrame()
+    if (frame.type === MSG_AUDIO) {
+      handlers.onChunk(Buffer.from(frame.payload))
+
+      return this._pumpAudioFrames(handlers)
+    }
+    if (frame.type === MSG_END) {
+      return Promise.resolve()
+    }
+    if (frame.type === MSG_ERROR) {
+      throw new Error(frame.payload.toString('utf8') || 'Piper synthesis failed')
+    }
+
+    return this._pumpAudioFrames(handlers)
+  }
+
+  protected _noop(): void {
+    return undefined
+  }
 
   protected _safeParseJson(payload: Buffer): Record<string, unknown> | null {
     try {
@@ -90,12 +97,14 @@ export class PiperServer {
         this._readyReject = null
         resolve({ sampleRate: this._sampleRate })
       }
+
       return
     }
 
     const waiter = this._waiters.shift()
     if (waiter) {
       waiter(frame)
+
       return
     }
     this._queue.push(frame)
@@ -115,6 +124,7 @@ export class PiperServer {
       const queued = this._queue.shift()
       if (queued) {
         resolve(queued)
+
         return
       }
       this._waiters.push(resolve)
@@ -126,7 +136,9 @@ export class PiperServer {
     if (!stdin) {
       throw new Error('Piper server is not running')
     }
-    const request = JSON.stringify({ text: params.text, length_scale: params.lengthScale })
+    const payload: Record<string, unknown> = { text: params.text }
+    payload['length_scale'] = params.lengthScale
+    const request = JSON.stringify(payload)
     stdin.write(`${request}\n`)
   }
 
@@ -134,6 +146,7 @@ export class PiperServer {
     return new Promise((resolve) => {
       if (!this._busy) {
         resolve()
+
         return
       }
       const timer = setTimeout(() => {
@@ -150,7 +163,7 @@ export class PiperServer {
   protected _rejectWaiter(error: Error): void {
     const waiter = this._waiters.shift()
     if (waiter) {
-      waiter({ type: MSG_ERROR, payload: Buffer.from(error.message, 'utf8') })
+      waiter({ payload: Buffer.from(error.message, 'utf8'), type: MSG_ERROR })
     }
   }
 
@@ -167,7 +180,9 @@ export class PiperServer {
     if (this._child) {
       try {
         this._child.kill('SIGTERM')
-      } catch {}
+      } catch {
+        this._noop()
+      }
     }
     this._rejectReady(new Error('Piper server stopped'))
     this._child = null
@@ -183,6 +198,7 @@ export class PiperServer {
     if (detail) {
       return `Piper server exited during startup. ${detail}`
     }
+
     return 'Piper server exited during startup.'
   }
 
@@ -195,26 +211,22 @@ export class PiperServer {
     const reader = new FrameReader((frame) => {
       this._handleFrame(frame)
     })
-    const proc = spawn(
-      pathUtil.venvPython(),
-      [pathUtil.piperServerScript(), modelPath],
-      { stdio: ['pipe', 'pipe', 'pipe'] }
-    )
+    const proc = spawn(pathUtil.venvPython(), [pathUtil.piperServerScript(), modelPath], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    })
     this._child = proc
 
-    proc.stdout?.on('data', (chunk: Buffer) => {
+    proc.stdout.on('data', (chunk: Buffer) => {
       if (proc !== this._child) {
         return
       }
       reader.push(chunk)
     })
-    proc.stderr?.on('data', (chunk: Buffer) => {
+    proc.stderr.on('data', (chunk: Buffer) => {
       if (proc !== this._child) {
         return
       }
-      this._stderrTail = (this._stderrTail + chunk.toString()).slice(
-        -constant().piperServer.stderrTailChars
-      )
+      this._stderrTail = (this._stderrTail + chunk.toString()).slice(-constant().piperServer.stderrTailChars)
     })
     proc.on('error', (err) => {
       if (proc !== this._child) {
@@ -247,6 +259,7 @@ export class PiperServer {
       this._readyReject = reject
     })
     this._readyPromise = promise
+
     return promise
   }
 
@@ -258,34 +271,40 @@ export class PiperServer {
     })
   }
 
-  protected async _ensureReadySerialized(params: {
+  protected async _ensureReadySerialized(params: { modelPath: string }): Promise<{ sampleRate: number }> {
+    return this._spawnUntilReady({
+      attemptLeft: constant().piperServer.startupMaxAttempts,
+      modelPath: params.modelPath,
+      previousError: null,
+    })
+  }
+
+  protected async _spawnUntilReady(params: {
+    attemptLeft: number
     modelPath: string
+    previousError: unknown
   }): Promise<{ sampleRate: number }> {
-    let attempt = 0
-    let lastError: unknown = null
-    while (attempt < constant().piperServer.startupMaxAttempts) {
-      attempt += 1
-      if (
-        this._child &&
-        !this._dead &&
-        this._currentModelPath === params.modelPath &&
-        this._readyPromise
-      ) {
-        return this._readyPromise
+    if (params.attemptLeft <= 0) {
+      if (params.previousError instanceof Error) {
+        throw params.previousError
       }
-      if (this._child) {
-        this._killChild()
-      }
-      try {
-        return await Promise.race([this._spawn(params.modelPath), this._startupTimeout()])
-      } catch (error) {
-        lastError = error
-      }
+      throw new Error('Piper server failed to start')
     }
-    if (lastError instanceof Error) {
-      throw lastError
+    if (this._child && !this._dead && this._currentModelPath === params.modelPath && this._readyPromise) {
+      return this._readyPromise
     }
-    throw new Error('Piper server failed to start')
+    if (this._child) {
+      this._killChild()
+    }
+    try {
+      return await Promise.race([this._spawn(params.modelPath), this._startupTimeout()])
+    } catch (error) {
+      return this._spawnUntilReady({
+        attemptLeft: params.attemptLeft - 1,
+        modelPath: params.modelPath,
+        previousError: error,
+      })
+    }
   }
 
   protected _ensureReady(params: { modelPath: string }): Promise<{ sampleRate: number }> {
@@ -298,8 +317,9 @@ export class PiperServer {
       },
       () => {
         this._noop()
-      }
+      },
     )
+
     return result
   }
 
@@ -309,8 +329,14 @@ export class PiperServer {
     }
     try {
       this._child.kill('SIGUSR1')
-    } catch {}
+    } catch {
+      this._noop()
+    }
     await this._waitForIdle(constant().piperServer.cancelGraceMs)
+    this._killChildIfStillBusy()
+  }
+
+  protected _killChildIfStillBusy(): void {
     if (this._busy && this._child) {
       this._killChild()
     }

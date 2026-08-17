@@ -7,7 +7,7 @@ export function Select<Value extends string>({
   value,
   options,
   onChange,
-  ariaLabel
+  ariaLabel,
 }: {
   value: Value
   options: SelectOption<Value>[]

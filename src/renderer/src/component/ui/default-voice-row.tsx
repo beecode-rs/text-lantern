@@ -1,13 +1,13 @@
-import { Download } from 'lucide-react'
 import { StarBadge } from '@src/renderer/src/component/ui/star-badge'
 import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import type { DefaultVoiceOption } from '@src/shared/voice/default-voice'
+import { Download } from 'lucide-react'
 
 export function DefaultVoiceRow({
   option,
   isInstalled,
   isDownloading,
-  onDownload
+  onDownload,
 }: {
   option: DefaultVoiceOption
   isInstalled: boolean
@@ -47,6 +47,7 @@ export function DefaultVoiceRow({
     if (params.isDownloading) {
       return 'Downloading…'
     }
+
     return 'Download'
   }
 }

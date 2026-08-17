@@ -1,10 +1,10 @@
-import type { Section } from '@src/renderer/src/component/sidebar'
-import { GeneralSettings } from '@src/renderer/src/component/settings/general'
-import { ModelsSettings } from '@src/renderer/src/component/settings/models'
-import { LanguagesSettings } from '@src/renderer/src/component/settings/languages'
-import { TestSettings } from '@src/renderer/src/component/settings/test'
-import { HistorySettings } from '@src/renderer/src/component/settings/history'
 import { AboutSettings } from '@src/renderer/src/component/settings/about'
+import { GeneralSettings } from '@src/renderer/src/component/settings/general'
+import { HistorySettings } from '@src/renderer/src/component/settings/history'
+import { LanguagesSettings } from '@src/renderer/src/component/settings/languages'
+import { ModelsSettings } from '@src/renderer/src/component/settings/models'
+import { TestSettings } from '@src/renderer/src/component/settings/test'
+import type { Section } from '@src/renderer/src/component/sidebar'
 
 export function SettingsSection({ active }: { active: Section }): React.JSX.Element {
   switch (active) {

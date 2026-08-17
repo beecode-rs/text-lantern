@@ -1,17 +1,20 @@
 import { LifeCycle } from '@beecode/msh-app-boot'
-
 import { historyDalSingleton } from '@src/main/dal/history-dal'
 import { settingsDalSingleton } from '@src/main/dal/settings-dal'
 
 export class DalLifeCycle extends LifeCycle {
-  public constructor() {
+  constructor() {
     super({ name: 'DAL' })
   }
 
-  protected async _createFn(): Promise<void> {
+  protected _createFn(): Promise<void> {
     settingsDalSingleton().init()
     historyDalSingleton().init()
+
+    return Promise.resolve()
   }
 
-  protected async _destroyFn(): Promise<void> {}
+  protected _destroyFn(): Promise<void> {
+    return Promise.resolve()
+  }
 }

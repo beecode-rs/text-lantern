@@ -4,41 +4,41 @@ type AcceleratorResult = { accel: string } | { cancel: true } | null
 
 const MODIFIER_KEYS = ['Meta', 'Control', 'Alt', 'Shift', 'Fn']
 
-const CODE_TO_KEY: Record<string, string> = {
-  Space: 'Space',
-  Tab: 'Tab',
-  Backspace: 'Backspace',
-  Enter: 'Return',
-  NumpadEnter: 'Return',
-  Delete: 'Delete',
-  Insert: 'Insert',
-  Home: 'Home',
-  End: 'End',
-  PageUp: 'PageUp',
-  PageDown: 'PageDown',
-  ArrowLeft: 'Left',
-  ArrowRight: 'Right',
-  ArrowUp: 'Up',
-  ArrowDown: 'Down',
-  CapsLock: 'Capslock',
-  NumLock: 'Numlock',
-  ScrollLock: 'Scrolllock',
-  PrintScreen: 'PrintScreen',
-  Minus: '-',
-  Equal: '=',
-  BracketLeft: '[',
-  BracketRight: ']',
-  Backslash: '\\',
-  Semicolon: ';',
-  Quote: "'",
-  Backquote: '`',
-  Comma: ',',
-  Period: '.',
-  Slash: '/'
-}
+const CODE_TO_KEY = new Map<string, string>([
+  ['ArrowDown', 'Down'],
+  ['ArrowLeft', 'Left'],
+  ['ArrowRight', 'Right'],
+  ['ArrowUp', 'Up'],
+  ['Backquote', '`'],
+  ['Backslash', '\\'],
+  ['Backspace', 'Backspace'],
+  ['BracketLeft', '['],
+  ['BracketRight', ']'],
+  ['CapsLock', 'Capslock'],
+  ['Comma', ','],
+  ['Delete', 'Delete'],
+  ['End', 'End'],
+  ['Enter', 'Return'],
+  ['Equal', '='],
+  ['Home', 'Home'],
+  ['Insert', 'Insert'],
+  ['Minus', '-'],
+  ['NumLock', 'Numlock'],
+  ['NumpadEnter', 'Return'],
+  ['PageDown', 'PageDown'],
+  ['PageUp', 'PageUp'],
+  ['Period', '.'],
+  ['PrintScreen', 'PrintScreen'],
+  ['Quote', "'"],
+  ['ScrollLock', 'Scrolllock'],
+  ['Semicolon', ';'],
+  ['Slash', '/'],
+  ['Space', 'Space'],
+  ['Tab', 'Tab'],
+])
 
 export class Accelerator {
-  public fromKeyboardEvent(e: KeyboardEvent): AcceleratorResult {
+  fromKeyboardEvent(e: KeyboardEvent): AcceleratorResult {
     if (e.key === 'Escape') {
       return { cancel: true }
     }
@@ -55,6 +55,7 @@ export class Accelerator {
     }
     e.preventDefault()
     e.stopPropagation()
+
     return { accel: [...modifiers, key].join('+') }
   }
 
@@ -72,6 +73,7 @@ export class Accelerator {
     if (e.shiftKey) {
       modifiers.push('Shift')
     }
+
     return modifiers
   }
 
@@ -87,10 +89,11 @@ export class Accelerator {
     if (/^F([1-9]|1\d|2[0-4])$/.test(code)) {
       return code
     }
-    const mapped = CODE_TO_KEY[code]
+    const mapped = CODE_TO_KEY.get(code)
     if (mapped !== undefined) {
       return mapped
     }
+
     return null
   }
 
@@ -104,6 +107,7 @@ export class Accelerator {
     if (key.charCodeAt(0) > 127) {
       return null
     }
+
     return key.toUpperCase()
   }
 
@@ -112,6 +116,7 @@ export class Accelerator {
     if (fromCode !== null) {
       return fromCode
     }
+
     return this._sanitizedEventKey(e.key)
   }
 }

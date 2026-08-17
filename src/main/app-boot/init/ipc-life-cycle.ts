@@ -1,21 +1,24 @@
 import { LifeCycle } from '@beecode/msh-app-boot'
+import { ipcController } from '@src/main/controller/ipc-controller'
 import type { BrowserWindow } from 'electron'
 
-import { ipcController } from '@src/main/controller/ipc-controller'
-
 export class IpcLifeCycle extends LifeCycle {
-  private readonly _windowGetter: () => BrowserWindow | null
+  protected readonly _windowGetter: () => BrowserWindow | null
 
-  public constructor(params: { windowGetter: () => BrowserWindow | null }) {
+  constructor(params: { windowGetter: () => BrowserWindow | null }) {
     super({ name: 'IPC controller' })
     this._windowGetter = params.windowGetter
   }
 
-  protected async _createFn(): Promise<void> {
+  protected _createFn(): Promise<void> {
     ipcController.register({ getWindow: this._windowGetter })
+
+    return Promise.resolve()
   }
 
-  protected async _destroyFn(): Promise<void> {
+  protected _destroyFn(): Promise<void> {
     ipcController.unregister()
+
+    return Promise.resolve()
   }
 }

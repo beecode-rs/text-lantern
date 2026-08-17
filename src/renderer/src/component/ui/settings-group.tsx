@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 export function SettingsGroup({
   title,
   description,
-  children
+  children,
 }: {
   title: string
   description?: string

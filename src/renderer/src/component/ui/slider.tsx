@@ -4,7 +4,7 @@ export function Slider({
   max,
   step,
   onChange,
-  format
+  format,
 }: {
   value: number
   min: number
@@ -13,7 +13,8 @@ export function Slider({
   onChange: (v: number) => void
   format?: (v: number) => string
 }): React.JSX.Element {
-  const display = formatValue({ value, format })
+  const display = formatValue({ format, value })
+
   return (
     <div className="flex items-center gap-3">
       <input
@@ -35,6 +36,7 @@ export function Slider({
     if (params.format) {
       return params.format(params.value)
     }
+
     return String(params.value)
   }
 }

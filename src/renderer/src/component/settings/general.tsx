@@ -1,18 +1,18 @@
-import { Save, Upload } from 'lucide-react'
-import { useSettingsStore } from '@src/renderer/src/store/settings'
-import { useConfigBackupStore } from '@src/renderer/src/store/config-backup'
-import { SettingsGroup } from '@src/renderer/src/component/ui/settings-group'
-import { Row } from '@src/renderer/src/component/ui/row'
-import { Toggle } from '@src/renderer/src/component/ui/toggle'
-import { Select, type SelectOption } from '@src/renderer/src/component/ui/select'
-import { Slider } from '@src/renderer/src/component/ui/slider'
 import { DownloadRow } from '@src/renderer/src/component/ui/download-row'
+import { Row } from '@src/renderer/src/component/ui/row'
+import { Select, type SelectOption } from '@src/renderer/src/component/ui/select'
+import { SettingsGroup } from '@src/renderer/src/component/ui/settings-group'
+import { Slider } from '@src/renderer/src/component/ui/slider'
+import { Toggle } from '@src/renderer/src/component/ui/toggle'
+import { useConfigBackupStore } from '@src/renderer/src/store/config-backup'
+import { useSettingsStore } from '@src/renderer/src/store/settings'
 import type { ThemePreference, VoiceDownload } from '@src/shared/types'
+import { Save, Upload } from 'lucide-react'
 
 const THEME_OPTIONS: SelectOption<ThemePreference>[] = [
-  { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' }
+  { label: 'System', value: 'system' },
+  { label: 'Light', value: 'light' },
+  { label: 'Dark', value: 'dark' },
 ]
 
 export function GeneralSettings(): React.JSX.Element {
@@ -29,10 +29,8 @@ export function GeneralSettings(): React.JSX.Element {
     return <></>
   }
 
-  const downloadingRows: Array<{ name: string; download: VoiceDownload }> = Object.keys(
-    progress
-  ).map((name) => {
-    return { name, download: { progress: progress[name], state: 'downloading' } }
+  const downloadingRows: { name: string; download: VoiceDownload }[] = Object.keys(progress).map((name) => {
+    return { download: { progress: progress[name], state: 'downloading' }, name }
   })
 
   return (
@@ -48,7 +46,7 @@ export function GeneralSettings(): React.JSX.Element {
             value={settings.theme}
             options={THEME_OPTIONS}
             onChange={(v) => {
-              update({ theme: v })
+              void update({ theme: v })
             }}
             ariaLabel="Theme"
           />
@@ -63,7 +61,7 @@ export function GeneralSettings(): React.JSX.Element {
             max={3}
             step={0.05}
             onChange={(v) => {
-              update({ rate: v })
+              void update({ rate: v })
             }}
             format={(v) => {
               return `${v.toFixed(2)}×`
@@ -77,7 +75,7 @@ export function GeneralSettings(): React.JSX.Element {
           <Toggle
             checked={settings.shouldCleanText}
             onChange={(v) => {
-              update({ shouldCleanText: v })
+              void update({ shouldCleanText: v })
             }}
             ariaLabel="Clean text"
           />
@@ -86,7 +84,7 @@ export function GeneralSettings(): React.JSX.Element {
           <Toggle
             checked={settings.shouldStripBrackets}
             onChange={(v) => {
-              update({ shouldStripBrackets: v })
+              void update({ shouldStripBrackets: v })
             }}
             ariaLabel="Strip brackets"
           />
@@ -97,7 +95,7 @@ export function GeneralSettings(): React.JSX.Element {
             min={0}
             value={settings.maxChars}
             onChange={(e) => {
-              update({ maxChars: Number(e.target.value) || 0 })
+              void update({ maxChars: Number(e.target.value) || 0 })
             }}
             className="w-24 px-2 py-1 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 text-right"
           />
@@ -109,7 +107,7 @@ export function GeneralSettings(): React.JSX.Element {
           <Toggle
             checked={settings.shouldStartHidden}
             onChange={(v) => {
-              update({ shouldStartHidden: v })
+              void update({ shouldStartHidden: v })
             }}
             ariaLabel="Start hidden"
           />
@@ -177,6 +175,7 @@ export function GeneralSettings(): React.JSX.Element {
     if (params.rate < 0.999) {
       return `${params.rate.toFixed(2)}× · Slower`
     }
+
     return `${params.rate.toFixed(2)}× · Normal`
   }
 
@@ -184,6 +183,7 @@ export function GeneralSettings(): React.JSX.Element {
     if (params.isBusy) {
       return 'Exporting…'
     }
+
     return 'Export…'
   }
 
@@ -191,6 +191,7 @@ export function GeneralSettings(): React.JSX.Element {
     if (params.isBusy) {
       return 'Importing…'
     }
+
     return 'Import…'
   }
 }

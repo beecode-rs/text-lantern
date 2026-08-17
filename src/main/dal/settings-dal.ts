@@ -1,15 +1,10 @@
-import fs from 'node:fs'
-
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-
 import { constant } from '@src/main/util/constants'
 import { logger } from '@src/main/util/logger'
 import { pathUtil } from '@src/main/util/path-util'
 import type { LanguageBinding, Settings } from '@src/shared/types'
-import {
-  DEFAULT_ENGLISH_VOICE_NAME,
-  DEFAULT_SERBIAN_VOICE_NAME
-} from '@src/shared/voice/default-voice'
+import { DEFAULT_ENGLISH_VOICE_NAME, DEFAULT_SERBIAN_VOICE_NAME } from '@src/shared/voice/default-voice'
+import fs from 'node:fs'
 
 interface LegacyShortcuts {
   auto?: string
@@ -28,17 +23,17 @@ interface LegacySettings {
 }
 
 export class SettingsDal {
-  public readonly defaults: Settings
+  readonly defaults: Settings
 
-  private _cache: Settings = structuredClone(constant().settings.defaultSettings)
+  protected _cache: Settings = structuredClone(constant().settings.defaultSettings)
 
-  private readonly _listeners = new Set<() => void>()
+  protected readonly _listeners = new Set<() => void>()
 
-  public constructor() {
+  constructor() {
     this.defaults = constant().settings.defaultSettings
   }
 
-  public init(): Settings {
+  init(): Settings {
     try {
       const raw = fs.readFileSync(this._settingsFilePath(), 'utf8')
       const parsed = JSON.parse(raw) as Partial<Settings> & LegacySettings
@@ -47,24 +42,27 @@ export class SettingsDal {
       this._cache = structuredClone(constant().settings.defaultSettings)
     }
     this._persistSettingsToDisk()
+
     return this._cache
   }
 
-  public get(): Settings {
+  get(): Settings {
     return this._cache
   }
 
-  public update(params: { patch: Partial<Settings> }): Settings {
+  update(params: { patch: Partial<Settings> }): Settings {
     this._cache = { ...this._cache, ...params.patch }
     this._persistSettingsToDisk()
     this._listeners.forEach((cb) => {
       cb()
     })
+
     return this._cache
   }
 
-  public onChange(cb: () => void): () => void {
+  onChange(cb: () => void): () => void {
     this._listeners.add(cb)
+
     return () => {
       this._listeners.delete(cb)
     }
@@ -81,19 +79,20 @@ export class SettingsDal {
       return null
     }
     const sc = parsed.shortcuts ?? {}
+
     return [
       {
         id: 'sr',
         langCode: 'sr',
+        shortcut: sc.sr ?? 'CommandOrControl+Shift+S',
         voice: parsed.voiceSr ?? DEFAULT_SERBIAN_VOICE_NAME,
-        shortcut: sc.sr ?? 'CommandOrControl+Shift+S'
       },
       {
         id: 'en',
         langCode: 'en',
+        shortcut: sc.en ?? 'CommandOrControl+Shift+E',
         voice: parsed.voiceEn ?? DEFAULT_ENGLISH_VOICE_NAME,
-        shortcut: sc.en ?? 'CommandOrControl+Shift+E'
-      }
+      },
     ]
   }
 
@@ -111,36 +110,44 @@ export class SettingsDal {
     if (rate > 0) {
       return 1 / rate
     }
+
     return 1
   }
 
-  protected _buildSettings(params: {
-    defaults: Settings
+  protected _resolveBindings(params: {
+    defaults: LanguageBinding[]
+    legacyBindings: LanguageBinding[] | null
     parsed: Partial<Settings> & LegacySettings
-  }): Settings {
+  }): LanguageBinding[] {
+    if (Array.isArray(params.parsed.languageBindings)) {
+      return params.parsed.languageBindings
+    }
+
+    return params.legacyBindings ?? params.defaults
+  }
+
+  protected _buildSettings(params: { defaults: Settings; parsed: Partial<Settings> & LegacySettings }): Settings {
     const { defaults, parsed } = params
     const legacyBindings = this._migrateLegacyBindings({ parsed })
-    const bindings = Array.isArray(parsed.languageBindings)
-      ? parsed.languageBindings
-      : legacyBindings ?? defaults.languageBindings
+    const bindings = this._resolveBindings({ defaults: defaults.languageBindings, legacyBindings, parsed })
     const autoShortcut = parsed.autoShortcut ?? parsed.shortcuts?.auto ?? defaults.autoShortcut
     const stopShortcut = parsed.stopShortcut ?? parsed.shortcuts?.stop ?? defaults.stopShortcut
     const rate = this._migrateLegacyRate({ rate: parsed.rate, schemaVersion: parsed.schemaVersion }) ?? defaults.rate
-    const fallbackLang = this._resolveFallbackLang({ parsed, legacyBindings, defaults })
+    const fallbackLang = this._resolveFallbackLang({ defaults, legacyBindings, parsed })
+
     return {
-      languageBindings: bindings,
-      fallbackLang,
       autoShortcut,
-      stopShortcut,
-      rate,
-      shouldCleanText: parsed.shouldCleanText ?? parsed.cleanText ?? defaults.shouldCleanText,
-      shouldStripBrackets:
-        parsed.shouldStripBrackets ?? parsed.stripBrackets ?? defaults.shouldStripBrackets,
-      shouldStartHidden: parsed.shouldStartHidden ?? parsed.startHidden ?? defaults.shouldStartHidden,
-      theme: parsed.theme ?? defaults.theme,
-      maxChars: parsed.maxChars ?? defaults.maxChars,
+      fallbackLang,
       historyLimit: parsed.historyLimit ?? defaults.historyLimit,
-      schemaVersion: constant().settings.currentSchemaVersion
+      languageBindings: bindings,
+      maxChars: parsed.maxChars ?? defaults.maxChars,
+      rate,
+      schemaVersion: constant().settings.currentSchemaVersion,
+      shouldCleanText: parsed.shouldCleanText ?? parsed.cleanText ?? defaults.shouldCleanText,
+      shouldStartHidden: parsed.shouldStartHidden ?? parsed.startHidden ?? defaults.shouldStartHidden,
+      shouldStripBrackets: parsed.shouldStripBrackets ?? parsed.stripBrackets ?? defaults.shouldStripBrackets,
+      stopShortcut,
+      theme: parsed.theme ?? defaults.theme,
     }
   }
 
@@ -155,6 +162,7 @@ export class SettingsDal {
     if (params.legacyBindings !== null) {
       return 'en'
     }
+
     return params.defaults.fallbackLang
   }
 

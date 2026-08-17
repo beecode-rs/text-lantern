@@ -1,69 +1,71 @@
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-
 import { LifeCycle } from '@beecode/msh-app-boot'
-import { app, BrowserWindow, nativeTheme, shell } from 'electron'
-
 import { settingsDalSingleton } from '@src/main/dal/settings-dal'
 import { constant } from '@src/main/util/constants'
 import { logger } from '@src/main/util/logger'
 import type { ThemePreference } from '@src/shared/types'
+import { BrowserWindow, app, nativeTheme, shell } from 'electron'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 export class MainWindowLifeCycle extends LifeCycle {
-  private _win: BrowserWindow | null = null
+  protected _win: BrowserWindow | null = null
 
-  private _destroying = false
+  protected _destroying = false
 
-  public constructor() {
+  constructor() {
     super({ name: 'Main window' })
   }
 
-  public getWindow(): BrowserWindow | null {
+  getWindow(): BrowserWindow | null {
     return this._win
   }
 
-  public show(): void {
+  show(): void {
     this._win?.show()
     this._win?.focus()
   }
 
-  public beginDestroy(): void {
+  beginDestroy(): void {
     this._destroying = true
   }
 
-  public isDestroying(): boolean {
+  isDestroying(): boolean {
     return this._destroying
   }
 
-  protected async _createFn(): Promise<void> {
+  protected _createFn(): Promise<void> {
     const settings = settingsDalSingleton().get()
     this._win = this._buildWindow({ theme: settings.theme })
     if (!settings.shouldStartHidden || !app.isPackaged) {
       this._win.show()
     }
+
+    return Promise.resolve()
   }
 
-  protected async _destroyFn(): Promise<void> {
+  protected _destroyFn(): Promise<void> {
     this.beginDestroy()
     this._win?.destroy()
     this._win = null
+
+    return Promise.resolve()
   }
 
   protected _buildWindow(params: { theme: ThemePreference }): BrowserWindow {
     const win = new BrowserWindow({
-      width: 900,
+      backgroundColor: this._resolveBackgroundColor({ theme: params.theme }),
       height: 620,
-      minWidth: 640,
       minHeight: 480,
+      minWidth: 640,
       show: false,
       titleBarStyle: 'hiddenInset',
       trafficLightPosition: { x: 16, y: 18 },
-      backgroundColor: this._resolveBackgroundColor({ theme: params.theme }),
       webPreferences: {
+        contextIsolation: true,
         preload: path.join(this._bundleDir(), '../preload/index.mjs'),
         sandbox: false,
-        contextIsolation: true
-      }
+      },
+      width: 900,
     })
 
     win.on('close', (e) => {
@@ -81,6 +83,7 @@ export class MainWindowLifeCycle extends LifeCycle {
 
     win.webContents.setWindowOpenHandler(({ url }) => {
       void shell.openExternal(url)
+
       return { action: 'deny' }
     })
 
@@ -101,7 +104,7 @@ export class MainWindowLifeCycle extends LifeCycle {
       logger().debug('renderer finished loading')
     })
     win.webContents.on('did-fail-load', (_e, code, desc) => {
-      logger().error(`renderer load failed ${code}: ${desc}`)
+      logger().error(`renderer load failed ${String(code)}: ${desc}`)
     })
     win.webContents.on('preload-error', (_e, p, err) => {
       logger().error(`preload error in ${p}: ${String(err)}`)
@@ -112,6 +115,7 @@ export class MainWindowLifeCycle extends LifeCycle {
     const { win } = params
     if (process.env['ELECTRON_RENDERER_URL']) {
       void win.loadURL(process.env['ELECTRON_RENDERER_URL'])
+
       return
     }
     void win.loadFile(path.join(this._bundleDir(), '../renderer/index.html'))
@@ -128,6 +132,7 @@ export class MainWindowLifeCycle extends LifeCycle {
     if (nativeTheme.shouldUseDarkColors) {
       return constant().mainWindow.darkBackground
     }
+
     return constant().mainWindow.lightBackground
   }
 

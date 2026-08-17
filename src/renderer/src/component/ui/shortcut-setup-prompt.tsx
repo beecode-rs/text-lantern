@@ -2,7 +2,7 @@ import { Languages } from 'lucide-react'
 
 export function ShortcutSetupPrompt({
   onSetup,
-  onDismiss
+  onDismiss,
 }: {
   onSetup: () => void
   onDismiss: () => void
@@ -22,8 +22,8 @@ export function ShortcutSetupPrompt({
           <h2 className="text-base font-semibold">Voice ready — set up a shortcut</h2>
         </div>
         <p className="mt-3 text-sm text-text/70 leading-relaxed">
-          Your first voice is downloaded. Connect it to a language and record a global shortcut to
-          start reading text aloud.
+          Your first voice is downloaded. Connect it to a language and record a global shortcut to start reading text
+          aloud.
         </p>
         <div className="mt-4 flex items-center justify-end gap-2">
           <button

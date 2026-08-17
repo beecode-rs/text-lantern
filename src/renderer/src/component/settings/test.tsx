@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Volume2, Square } from 'lucide-react'
-import { useSettingsStore } from '@src/renderer/src/store/settings'
-import { useModelsStore } from '@src/renderer/src/store/models'
-import { useTestStore } from '@src/renderer/src/store/test'
-import { SettingsGroup } from '@src/renderer/src/component/ui/settings-group'
-import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import { api } from '@src/renderer/src/api'
+import { SettingsGroup } from '@src/renderer/src/component/ui/settings-group'
+import { useModelsStore } from '@src/renderer/src/store/models'
+import { useSettingsStore } from '@src/renderer/src/store/settings'
+import { useTestStore } from '@src/renderer/src/store/test'
+import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import type { TtsStatus } from '@src/shared/types'
+import { Square, Volume2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 
 export function TestSettings(): React.JSX.Element {
   const settings = useSettingsStore((s) => {
@@ -34,7 +34,7 @@ export function TestSettings(): React.JSX.Element {
   const [status, setStatus] = useState<TtsStatus>({ state: 'idle' })
 
   useEffect(() => {
-    loadModels()
+    void loadModels()
   }, [loadModels])
 
   useEffect(() => {
@@ -45,6 +45,7 @@ export function TestSettings(): React.JSX.Element {
     if (!settings) {
       return []
     }
+
     return settings.languageBindings.filter((binding) => {
       return voices.some((voice) => {
         return voice.name === binding.voice
@@ -68,6 +69,7 @@ export function TestSettings(): React.JSX.Element {
     const english = connectedBindings.find((binding) => {
       return binding.langCode === 'en'
     })
+
     return (english ?? connectedBindings[0]).langCode
   }, [connectedBindings, selectedLang])
 
@@ -88,14 +90,15 @@ export function TestSettings(): React.JSX.Element {
       return voice.name === fallbackBinding.voice
     })
   const autoLabel = getAutoLabel({
-    isFallbackVoiceConnected,
     fallbackBinding,
-    fallbackLang: settings.fallbackLang
+    fallbackLang: settings.fallbackLang,
+    isFallbackVoiceConnected,
   })
 
   const onButtonClick = (): void => {
     if (isBusy) {
       void api.stop()
+
       return
     }
     if (canSpeak) {
@@ -104,16 +107,16 @@ export function TestSettings(): React.JSX.Element {
   }
 
   const body = getBody({
-    hasConnected,
-    isBusy,
     activeLang,
     autoLabel,
+    canSpeak,
     connectedBindings,
-    setLang,
-    text,
-    setText,
+    hasConnected,
+    isBusy,
     onButtonClick,
-    canSpeak
+    setLang,
+    setText,
+    text,
   })
 
   return (
@@ -146,9 +149,8 @@ export function TestSettings(): React.JSX.Element {
         <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 flex items-start gap-3">
           <Volume2 size={18} className="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
           <div className="text-sm text-text/70">
-            No language is connected to a downloaded voice yet. Download a voice in{' '}
-            <strong>Models</strong>, pair it with a language in <strong>Languages</strong>, then
-            return here to test it.
+            No language is connected to a downloaded voice yet. Download a voice in <strong>Models</strong>, pair it
+            with a language in <strong>Languages</strong>, then return here to test it.
           </div>
         </div>
       )
@@ -217,6 +219,7 @@ export function TestSettings(): React.JSX.Element {
     if (params.isFallbackVoiceConnected && params.fallbackBinding) {
       return `Auto-detect · ${params.fallbackBinding.voice}`
     }
+
     return `Auto-detect · fallback: ${languageCatalogSingleton().getDisplayName({ code: params.fallbackLang })}`
   }
 
@@ -224,6 +227,7 @@ export function TestSettings(): React.JSX.Element {
     if (params.isBusy) {
       return <Square size={13} className="fill-current" />
     }
+
     return <Volume2 size={14} />
   }
 
@@ -231,6 +235,7 @@ export function TestSettings(): React.JSX.Element {
     if (params.isBusy) {
       return 'Stop'
     }
+
     return 'Speak'
   }
 }

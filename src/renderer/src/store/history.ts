@@ -1,6 +1,6 @@
-import { create } from 'zustand'
-import type { HistoryEntry } from '@src/shared/types'
 import { api } from '@src/renderer/src/api'
+import type { HistoryEntry } from '@src/shared/types'
+import { create } from 'zustand'
 
 interface HistoryStore {
   entries: HistoryEntry[]
@@ -10,15 +10,15 @@ interface HistoryStore {
 }
 
 export const useHistoryStore = create<HistoryStore>((set) => ({
+  clear: async () => {
+    await api.clearHistory()
+  },
   entries: [],
   load: async () => {
     const entries = await api.getHistory()
     set({ entries })
   },
-  clear: async () => {
-    await api.clearHistory()
-  },
   replace: (entries) => {
     set({ entries })
-  }
+  },
 }))

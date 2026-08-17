@@ -1,27 +1,24 @@
-import { useMemo, useState } from 'react'
-import { ArrowLeft, Download, Search, Loader2 } from 'lucide-react'
-import { useModelsStore } from '@src/renderer/src/store/models'
+import { DefaultVoiceRow } from '@src/renderer/src/component/ui/default-voice-row'
 import { DownloadRow } from '@src/renderer/src/component/ui/download-row'
 import { RemoteModelRow } from '@src/renderer/src/component/ui/remote-model-row'
-import { DefaultVoiceRow } from '@src/renderer/src/component/ui/default-voice-row'
+import { useModelsStore } from '@src/renderer/src/store/models'
 import { DEFAULT_VOICE_OPTIONS } from '@src/shared/voice/default-voice'
+import { ArrowLeft, Download, Loader2, Search } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
-export function DownloadModels({
-  onBack
-}: {
-  onBack: () => void
-}): React.JSX.Element {
-  const { voices, remote, isSearching, searchError, downloads, search, download, dismissDownload } =
-    useModelsStore()
+export function DownloadModels({ onBack }: { onBack: () => void }): React.JSX.Element {
+  const { voices, remote, isSearching, searchError, downloads, search, download, dismissDownload } = useModelsStore()
 
   const [query, setQuery] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState('')
   const [addName, setAddName] = useState('')
 
   const installedNames = useMemo(() => {
-    return new Set(voices.map((voice) => {
-      return voice.name
-    }))
+    return new Set(
+      voices.map((voice) => {
+        return voice.name
+      }),
+    )
   }, [voices])
 
   const downloadingNames = Object.entries(downloads)
@@ -33,7 +30,7 @@ export function DownloadModels({
     })
   const downloadRows = useMemo(() => {
     return Object.entries(downloads).map(([name, download]) => {
-      return { name, download }
+      return { download, name }
     })
   }, [downloads])
 
@@ -141,9 +138,7 @@ export function DownloadModels({
       <section className="flex flex-col gap-2">
         {isSearching && <p className="text-sm text-text/50 px-1 py-6 text-center">Searching…</p>}
 
-        {!isSearching && searchError && (
-          <p className="text-sm text-red-500 px-1 py-6 text-center">{searchError}</p>
-        )}
+        {!isSearching && searchError && <p className="text-sm text-red-500 px-1 py-6 text-center">{searchError}</p>}
 
         {showEmpty && (
           <p className="text-sm text-text/50 px-1 py-6 text-center">
@@ -200,8 +195,7 @@ export function DownloadModels({
           </button>
         </div>
         <p className="text-xs text-text/50">
-          For voices outside the catalog, e.g. the custom Serbian{' '}
-          <span className="selectable">sr_Marko_medium</span>.
+          For voices outside the catalog, e.g. the custom Serbian <span className="selectable">sr_Marko_medium</span>.
         </p>
       </section>
     </div>
@@ -211,6 +205,7 @@ export function DownloadModels({
     if (params.isSearching) {
       return <Loader2 size={14} className="animate-spin" />
     }
+
     return <Search size={14} />
   }
 }

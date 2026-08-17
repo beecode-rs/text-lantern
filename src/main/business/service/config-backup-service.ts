@@ -1,8 +1,4 @@
-import fs from 'node:fs'
-import path from 'node:path'
-
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-
 import { settingsDalSingleton } from '@src/main/dal/settings-dal'
 import { voiceModelDalSingleton } from '@src/main/dal/voice-model-dal'
 import { piperEngineSingleton } from '@src/main/lib/piper/engine'
@@ -10,6 +6,8 @@ import { constant } from '@src/main/util/constants'
 import { logger } from '@src/main/util/logger'
 import { pathUtil } from '@src/main/util/path-util'
 import type { ConfigBackup, LanguageBinding, Settings, ThemePreference } from '@src/shared/types'
+import fs from 'node:fs'
+import path from 'node:path'
 
 const VOICE_NAME_PATTERN = /^[A-Za-z0-9_-]+$/
 
@@ -21,7 +19,7 @@ interface ParsedBackup {
 }
 
 export class ConfigBackupService {
-  public exportToFile(params: { filePath: string }): void {
+  exportToFile(params: { filePath: string }): void {
     try {
       fs.writeFileSync(params.filePath, JSON.stringify(this._buildBackup(), null, 2), 'utf8')
     } catch (err) {
@@ -30,7 +28,7 @@ export class ConfigBackupService {
     }
   }
 
-  public async importFromFile(params: {
+  async importFromFile(params: {
     filePath: string
     onLog: (line: string) => void
     onProgress: (p: { name: string; progress: number }) => void
@@ -39,31 +37,33 @@ export class ConfigBackupService {
     const failedVoices = await this._downloadEachMissingVoice({
       names: this._downloadNamesFromBackup({ backup }),
       onLog: params.onLog,
-      onProgress: params.onProgress
+      onProgress: params.onProgress,
     })
-    const missingReferencedVoices = this._referencedVoiceNames({ settings: backup.settings }).filter(
-      (name) => {
-        return !this._hasVoiceModelFiles({ name })
-      }
-    )
+    const missingReferencedVoices = this._referencedVoiceNames({ settings: backup.settings }).filter((name) => {
+      return !this._hasVoiceModelFiles({ name })
+    })
     if (missingReferencedVoices.length > 0) {
       params.onLog(`Import aborted — voices still missing: ${missingReferencedVoices.join(', ')}`)
+
       return { didSucceed: false, failedVoices }
     }
     settingsDalSingleton().update({ patch: this._settingsPatchFromBackup({ settings: backup.settings }) })
     params.onLog('Settings applied.')
+
     return { didSucceed: true, failedVoices }
   }
 
   protected _buildBackup(): ConfigBackup {
     return {
       app: constant().configBackup.appIdentifier,
-      schemaVersion: constant().configBackup.currentSchemaVersion,
       exportedAt: Date.now(),
+      schemaVersion: constant().configBackup.currentSchemaVersion,
       settings: settingsDalSingleton().get(),
-      voices: voiceModelDalSingleton().listVoices().map((voice) => {
-        return voice.name
-      })
+      voices: voiceModelDalSingleton()
+        .listVoices()
+        .map((voice) => {
+          return voice.name
+        }),
     }
   }
 
@@ -74,6 +74,7 @@ export class ConfigBackupService {
     } catch {
       throw new Error('Could not read the selected file.')
     }
+
     return this._parseBackup({ raw })
   }
 
@@ -85,15 +86,13 @@ export class ConfigBackupService {
     if (parsed.app !== constant().configBackup.appIdentifier) {
       throw new Error('This backup was created by a different application.')
     }
-    if (
-      !this._isNumber(parsed.schemaVersion) ||
-      parsed.schemaVersion > constant().configBackup.currentSchemaVersion
-    ) {
+    if (!this._isNumber(parsed.schemaVersion) || parsed.schemaVersion > constant().configBackup.currentSchemaVersion) {
       throw new Error('This backup was created by a newer version of Text Lantern.')
     }
     if (!this._isRecord(parsed.settings)) {
       throw new Error('The backup contains no settings.')
     }
+
     return { settings: parsed.settings, voices: this._voicesFromParsed({ value: parsed.voices }) }
   }
 
@@ -115,11 +114,13 @@ export class ConfigBackupService {
     if (!isValid) {
       throw new Error('The backup contains an invalid voice name.')
     }
+
     return params.value as string[]
   }
 
   protected _downloadNamesFromBackup(params: { backup: ParsedBackup }): string[] {
     const referenced = this._referencedVoiceNames({ settings: params.backup.settings })
+
     return Array.from(new Set([...params.backup.voices, ...referenced]))
   }
 
@@ -128,6 +129,7 @@ export class ConfigBackupService {
     if (bindings === null) {
       return []
     }
+
     return bindings.map((binding) => {
       return binding.voice
     })
@@ -143,6 +145,7 @@ export class ConfigBackupService {
       await acc
       if (this._hasVoiceModelFiles({ name })) {
         params.onLog(`  present: ${name}`)
+
         return
       }
       params.onLog(`Downloading ${name}…`)
@@ -151,7 +154,7 @@ export class ConfigBackupService {
           name,
           onProgress: (p) => {
             params.onProgress({ name, progress: p })
-          }
+          },
         })
         params.onLog(`  done: ${name}`)
       } catch (err) {
@@ -159,12 +162,14 @@ export class ConfigBackupService {
         params.onLog(`  failed: ${name}: ${String(err)}`)
       }
     }, Promise.resolve())
+
     return failedNames
   }
 
   protected _hasVoiceModelFiles(params: { name: string }): boolean {
     const onnx = path.join(pathUtil.modelsDir(), `${params.name}.onnx`)
     const json = path.join(pathUtil.modelsDir(), `${params.name}.onnx.json`)
+
     return fs.existsSync(onnx) && fs.existsSync(json)
   }
 
@@ -204,12 +209,11 @@ export class ConfigBackupService {
     if (this._isNumber(params.settings.historyLimit)) {
       patch.historyLimit = Math.max(0, Math.floor(params.settings.historyLimit))
     }
+
     return patch
   }
 
-  protected _languageBindingsFromBackup(params: {
-    settings: UnknownRecord
-  }): LanguageBinding[] | null {
+  protected _languageBindingsFromBackup(params: { settings: UnknownRecord }): LanguageBinding[] | null {
     const bindings = params.settings.languageBindings
     if (!Array.isArray(bindings)) {
       return null
@@ -218,6 +222,7 @@ export class ConfigBackupService {
       if (!this._isRecord(binding)) {
         return false
       }
+
       return (
         this._isString(binding.id) &&
         this._isString(binding.langCode) &&
@@ -228,6 +233,7 @@ export class ConfigBackupService {
     if (!isValid) {
       return null
     }
+
     return bindings as LanguageBinding[]
   }
 
@@ -242,6 +248,7 @@ export class ConfigBackupService {
     if (params.theme === 'dark') {
       return 'dark'
     }
+
     return 'system'
   }
 

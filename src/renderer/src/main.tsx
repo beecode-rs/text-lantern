@@ -1,5 +1,5 @@
-import { createRoot } from 'react-dom/client'
 import App from '@src/renderer/src/app'
+import { createRoot } from 'react-dom/client'
 import '@src/renderer/src/style/theme.css'
 
 const container = document.getElementById('root')

@@ -1,6 +1,6 @@
-import { create } from 'zustand'
-import type { RemoteVoice, Voice, VoiceDownload } from '@src/shared/types'
 import { api } from '@src/renderer/src/api'
+import type { RemoteVoice, Voice, VoiceDownload } from '@src/shared/types'
+import { create } from 'zustand'
 
 const DONE_DISMISS_DELAY_MS = 3000
 
@@ -29,97 +29,101 @@ interface ModelsStore {
 }
 
 export const useModelsStore = create<ModelsStore>((set, get) => {
-  const omit = <T extends Record<string, unknown>>(obj: T, key: string): T => {
-    const next = { ...obj }
-    delete next[key]
-    return next
+  const getDownload = (name: string): VoiceDownload | undefined => {
+    return get().downloads[name]
+  }
+
+  const omitDownload = (downloads: Record<string, VoiceDownload>, key: string): Record<string, VoiceDownload> => {
+    const { [key]: _removed, ...rest } = downloads
+
+    return rest
   }
 
   const markDownloadDone = (name: string): void => {
     set({ downloads: { ...get().downloads, [name]: { progress: 1, state: 'done' } } })
     setTimeout(() => {
-      if (get().downloads[name]?.state === 'done') {
-        set({ downloads: omit(get().downloads, name) })
+      if (getDownload(name)?.state === 'done') {
+        set({ downloads: omitDownload(get().downloads, name) })
       }
     }, DONE_DISMISS_DELAY_MS)
   }
 
   const markDownloadFailed = (name: string): void => {
-    const failed = get().downloads[name]
+    const failed = getDownload(name)
     set({
-      downloads: { ...get().downloads, [name]: { progress: failed?.progress ?? 0, state: 'error' } }
+      downloads: { ...get().downloads, [name]: { progress: failed?.progress ?? 0, state: 'error' } },
     })
   }
 
   return {
-    voices: [],
-    isEngineInstalled: false,
-    isInstalling: false,
-    logs: [],
-    downloads: {},
-    isLoading: false,
-    remote: [],
-    isSearching: false,
-    searchError: null,
-    hasCompletedDownload: false,
-
-    load: async () => {
-      set({ isLoading: true })
-      const [voices, isEngineInstalled] = await Promise.all([api.listVoices(), api.isEngineInstalled()])
-      set({ voices, isEngineInstalled, isLoading: false })
+    acknowledgeCompletedDownload: () => {
+      set({ hasCompletedDownload: false })
     },
-    refreshEngine: async () => {
-      set({ isEngineInstalled: await api.isEngineInstalled() })
+    appendLog: (line) => {
+      set({ logs: [...get().logs, line] })
+    },
+    dismissDownload: (name) => {
+      set({ downloads: omitDownload(get().downloads, name) })
     },
     download: async (name) => {
       set({ downloads: { ...get().downloads, [name]: { progress: 0, state: 'downloading' } } })
       try {
         const voices = await api.downloadVoice(name)
-        set({ voices, hasCompletedDownload: true })
+        set({ hasCompletedDownload: true, voices })
         markDownloadDone(name)
       } catch (err) {
         get().appendLog(`Download failed for ${name}: ${String(err)}`)
         markDownloadFailed(name)
       }
     },
-    remove: async (name) => {
-      const voices = await api.deleteVoice(name)
-      set({ voices })
-    },
-    dismissDownload: (name) => {
-      set({ downloads: omit(get().downloads, name) })
-    },
+    downloads: {},
+    hasCompletedDownload: false,
     installEngine: async (voiceNames) => {
       set({ isInstalling: true, logs: [] })
       const ok = await api.installEngine(voiceNames)
       const isEngineInstalled = await api.isEngineInstalled()
       const voices = await api.listVoices()
-      set({ isInstalling: false, isEngineInstalled, voices, hasCompletedDownload: voices.length > 0 })
+      set({ hasCompletedDownload: voices.length > 0, isEngineInstalled, isInstalling: false, voices })
       if (!ok) {
         get().appendLog('Engine install finished but did not verify.')
       }
     },
+    isEngineInstalled: false,
+    isInstalling: false,
+    isLoading: false,
+
+    isSearching: false,
+    load: async () => {
+      set({ isLoading: true })
+      const [voices, isEngineInstalled] = await Promise.all([api.listVoices(), api.isEngineInstalled()])
+      set({ isEngineInstalled, isLoading: false, voices })
+    },
+    logs: [],
+    refreshEngine: async () => {
+      set({ isEngineInstalled: await api.isEngineInstalled() })
+    },
+    remote: [],
+    remove: async (name) => {
+      const voices = await api.deleteVoice(name)
+      set({ voices })
+    },
     search: async (query) => {
-      set({ isSearching: true, searchError: null, remote: [] })
+      set({ isSearching: true, remote: [], searchError: null })
       try {
         const remote = await api.searchVoices(query)
-        set({ remote, isSearching: false })
+        set({ isSearching: false, remote })
       } catch (err) {
         set({ isSearching: false, searchError: String(err) })
       }
     },
-    appendLog: (line) => {
-      set({ logs: [...get().logs, line] })
-    },
+    searchError: null,
     setProgress: (name, p) => {
-      const current = get().downloads[name]
+      const current = getDownload(name)
       if (current !== undefined && current.state !== 'downloading') {
         return
       }
       set({ downloads: { ...get().downloads, [name]: { progress: p, state: 'downloading' } } })
     },
-    acknowledgeCompletedDownload: () => {
-      set({ hasCompletedDownload: false })
-    }
+    voices: [],
   }
 })

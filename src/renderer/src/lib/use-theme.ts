@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
 import type { ThemePreference } from '@src/shared/types'
+import { useEffect } from 'react'
 
 const DARK_MEDIA_QUERY = '(prefers-color-scheme: dark)'
 
@@ -18,10 +18,12 @@ export function useTheme(theme: ThemePreference | undefined): void {
     const syncTheme = (): void => {
       if (theme === 'dark') {
         applyDarkTheme(true)
+
         return
       }
       if (theme === 'light') {
         applyDarkTheme(false)
+
         return
       }
       applyDarkTheme(systemPrefersDark.matches)
@@ -34,6 +36,7 @@ export function useTheme(theme: ThemePreference | undefined): void {
     }
 
     systemPrefersDark.addEventListener('change', syncTheme)
+
     return () => {
       systemPrefersDark.removeEventListener('change', syncTheme)
     }

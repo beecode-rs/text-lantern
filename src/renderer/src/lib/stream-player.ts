@@ -1,14 +1,14 @@
 const SILENCE_SCALE = 32768
 
 export class StreamPlayer {
-  private _ctx: AudioContext | null = null
-  private _gain: GainNode | null = null
-  private _nextTime = 0
-  private _sampleRate = 16000
-  private _activeSources = new Set<AudioBufferSourceNode>()
-  private _inputEnded = false
-  private _streaming = false
-  private _generation = 0
+  protected _ctx: AudioContext | null = null
+  protected _gain: GainNode | null = null
+  protected _nextTime = 0
+  protected _sampleRate = 16000
+  protected _activeSources = new Set<AudioBufferSourceNode>()
+  protected _inputEnded = false
+  protected _streaming = false
+  protected _generation = 0
   onDone: (() => void) | null = null
 
   start(params: { sampleRate: number }): void {
@@ -75,13 +75,15 @@ export class StreamPlayer {
       source.onended = null
       try {
         source.stop()
-      } catch {}
+      } catch {
+        return undefined
+      }
     })
     this._activeSources.clear()
     this._nextTime = 0
   }
 
-  private _ensureContext(): void {
+  protected _ensureContext(): void {
     if (this._ctx) {
       return
     }
@@ -92,7 +94,7 @@ export class StreamPlayer {
     this._gain = gain
   }
 
-  private _maybeFireDone(): void {
+  protected _maybeFireDone(): void {
     if (!this._inputEnded) {
       return
     }

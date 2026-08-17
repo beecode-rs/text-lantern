@@ -1,6 +1,6 @@
-import { create } from 'zustand'
 import { api } from '@src/renderer/src/api'
 import { useModelsStore } from '@src/renderer/src/store/models'
+import { create } from 'zustand'
 
 interface ConfigBackupStore {
   isExporting: boolean
@@ -16,17 +16,16 @@ interface ConfigBackupStore {
 export const useConfigBackupStore = create<ConfigBackupStore>((set, get) => {
   const getImportSummaryLabel = (params: { failedCount: number }): string => {
     if (params.failedCount > 0) {
-      return `Imported — ${params.failedCount} voice download(s) failed.`
+      return `Imported — ${String(params.failedCount)} voice download(s) failed.`
     }
+
     return 'Imported — all voices restored.'
   }
 
   return {
-    isExporting: false,
-    isImporting: false,
-    logs: [],
-    progress: {},
-
+    appendLog: (line) => {
+      set({ logs: [...get().logs, line] })
+    },
     exportConfig: async () => {
       set({ isExporting: true })
       try {
@@ -55,11 +54,13 @@ export const useConfigBackupStore = create<ConfigBackupStore>((set, get) => {
       }
       set({ isImporting: false, progress: {} })
     },
-    appendLog: (line) => {
-      set({ logs: [...get().logs, line] })
-    },
+    isExporting: false,
+
+    isImporting: false,
+    logs: [],
+    progress: {},
     setProgress: (name, p) => {
       set({ progress: { ...get().progress, [name]: p } })
-    }
+    },
   }
 })

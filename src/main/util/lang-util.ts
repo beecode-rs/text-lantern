@@ -1,20 +1,30 @@
-import { detect } from 'tinyld'
-
 import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import type { Lang, Settings } from '@src/shared/types'
+import { detect } from 'tinyld'
 
 const TTS_LANGUAGE_CODES = new Set<string>(
-  languageCatalogSingleton().list().map((language) => {
-    return language.code
-  })
+  languageCatalogSingleton()
+    .list()
+    .map((language) => {
+      return language.code
+    }),
 )
 
 export const langUtil = {
+  _resolveLangCode(params: { lang: Lang; text: string }): string | null {
+    if (params.lang === 'auto') {
+      return this.detectLang({ text: params.text })
+    }
+
+    return params.lang
+  },
+
   detectLang(params: { text: string }): string | null {
     const code = detect(params.text)
     if (!TTS_LANGUAGE_CODES.has(code)) {
       return null
     }
+
     return code
   },
 
@@ -34,6 +44,7 @@ export const langUtil = {
         return fallback.voice
       }
     }
+
     return params.settings.languageBindings[0]?.voice ?? ''
   },
 
@@ -43,13 +54,7 @@ export const langUtil = {
     if (separator <= 0) {
       return lower
     }
+
     return lower.slice(0, separator)
   },
-
-  _resolveLangCode(params: { lang: Lang; text: string }): string | null {
-    if (params.lang === 'auto') {
-      return this.detectLang({ text: params.text })
-    }
-    return params.lang
-  }
 }

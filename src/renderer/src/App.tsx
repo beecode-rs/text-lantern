@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react'
-import { Sidebar, type Section } from '@src/renderer/src/component/sidebar'
+import { api } from '@src/renderer/src/api'
 import { NowPlaying } from '@src/renderer/src/component/now-playing'
 import { SettingsSection } from '@src/renderer/src/component/settings-section'
+import { type Section, Sidebar } from '@src/renderer/src/component/sidebar'
 import { ShortcutSetupPrompt } from '@src/renderer/src/component/ui/shortcut-setup-prompt'
-import { useSettingsStore } from '@src/renderer/src/store/settings'
+import { useTheme } from '@src/renderer/src/lib/use-theme'
+import { useConfigBackupStore } from '@src/renderer/src/store/config-backup'
 import { useHistoryStore } from '@src/renderer/src/store/history'
 import { useModelsStore } from '@src/renderer/src/store/models'
-import { useConfigBackupStore } from '@src/renderer/src/store/config-backup'
-import { api } from '@src/renderer/src/api'
-import { useTheme } from '@src/renderer/src/lib/use-theme'
+import { useSettingsStore } from '@src/renderer/src/store/settings'
+import { useEffect, useState } from 'react'
 
 export default function App(): React.JSX.Element {
   const [section, setSection] = useState<Section>('general')
@@ -60,7 +60,7 @@ export default function App(): React.JSX.Element {
     appendLog,
     setProgress,
     appendConfigLog,
-    setConfigProgress
+    setConfigProgress,
   ])
 
   useEffect(() => {
@@ -72,6 +72,7 @@ export default function App(): React.JSX.Element {
     }
     if (settings.languageBindings.length > 0) {
       acknowledgeCompletedDownload()
+
       return
     }
     setIsSetupPromptVisible(true)
@@ -85,14 +86,12 @@ export default function App(): React.JSX.Element {
   useTheme(settings?.theme)
 
   if (!settings) {
-    return (
-      <div className="h-screen flex items-center justify-center text-text/50 text-sm">Loading…</div>
-    )
+    return <div className="h-screen flex items-center justify-center text-text/50 text-sm">Loading…</div>
   }
 
   return (
     <div className="h-screen flex flex-col bg-background text-text">
-      <div className="h-7 shrink-0" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
+      <div className="app-region-drag h-7 shrink-0" />
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar active={section} onChange={setSection} />

@@ -1,31 +1,25 @@
-import type { ComponentType } from 'react'
-import { BookOpen, Cpu, History, Languages, Volume2, Info } from 'lucide-react'
 import iconUrl from '@src/renderer/src/asset/icon.png'
+import { BookOpen, Cpu, History, Info, Languages, Volume2 } from 'lucide-react'
+import type { ComponentType } from 'react'
 
 export type Section = 'general' | 'models' | 'languages' | 'test' | 'history' | 'about'
 
 const ITEMS: { id: Section; label: string; icon: ComponentType<{ size?: number | string }> }[] = [
-  { id: 'general', label: 'General', icon: BookOpen },
-  { id: 'models', label: 'Models', icon: Cpu },
-  { id: 'languages', label: 'Languages', icon: Languages },
-  { id: 'test', label: 'Test', icon: Volume2 },
-  { id: 'history', label: 'History', icon: History },
-  { id: 'about', label: 'About', icon: Info }
+  { icon: BookOpen, id: 'general', label: 'General' },
+  { icon: Cpu, id: 'models', label: 'Models' },
+  { icon: Languages, id: 'languages', label: 'Languages' },
+  { icon: Volume2, id: 'test', label: 'Test' },
+  { icon: History, id: 'history', label: 'History' },
+  { icon: Info, id: 'about', label: 'About' },
 ]
 
-export function Sidebar({
-  active,
-  onChange
-}: {
-  active: Section
-  onChange: (s: Section) => void
-}): React.JSX.Element {
+export function Sidebar({ active, onChange }: { active: Section; onChange: (s: Section) => void }): React.JSX.Element {
   const getItemClassName = (params: { isActive: boolean }): string => {
-    const base =
-      'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors'
+    const base = 'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors'
     if (params.isActive) {
       return `${base} bg-logo-primary text-logo-stroke`
     }
+
     return `${base} text-text/85 hover:bg-mid-gray/20`
   }
 
@@ -40,6 +34,7 @@ export function Sidebar({
         {ITEMS.map(({ id, label, icon: Icon }) => {
           const isActive = active === id
           const itemClassName = getItemClassName({ isActive })
+
           return (
             <button
               key={id}

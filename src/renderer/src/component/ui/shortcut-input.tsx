@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react'
 import { acceleratorSingleton } from '@src/renderer/src/lib/accelerator'
 import { formatSingleton } from '@src/renderer/src/lib/format'
+import { useEffect, useState } from 'react'
 
 export function ShortcutInput({
   value,
   onChange,
   hasConflict,
-  disabled
+  disabled,
 }: {
   value: string
   onChange: (accel: string) => void
@@ -26,12 +26,14 @@ export function ShortcutInput({
       }
       if ('cancel' in result) {
         setIsListening(false)
+
         return
       }
       onChange(result.accel)
       setIsListening(false)
     }
     window.addEventListener('keydown', onKey, true)
+
     return () => {
       window.removeEventListener('keydown', onKey, true)
     }
@@ -69,17 +71,14 @@ export function ShortcutInput({
     </button>
   )
 
-  function getButtonClassName(params: {
-    baseClassName: string
-    hasConflict?: boolean
-    isListening: boolean
-  }): string {
+  function getButtonClassName(params: { baseClassName: string; hasConflict?: boolean; isListening: boolean }): string {
     if (params.hasConflict) {
       return `${params.baseClassName} border-red-500/70 bg-red-500/10`
     }
     if (params.isListening) {
       return `${params.baseClassName} border-logo-primary bg-logo-primary/10`
     }
+
     return `${params.baseClassName} border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20`
   }
 }

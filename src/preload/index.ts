@@ -1,77 +1,76 @@
-import { contextBridge, ipcRenderer } from 'electron'
-import type { TtsApi } from '@src/shared/types'
-
 import { channelSubscriber } from '@src/preload/_channel-subscriber'
+import type { TtsApi } from '@src/shared/types'
+import { contextBridge, ipcRenderer } from 'electron'
 
 const api: TtsApi = {
-  getSettings: () => {
-    return ipcRenderer.invoke('settings:get')
-  },
-  updateSettings: (patch) => {
-    return ipcRenderer.invoke('settings:update', patch)
-  },
-
-  listVoices: () => {
-    return ipcRenderer.invoke('models:list')
-  },
-  isEngineInstalled: () => {
-    return ipcRenderer.invoke('models:engineInstalled')
-  },
-  installEngine: (voiceNames) => {
-    return ipcRenderer.invoke('models:installEngine', voiceNames)
-  },
-  downloadVoice: (name) => {
-    return ipcRenderer.invoke('models:download', name)
+  clearHistory: () => {
+    return ipcRenderer.invoke('history:clear')
   },
   deleteVoice: (name) => {
     return ipcRenderer.invoke('models:delete', name)
   },
+
+  downloadVoice: (name) => {
+    return ipcRenderer.invoke('models:download', name)
+  },
+  exportConfig: () => {
+    return ipcRenderer.invoke('config:export')
+  },
+  getHistory: () => {
+    return ipcRenderer.invoke('history:get')
+  },
+  getSettings: () => {
+    return ipcRenderer.invoke('settings:get')
+  },
+  importConfig: () => {
+    return ipcRenderer.invoke('config:import')
+  },
+  installEngine: (voiceNames) => {
+    return ipcRenderer.invoke('models:installEngine', voiceNames)
+  },
+
+  isEngineInstalled: () => {
+    return ipcRenderer.invoke('models:engineInstalled')
+  },
+  listVoices: () => {
+    return ipcRenderer.invoke('models:list')
+  },
+  onAudioChunk: channelSubscriber.createForChannel({ channel: 'tts:audioChunk' }),
+
+  onAudioEnd: channelSubscriber.createForChannel({ channel: 'tts:audioEnd' }),
+  onAudioStart: channelSubscriber.createForChannel({ channel: 'tts:audioStart' }),
+
+  onConfigLog: channelSubscriber.createForChannel({ channel: 'config:log' }),
+  onConfigProgress: channelSubscriber.createForChannel({ channel: 'config:progress' }),
+
+  onHistoryChanged: channelSubscriber.createForChannel({ channel: 'history:changed' }),
+  onModelsLog: channelSubscriber.createForChannel({ channel: 'models:log' }),
+
+  onModelsProgress: channelSubscriber.createForChannel({ channel: 'models:progress' }),
+  onSettingsChanged: channelSubscriber.createForChannel({ channel: 'settings:changed' }),
+  onStopPlayback: channelSubscriber.createForChannel({ channel: 'tts:stopPlayback' }),
+  onTtsStatus: channelSubscriber.createForChannel({ channel: 'tts:status' }),
+  playbackEnded: () => {
+    return ipcRenderer.invoke('tts:playbackEnded')
+  },
+  reregisterShortcuts: () => {
+    return ipcRenderer.invoke('shortcuts:reregister')
+  },
   searchVoices: (query) => {
     return ipcRenderer.invoke('models:search', query)
   },
-
+  showSettings: () => {
+    return ipcRenderer.invoke('app:showSettings')
+  },
   speak: (lang, text, options) => {
     return ipcRenderer.invoke('tts:speak', lang, text, options)
   },
   stop: () => {
     return ipcRenderer.invoke('tts:stop')
   },
-  playbackEnded: () => {
-    return ipcRenderer.invoke('tts:playbackEnded')
+  updateSettings: (patch) => {
+    return ipcRenderer.invoke('settings:update', patch)
   },
-
-  reregisterShortcuts: () => {
-    return ipcRenderer.invoke('shortcuts:reregister')
-  },
-  showSettings: () => {
-    return ipcRenderer.invoke('app:showSettings')
-  },
-
-  exportConfig: () => {
-    return ipcRenderer.invoke('config:export')
-  },
-  importConfig: () => {
-    return ipcRenderer.invoke('config:import')
-  },
-
-  getHistory: () => {
-    return ipcRenderer.invoke('history:get')
-  },
-  clearHistory: () => {
-    return ipcRenderer.invoke('history:clear')
-  },
-
-  onSettingsChanged: channelSubscriber.createForChannel({ channel: 'settings:changed' }),
-  onTtsStatus: channelSubscriber.createForChannel({ channel: 'tts:status' }),
-  onAudioStart: channelSubscriber.createForChannel({ channel: 'tts:audioStart' }),
-  onAudioChunk: channelSubscriber.createForChannel({ channel: 'tts:audioChunk' }),
-  onAudioEnd: channelSubscriber.createForChannel<void>({ channel: 'tts:audioEnd' }),
-  onStopPlayback: channelSubscriber.createForChannel<void>({ channel: 'tts:stopPlayback' }),
-  onModelsLog: channelSubscriber.createForChannel({ channel: 'models:log' }),
-  onModelsProgress: channelSubscriber.createForChannel({ channel: 'models:progress' }),
-  onHistoryChanged: channelSubscriber.createForChannel({ channel: 'history:changed' }),
-  onConfigLog: channelSubscriber.createForChannel({ channel: 'config:log' }),
-  onConfigProgress: channelSubscriber.createForChannel({ channel: 'config:progress' })
 }
 
 contextBridge.exposeInMainWorld('api', api)

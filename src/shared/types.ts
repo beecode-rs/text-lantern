@@ -5,7 +5,7 @@ export interface LanguageBinding {
   shortcut: string
 }
 
-export type Lang = 'auto' | string
+export type Lang = 'auto' | (string & {})
 
 export type ThemePreference = 'system' | 'light' | 'dark'
 

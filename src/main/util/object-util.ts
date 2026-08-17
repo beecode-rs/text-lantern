@@ -13,6 +13,7 @@ export const objectUtil = {
       if (Array.isArray(current)) {
         return freezeArray(current)
       }
+
       return freezeObject(current as Record<string, unknown>)
     }
 
@@ -23,8 +24,9 @@ export const objectUtil = {
         copy,
         current.map((child) => {
           return freeze(child)
-        })
+        }),
       )
+
       return Object.freeze(copy)
     }
 
@@ -36,12 +38,13 @@ export const objectUtil = {
         Object.fromEntries(
           Object.entries(current).map(([key, child]) => {
             return [key, freeze(child)] as const
-          })
-        )
+          }),
+        ),
       )
+
       return Object.freeze(copy)
     }
 
     return freeze(value) as T
-  }
+  },
 }

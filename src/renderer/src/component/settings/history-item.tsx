@@ -1,13 +1,13 @@
-import { useState } from 'react'
-import { Clock, RotateCcw } from 'lucide-react'
 import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import type { HistoryEntry } from '@src/shared/types'
+import { Clock, RotateCcw } from 'lucide-react'
+import { useState } from 'react'
 
 const PREVIEW_CHARS = 160
 
 export function HistoryItem({
   entry,
-  onReplay
+  onReplay,
 }: {
   entry: HistoryEntry
   onReplay: (entry: HistoryEntry) => void
@@ -17,7 +17,7 @@ export function HistoryItem({
   const langName = languageCatalogSingleton().getDisplayName({ code: langCode })
   const time = new Date(entry.createdAt)
   const isLong = entry.text.length > PREVIEW_CHARS
-  const display = getDisplayText({ text: entry.text, expanded, isLong })
+  const display = getDisplayText({ expanded, isLong, text: entry.text })
   const toggleLabel = getToggleLabel({ expanded })
 
   return (
@@ -27,7 +27,9 @@ export function HistoryItem({
           <Clock size={12} className="shrink-0" />
           <span className="whitespace-nowrap">{time.toLocaleString()}</span>
           <span className="shrink-0">·</span>
-          <span className="selectable truncate">{langName} · {entry.voice}</span>
+          <span className="selectable truncate">
+            {langName} · {entry.voice}
+          </span>
         </div>
         <button
           type="button"
@@ -60,6 +62,7 @@ export function HistoryItem({
     if (params.isLong && !params.expanded) {
       return `${params.text.slice(0, PREVIEW_CHARS)}…`
     }
+
     return params.text
   }
 
@@ -67,6 +70,7 @@ export function HistoryItem({
     if (params.expanded) {
       return 'Show less'
     }
+
     return 'Show more'
   }
 }

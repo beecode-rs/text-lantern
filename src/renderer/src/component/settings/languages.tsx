@@ -1,15 +1,16 @@
-import { useEffect } from 'react'
-import { AlertTriangle, Plus, Trash2 } from 'lucide-react'
-import { useSettingsStore } from '@src/renderer/src/store/settings'
-import { useModelsStore } from '@src/renderer/src/store/models'
-import { SettingsGroup } from '@src/renderer/src/component/ui/settings-group'
 import { Row } from '@src/renderer/src/component/ui/row'
+import { SettingsGroup } from '@src/renderer/src/component/ui/settings-group'
 import { ShortcutInput } from '@src/renderer/src/component/ui/shortcut-input'
 import { StarBadge } from '@src/renderer/src/component/ui/star-badge'
+import { useModelsStore } from '@src/renderer/src/store/models'
+import { useSettingsStore } from '@src/renderer/src/store/settings'
 import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import type { LanguageBinding, Settings } from '@src/shared/types'
+import { AlertTriangle, Plus, Trash2 } from 'lucide-react'
+import { useEffect } from 'react'
 
-const BINDING_GRID = 'grid grid-cols-[minmax(130px,170px)_minmax(120px,190px)_minmax(150px,160px)_minmax(0,1fr)] items-center gap-2 px-4'
+const BINDING_GRID =
+  'grid grid-cols-[minmax(130px,170px)_minmax(120px,190px)_minmax(150px,160px)_minmax(0,1fr)] items-center gap-2 px-4'
 
 export function LanguagesSettings(): React.JSX.Element {
   const settings = useSettingsStore((s) => {
@@ -26,7 +27,7 @@ export function LanguagesSettings(): React.JSX.Element {
   })
 
   useEffect(() => {
-    load()
+    void load()
   }, [load])
 
   if (!settings) {
@@ -38,13 +39,14 @@ export function LanguagesSettings(): React.JSX.Element {
       return b.shortcut
     }),
     settings.autoShortcut,
-    settings.stopShortcut
+    settings.stopShortcut,
   ]
     .filter((accel) => {
       return accel !== ''
     })
     .reduce<Record<string, number>>((acc, accel) => {
       acc[accel] = (acc[accel] ?? 0) + 1
+
       return acc
     }, {})
 
@@ -59,7 +61,7 @@ export function LanguagesSettings(): React.JSX.Element {
   const fallbackOptions = settings.languageBindings.map((binding) => {
     return {
       code: binding.langCode,
-      name: languageCatalogSingleton().getDisplayName({ code: binding.langCode })
+      name: languageCatalogSingleton().getDisplayName({ code: binding.langCode }),
     }
   })
   const isFallbackMissing =
@@ -69,19 +71,19 @@ export function LanguagesSettings(): React.JSX.Element {
     })
   const isAutoDisabled = settings.languageBindings.length === 0
 
-  const fallbackSelectValue = getFallbackSelectValue({ isAutoDisabled, fallbackLang: settings.fallbackLang })
+  const fallbackSelectValue = getFallbackSelectValue({ fallbackLang: settings.fallbackLang, isAutoDisabled })
   const fallbackSelectOptions = buildFallbackSelectOptions({
+    fallbackLang: settings.fallbackLang,
+    fallbackOptions,
     isAutoDisabled,
     isFallbackMissing,
-    fallbackLang: settings.fallbackLang,
-    fallbackOptions
   })
 
   const setBinding = (id: string, patch: Partial<LanguageBinding>): void => {
     void update({
       languageBindings: settings.languageBindings.map((b) => {
         return mergeBindingPatch({ binding: b, id, patch })
-      })
+      }),
     })
   }
 
@@ -89,7 +91,7 @@ export function LanguagesSettings(): React.JSX.Element {
     void update({
       languageBindings: settings.languageBindings.filter((b) => {
         return b.id !== id
-      })
+      }),
     })
   }
 
@@ -98,12 +100,12 @@ export function LanguagesSettings(): React.JSX.Element {
       return b.langCode
     })
     const langCode = pickUnusedLangCode({ usedCodes, voices })
-    const voice = findVoiceForLangCode({ voices, langCode })
+    const voice = findVoiceForLangCode({ langCode, voices })
     const newBinding: LanguageBinding = {
       id: crypto.randomUUID(),
       langCode,
+      shortcut: '',
       voice,
-      shortcut: ''
     }
     const patch: Partial<Settings> = { languageBindings: [...settings.languageBindings, newBinding] }
     if (settings.fallbackLang === '' && langCode !== '') {
@@ -139,8 +141,7 @@ export function LanguagesSettings(): React.JSX.Element {
             </div>
             {settings.languageBindings.length === 0 && (
               <p className="px-4 py-6 text-sm text-text/50 text-center">
-                No languages yet. Download a voice in <strong>Models</strong>, then add it here and
-                record a shortcut.
+                No languages yet. Download a voice in <strong>Models</strong>, then add it here and record a shortcut.
               </p>
             )}
             {settings.languageBindings.map((binding) => {
@@ -151,17 +152,21 @@ export function LanguagesSettings(): React.JSX.Element {
                 .map((b) => {
                   return b.langCode
                 })
-              const langOptions = languageCatalogSingleton().list().filter((l) => {
-                return !usedByOthers.includes(l.code)
-              })
+              const langOptions = languageCatalogSingleton()
+                .list()
+                .filter((l) => {
+                  return !usedByOthers.includes(l.code)
+                })
               const rowVoices = [...voices].sort((a, b) => {
                 const aRank = langMatchRank({ lang: a.lang, langCode: binding.langCode })
                 const bRank = langMatchRank({ lang: b.lang, langCode: binding.langCode })
+
                 return aRank - bRank
               })
               const voiceMissing = !voices.some((v) => {
                 return v.name === binding.voice
               })
+
               return (
                 <div key={binding.id} className={`${BINDING_GRID} py-3`}>
                   <div className="relative">
@@ -191,9 +196,7 @@ export function LanguagesSettings(): React.JSX.Element {
                     }}
                     className="w-full max-w-[190px] min-w-0 truncate px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors"
                   >
-                    {voiceMissing && (
-                      <option value={binding.voice}>{binding.voice} (missing)</option>
-                    )}
+                    {voiceMissing && <option value={binding.voice}>{binding.voice} (missing)</option>}
                     {rowVoices.map((v) => {
                       return (
                         <option key={v.name} value={v.name}>
@@ -238,10 +241,7 @@ export function LanguagesSettings(): React.JSX.Element {
       </SettingsGroup>
 
       <SettingsGroup title="Other shortcuts">
-        <Row
-          title="Auto-detect"
-          description="Read the selection; language detected from the text."
-        >
+        <Row title="Auto-detect" description="Read the selection; language detected from the text.">
           <ShortcutInput
             value={settings.autoShortcut}
             hasConflict={hasConflictFor(settings.autoShortcut)}
@@ -251,10 +251,7 @@ export function LanguagesSettings(): React.JSX.Element {
             }}
           />
         </Row>
-        <Row
-          title="Default fallback language"
-          description="Used when language detection fails."
-        >
+        <Row title="Default fallback language" description="Used when language detection fails.">
           <select
             value={fallbackSelectValue}
             disabled={isAutoDisabled}
@@ -278,10 +275,9 @@ export function LanguagesSettings(): React.JSX.Element {
       </SettingsGroup>
 
       <p className="text-xs text-text/50 leading-relaxed px-1">
-        On macOS, reading the selection needs <strong>Automation</strong> permission (control of System
-        Events) and may need <strong>Accessibility</strong> permission for Text Lantern
-        (System Settings → Privacy &amp; Security), because it sends a Cmd+C to copy the selected text.
-        Your clipboard is saved and restored around the grab.
+        On macOS, reading the selection needs <strong>Automation</strong> permission (control of System Events) and may
+        need <strong>Accessibility</strong> permission for Text Lantern (System Settings → Privacy &amp; Security),
+        because it sends a Cmd+C to copy the selected text. Your clipboard is saved and restored around the grab.
       </p>
     </div>
   )
@@ -290,6 +286,7 @@ export function LanguagesSettings(): React.JSX.Element {
     if (params.isAutoDisabled) {
       return ''
     }
+
     return params.fallbackLang
   }
 
@@ -302,6 +299,7 @@ export function LanguagesSettings(): React.JSX.Element {
     if (params.isAutoDisabled) {
       return <option value="">No languages</option>
     }
+
     return (
       <>
         {params.isFallbackMissing && (
@@ -328,17 +326,17 @@ export function LanguagesSettings(): React.JSX.Element {
     if (params.binding.id !== params.id) {
       return params.binding
     }
+
     return { ...params.binding, ...params.patch }
   }
 
-  function pickUnusedLangCode(params: {
-    usedCodes: string[]
-    voices: { name: string; lang: string }[]
-  }): string {
+  function pickUnusedLangCode(params: { usedCodes: string[]; voices: { name: string; lang: string }[] }): string {
     const catalogCodes = new Set(
-      languageCatalogSingleton().list().map((l) => {
-        return l.code
-      })
+      languageCatalogSingleton()
+        .list()
+        .map((l) => {
+          return l.code
+        }),
     )
     const installedVoice = params.voices.find((v) => {
       return catalogCodes.has(v.lang) && !params.usedCodes.includes(v.lang)
@@ -346,6 +344,7 @@ export function LanguagesSettings(): React.JSX.Element {
     if (installedVoice) {
       return installedVoice.lang
     }
+
     return (
       languageCatalogSingleton()
         .list()
@@ -362,6 +361,7 @@ export function LanguagesSettings(): React.JSX.Element {
     if (matched) {
       return matched.name
     }
+
     return params.voices[0]?.name ?? ''
   }
 
@@ -369,6 +369,7 @@ export function LanguagesSettings(): React.JSX.Element {
     if (params.lang === params.langCode) {
       return 0
     }
+
     return 1
   }
 }

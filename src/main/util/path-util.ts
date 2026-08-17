@@ -1,32 +1,37 @@
-import path from 'node:path'
 import { app } from 'electron'
+import path from 'node:path'
 
 export const pathUtil = {
-  projectRoot(): string {
-    return process.env.APP_ROOT || process.cwd()
-  },
-
   modelsDir(): string {
     return path.join(this.projectRoot(), 'models')
-  },
-
-  venvDir(): string {
-    return path.join(this.projectRoot(), 'bin', 'venv')
   },
 
   piperBin(): string {
     return path.join(this.venvDir(), 'bin', 'piper')
   },
 
-  venvPython(): string {
-    return path.join(this.venvDir(), 'bin', 'python')
-  },
-
   piperServerScript(): string {
     return path.join(this.projectRoot(), 'resource', 'script', 'piper_server.py')
   },
 
+  projectRoot(): string {
+    const envRoot = process.env.APP_ROOT
+    if (envRoot) {
+      return envRoot
+    }
+
+    return process.cwd()
+  },
+
   userDataFile(name: string): string {
     return path.join(app.getPath('userData'), name)
-  }
+  },
+
+  venvDir(): string {
+    return path.join(this.projectRoot(), 'bin', 'venv')
+  },
+
+  venvPython(): string {
+    return path.join(this.venvDir(), 'bin', 'python')
+  },
 }

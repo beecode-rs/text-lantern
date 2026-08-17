@@ -1,5 +1,3 @@
-import { dialog, ipcMain, type BrowserWindow } from 'electron'
-
 import { configBackupServiceSingleton } from '@src/main/business/service/config-backup-service'
 import { ttsServiceSingleton } from '@src/main/business/service/tts-service'
 import { historyDalSingleton } from '@src/main/dal/history-dal'
@@ -9,7 +7,8 @@ import { piperEngineSingleton } from '@src/main/lib/piper/engine'
 import { shortcutsSingleton } from '@src/main/lib/shortcuts'
 import { traySingleton } from '@src/main/lib/tray'
 import { constant } from '@src/main/util/constants'
-import type { HistoryEntry, Lang, TtsSpeakOptions } from '@src/shared/types'
+import type { HistoryEntry, Lang, Settings, TtsSpeakOptions } from '@src/shared/types'
+import { type BrowserWindow, dialog, ipcMain } from 'electron'
 
 const handledChannels = [
   'settings:get',
@@ -28,10 +27,10 @@ const handledChannels = [
   'history:get',
   'history:clear',
   'config:export',
-  'config:import'
+  'config:import',
 ]
 
-let teardownFns: Array<() => void> = []
+let teardownFns: (() => void)[] = []
 
 export const ipcController = {
   register(params: { getWindow: () => BrowserWindow | null }): void {
@@ -42,7 +41,7 @@ export const ipcController = {
     ipcMain.handle('settings:get', () => {
       return settingsDalSingleton().get()
     })
-    ipcMain.handle('settings:update', (_e, patch) => {
+    ipcMain.handle('settings:update', (_e, patch: Partial<Settings>) => {
       return settingsDalSingleton().update({ patch })
     })
 
@@ -54,11 +53,12 @@ export const ipcController = {
     })
     ipcMain.handle('models:installEngine', async (e, voiceNames: string[]) => {
       const ok = await piperEngineSingleton().installEngine({
-        voiceNames,
         onLog: (line) => {
           e.sender.send('models:log', line)
-        }
+        },
+        voiceNames,
       })
+
       return ok
     })
     ipcMain.handle('models:download', async (e, name: string) => {
@@ -66,12 +66,14 @@ export const ipcController = {
         name,
         onProgress: (p) => {
           e.sender.send('models:progress', { name, progress: p })
-        }
+        },
       })
+
       return voiceModelDalSingleton().listVoices()
     })
     ipcMain.handle('models:delete', (_e, name: string) => {
       voiceModelDalSingleton().deleteVoice({ name })
+
       return voiceModelDalSingleton().listVoices()
     })
     ipcMain.handle('models:search', (_e, query: string) => {
@@ -81,23 +83,27 @@ export const ipcController = {
     ipcMain.handle('tts:speak', (_e, lang: Lang, text?: string, options?: TtsSpeakOptions) => {
       void ttsServiceSingleton().speak({
         lang,
-        text,
+        settings: settingsDalSingleton().get(),
         shouldSkipHistory: options?.shouldSkipHistory,
-        settings: settingsDalSingleton().get()
+        text,
       })
+
       return true
     })
     ipcMain.handle('tts:stop', () => {
       void ttsServiceSingleton().stop()
+
       return true
     })
     ipcMain.handle('tts:playbackEnded', () => {
       ttsServiceSingleton().playbackEnded()
+
       return true
     })
 
     ipcMain.handle('shortcuts:reregister', () => {
       shortcutsSingleton().registerAll()
+
       return true
     })
     ipcMain.handle('app:showSettings', () => {
@@ -113,15 +119,16 @@ export const ipcController = {
     })
     ipcMain.handle('history:clear', () => {
       historyDalSingleton().clear()
+
       return true
     })
 
     const showConfigSaveDialog = async (): Promise<string | null> => {
       const win = params.getWindow()
       const options: Electron.SaveDialogOptions = {
-        title: 'Export configuration',
         defaultPath: constant().configBackup.defaultFileName,
-        filters: [{ name: 'JSON', extensions: ['json'] }]
+        filters: [{ extensions: ['json'], name: 'JSON' }],
+        title: 'Export configuration',
       }
       let res: Electron.SaveDialogReturnValue
       if (win === null) {
@@ -129,21 +136,22 @@ export const ipcController = {
       } else {
         res = await dialog.showSaveDialog(win, options)
       }
-      if (res.canceled || res.filePath === undefined) {
+      if (res.canceled || res.filePath === '') {
         return null
       }
       if (res.filePath.endsWith('.json')) {
         return res.filePath
       }
+
       return `${res.filePath}.json`
     }
 
     const showConfigOpenDialog = async (): Promise<string | null> => {
       const win = params.getWindow()
       const options: Electron.OpenDialogOptions = {
+        filters: [{ extensions: ['json'], name: 'JSON' }],
+        properties: ['openFile'],
         title: 'Import configuration',
-        filters: [{ name: 'JSON', extensions: ['json'] }],
-        properties: ['openFile']
       }
       let res: Electron.OpenDialogReturnValue
       if (win === null) {
@@ -154,6 +162,7 @@ export const ipcController = {
       if (res.canceled || res.filePaths.length === 0) {
         return null
       }
+
       return res.filePaths[0]
     }
 
@@ -163,13 +172,14 @@ export const ipcController = {
         return false
       }
       configBackupServiceSingleton().exportToFile({ filePath })
+
       return true
     })
 
     ipcMain.handle('config:import', async (e) => {
       const filePath = await showConfigOpenDialog()
       if (filePath === null) {
-        return { didSucceed: false, didCancel: true, failedVoices: [], errorMessage: null }
+        return { didCancel: true, didSucceed: false, errorMessage: null, failedVoices: [] }
       }
       try {
         const result = await configBackupServiceSingleton().importFromFile({
@@ -179,11 +189,12 @@ export const ipcController = {
           },
           onProgress: (p) => {
             e.sender.send('config:progress', p)
-          }
+          },
         })
+
         return { ...result, didCancel: false, errorMessage: null }
       } catch (err) {
-        return { didSucceed: false, didCancel: false, failedVoices: [], errorMessage: String(err) }
+        return { didCancel: false, didSucceed: false, errorMessage: String(err), failedVoices: [] }
       }
     })
 
@@ -239,7 +250,7 @@ export const ipcController = {
       () => {
         historyDalSingleton().events.off('changed', onHistoryChanged)
       },
-      unsubscribeSettingsChanged
+      unsubscribeSettingsChanged,
     ]
   },
 
@@ -251,5 +262,5 @@ export const ipcController = {
       teardownFn()
     })
     teardownFns = []
-  }
+  },
 }

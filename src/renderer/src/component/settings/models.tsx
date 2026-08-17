@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Download, Search, AlertTriangle, RefreshCw } from 'lucide-react'
-import { useModelsStore } from '@src/renderer/src/store/models'
-import { ModelCard } from '@src/renderer/src/component/ui/model-card'
-import { DownloadRow } from '@src/renderer/src/component/ui/download-row'
 import { DownloadModels } from '@src/renderer/src/component/settings/download-models'
+import { DownloadRow } from '@src/renderer/src/component/ui/download-row'
+import { ModelCard } from '@src/renderer/src/component/ui/model-card'
+import { useModelsStore } from '@src/renderer/src/store/models'
 import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import { DEFAULT_VOICE_OPTIONS } from '@src/shared/voice/default-voice'
+import { AlertTriangle, Download, RefreshCw, Search } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 
 export function ModelsSettings(): React.JSX.Element {
   const {
@@ -18,7 +18,7 @@ export function ModelsSettings(): React.JSX.Element {
     installEngine,
     remove,
     download,
-    dismissDownload
+    dismissDownload,
   } = useModelsStore()
 
   const [query, setQuery] = useState('')
@@ -30,7 +30,7 @@ export function ModelsSettings(): React.JSX.Element {
   })
 
   useEffect(() => {
-    load()
+    void load()
   }, [load])
 
   const filtered = useMemo(() => {
@@ -38,6 +38,7 @@ export function ModelsSettings(): React.JSX.Element {
     if (!q) {
       return voices
     }
+
     return voices.filter((v) => {
       return v.name.toLowerCase().includes(q)
     })
@@ -45,7 +46,7 @@ export function ModelsSettings(): React.JSX.Element {
 
   const downloadRows = useMemo(() => {
     return Object.entries(downloads).map(([name, download]) => {
-      return { name, download }
+      return { download, name }
     })
   }, [downloads])
 
@@ -62,7 +63,7 @@ export function ModelsSettings(): React.JSX.Element {
   const installButtonIcon = getInstallButtonIcon({ isInstalling })
   const installButtonLabel = getInstallButtonLabel({ isInstalling })
   const installedCountLabel = getInstalledCountLabel({ count: voices.length })
-  const voiceList = getVoiceList({ filtered, voices, query, remove })
+  const voiceList = getVoiceList({ filtered, query, remove, voices })
 
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
@@ -80,8 +81,7 @@ export function ModelsSettings(): React.JSX.Element {
           </button>
         </div>
         <p className="text-sm text-text/55 mt-1">
-          Voices are stored in <code className="text-xs">models/</code>. Browse the catalog or add any
-          Piper voice.
+          Voices are stored in <code className="text-xs">models/</code>. Browse the catalog or add any Piper voice.
         </p>
       </header>
 
@@ -92,19 +92,19 @@ export function ModelsSettings(): React.JSX.Element {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium">Piper engine not found</p>
               <p className="text-xs text-text/60 mt-1">
-                Install the Piper engine — it creates a private virtualenv (Python <code>piper-tts</code>)
-                and downloads the selected default voices.
+                Install the Piper engine — it creates a private virtualenv (Python <code>piper-tts</code>) and downloads
+                the selected default voices.
               </p>
               {getDefaultVoiceCheckboxes({
-                selectedVoiceNames,
                 isInstalling,
-                onToggle: toggleVoiceSelected
+                onToggle: toggleVoiceSelected,
+                selectedVoiceNames,
               })}
               <button
                 type="button"
                 disabled={isInstalling}
                 onClick={() => {
-                  installEngine(selectedVoiceNames)
+                  void installEngine(selectedVoiceNames)
                 }}
                 className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-logo-primary text-logo-stroke disabled:opacity-60"
               >
@@ -170,6 +170,7 @@ export function ModelsSettings(): React.JSX.Element {
           return name !== voiceName
         })
       }
+
       return [...prev, voiceName]
     })
   }
@@ -183,10 +184,7 @@ export function ModelsSettings(): React.JSX.Element {
       <div className="mt-3 flex flex-col gap-1.5">
         {DEFAULT_VOICE_OPTIONS.map((option) => {
           return (
-            <label
-              key={option.voiceName}
-              className="flex items-center gap-2 text-sm cursor-pointer"
-            >
+            <label key={option.voiceName} className="flex items-center gap-2 text-sm cursor-pointer">
               <input
                 type="checkbox"
                 checked={params.selectedVoiceNames.includes(option.voiceName)}
@@ -209,6 +207,7 @@ export function ModelsSettings(): React.JSX.Element {
     if (params.isInstalling) {
       return <RefreshCw size={14} className="animate-spin" />
     }
+
     return <Download size={14} />
   }
 
@@ -216,13 +215,15 @@ export function ModelsSettings(): React.JSX.Element {
     if (params.isInstalling) {
       return 'Installing…'
     }
+
     return 'Install engine'
   }
 
   function getInstalledCountLabel(params: { count: number }): string {
     if (params.count > 0) {
-      return `(${params.count})`
+      return `(${String(params.count)})`
     }
+
     return ''
   }
 
@@ -234,11 +235,10 @@ export function ModelsSettings(): React.JSX.Element {
   }): React.JSX.Element {
     if (params.filtered.length === 0) {
       return (
-        <p className="text-sm text-text/50 px-1 py-6 text-center">
-          {getEmptyVoicesMessage({ voices: params.voices })}
-        </p>
+        <p className="text-sm text-text/50 px-1 py-6 text-center">{getEmptyVoicesMessage({ voices: params.voices })}</p>
       )
     }
+
     return (
       <div className="flex flex-col gap-2">
         {params.filtered.map((voice) => {
@@ -260,6 +260,7 @@ export function ModelsSettings(): React.JSX.Element {
     if (params.voices.length === 0) {
       return 'No voices yet — download one to get started.'
     }
+
     return 'No voices match your filter.'
   }
 }

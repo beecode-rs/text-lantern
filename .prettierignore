@@ -1,0 +1,12 @@
+node_modules
+pnpm-lock.yaml
+out
+dist
+build
+coverage
+.env*
+!.env*.example
+.history
+.tmp
+graphify-out
+resource/design-material

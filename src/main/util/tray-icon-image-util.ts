@@ -1,22 +1,21 @@
-import { nativeImage, type NativeImage } from 'electron'
-
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
+import { type NativeImage, nativeImage } from 'electron'
 
 const ICON_WIDTH = 28
 const ICON_HEIGHT = 20
 
-const BUBBLE = { x0: 3, y0: 4, x1: 14, y1: 12, r: 2 }
-const TAIL = { x0: 4, slope: 1.2, y0: 11, y1: 15, cap: 8 }
-const WAVES = { cx: 14, cy: 8, radii: [2.5, 4.5, 6.5], angleMaxDeg: 50, tolerance: 0.8 }
+const BUBBLE = { r: 2, x0: 3, x1: 14, y0: 4, y1: 12 }
+const TAIL = { cap: 8, slope: 1.2, x0: 4, y0: 11, y1: 15 }
+const WAVES = { angleMaxDeg: 50, cx: 14, cy: 8, radii: [2.5, 4.5, 6.5], tolerance: 0.8 }
 
 export class TrayIconImageUtil {
-  private _cachedIcons: { outline: NativeImage; filled: NativeImage } | undefined
+  protected _cachedIcons: { outline: NativeImage; filled: NativeImage } | undefined
 
-  public outlineIcon(): NativeImage {
+  outlineIcon(): NativeImage {
     return this._buildIconsOnce().outline
   }
 
-  public filledIcon(): NativeImage {
+  filledIcon(): NativeImage {
     return this._buildIconsOnce().filled
   }
 
@@ -36,6 +35,7 @@ export class TrayIconImageUtil {
     }
     const dx = px - rx
     const dy = py - ry
+
     return px >= x0 && px <= x1 && py >= y0 && py <= y1 && dx * dx + dy * dy <= r * r
   }
 
@@ -45,6 +45,7 @@ export class TrayIconImageUtil {
       return false
     }
     const xLimit = Math.min(x0 + (py - y0) * slope, cap)
+
     return px >= x0 && px <= xLimit
   }
 
@@ -60,17 +61,14 @@ export class TrayIconImageUtil {
     if (angleDeg > angleMaxDeg) {
       return false
     }
+
     return radii.some((ri) => {
       return Math.abs(dist - ri) <= tolerance
     })
   }
 
   protected _isPixelInsideMark(px: number, py: number): boolean {
-    return (
-      this._isPixelInsideSpeechBubble(px, py) ||
-      this._isPixelInsideTail(px, py) ||
-      this._isPixelOnWave(px, py)
-    )
+    return this._isPixelInsideSpeechBubble(px, py) || this._isPixelInsideTail(px, py) || this._isPixelOnWave(px, py)
   }
 
   protected _buildMarkPixelGrid(): Uint8Array {
@@ -80,6 +78,7 @@ export class TrayIconImageUtil {
       if (this._isPixelInsideMark(x, y)) {
         return 1
       }
+
       return 0
     })
   }
@@ -92,6 +91,7 @@ export class TrayIconImageUtil {
     if (x < 0 || y < 0 || x >= ICON_WIDTH || y >= ICON_HEIGHT) {
       return false
     }
+
     return grid[this._pixelIndexInGrid(x, y)] === 1
   }
 
@@ -126,13 +126,15 @@ export class TrayIconImageUtil {
       } else {
         buf[o + 3] = 0
       }
+
       return undefined
     })
     const img = nativeImage.createFromBuffer(buf, {
+      height: ICON_HEIGHT,
       width: ICON_WIDTH,
-      height: ICON_HEIGHT
     })
     img.setTemplateImage(true)
+
     return img
   }
 
@@ -142,9 +144,10 @@ export class TrayIconImageUtil {
     }
     const grid = this._buildMarkPixelGrid()
     this._cachedIcons = {
-      outline: this._renderPixelGridToImage({ grid, filled: false }),
-      filled: this._renderPixelGridToImage({ grid, filled: true })
+      filled: this._renderPixelGridToImage({ filled: true, grid }),
+      outline: this._renderPixelGridToImage({ filled: false, grid }),
     }
+
     return this._cachedIcons
   }
 }

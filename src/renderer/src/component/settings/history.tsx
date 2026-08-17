@@ -1,11 +1,11 @@
-import { Trash2 } from 'lucide-react'
-import { useSettingsStore } from '@src/renderer/src/store/settings'
-import { useHistoryStore } from '@src/renderer/src/store/history'
-import { SettingsGroup } from '@src/renderer/src/component/ui/settings-group'
-import { Row } from '@src/renderer/src/component/ui/row'
-import { HistoryItem } from '@src/renderer/src/component/settings/history-item'
 import { api } from '@src/renderer/src/api'
+import { HistoryItem } from '@src/renderer/src/component/settings/history-item'
+import { Row } from '@src/renderer/src/component/ui/row'
+import { SettingsGroup } from '@src/renderer/src/component/ui/settings-group'
+import { useHistoryStore } from '@src/renderer/src/store/history'
+import { useSettingsStore } from '@src/renderer/src/store/settings'
 import type { HistoryEntry } from '@src/shared/types'
+import { Trash2 } from 'lucide-react'
 
 export function HistorySettings(): React.JSX.Element {
   const settings = useSettingsStore((s) => {
@@ -31,7 +31,7 @@ export function HistorySettings(): React.JSX.Element {
   }
 
   const limitLabel = getLimitLabel({ historyLimit: settings.historyLimit })
-  const entryList = getEntryList({ entries, onReplay, clear })
+  const entryList = getEntryList({ clear, entries, onReplay })
 
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
@@ -49,7 +49,7 @@ export function HistorySettings(): React.JSX.Element {
             min={1}
             value={settings.historyLimit}
             onChange={(e) => {
-              update({ historyLimit: Math.max(1, Number(e.target.value) || 1) })
+              void update({ historyLimit: Math.max(1, Number(e.target.value) || 1) })
             }}
             className="w-24 px-2 py-1 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 text-right"
           />
@@ -64,7 +64,8 @@ export function HistorySettings(): React.JSX.Element {
     if (params.historyLimit === 1) {
       return '1 entry'
     }
-    return `${params.historyLimit} entries`
+
+    return `${String(params.historyLimit)} entries`
   }
 
   function getEntryList(params: {
@@ -79,6 +80,7 @@ export function HistorySettings(): React.JSX.Element {
         </div>
       )
     }
+
     return (
       <div className="flex flex-col gap-3">
         <div className="flex justify-end">

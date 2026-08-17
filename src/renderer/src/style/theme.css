@@ -60,3 +60,8 @@ body {
   border: 2px solid transparent;
   background-clip: padding-box;
 }
+
+/* Top strip acts as the draggable title bar (Electron). */
+.app-region-drag {
+  -webkit-app-region: drag;
+}

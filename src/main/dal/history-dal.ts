@@ -1,29 +1,27 @@
-import { randomUUID } from 'node:crypto'
-import { EventEmitter } from 'node:events'
-import fs from 'node:fs'
-
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-
 import { settingsDalSingleton } from '@src/main/dal/settings-dal'
 import { constant } from '@src/main/util/constants'
 import { logger } from '@src/main/util/logger'
 import { pathUtil } from '@src/main/util/path-util'
 import type { HistoryEntry } from '@src/shared/types'
+import { randomUUID } from 'node:crypto'
+import { EventEmitter } from 'node:events'
+import fs from 'node:fs'
 
 export class HistoryDal {
-  public readonly events: EventEmitter
+  readonly events: EventEmitter
 
-  private _cache: HistoryEntry[] = []
+  protected _cache: HistoryEntry[] = []
 
-  public constructor() {
+  constructor() {
     this.events = new EventEmitter()
     this.events.setMaxListeners(50)
   }
 
-  public init(): HistoryEntry[] {
+  init(): HistoryEntry[] {
     try {
       const raw = fs.readFileSync(this._historyFilePath(), 'utf8')
-      const parsed = JSON.parse(raw)
+      const parsed: unknown = JSON.parse(raw)
       if (Array.isArray(parsed)) {
         this._cache = parsed as HistoryEntry[]
       }
@@ -32,34 +30,37 @@ export class HistoryDal {
     }
     this._cache = this._cache.slice(0, this._resolveHistoryLimit())
     this._persistHistoryToDisk()
+
     return this._cache
   }
 
-  public get(): HistoryEntry[] {
+  get(): HistoryEntry[] {
     return this._cache
   }
 
-  public add(params: { text: string; voice: string }): HistoryEntry[] {
+  add(params: { text: string; voice: string }): HistoryEntry[] {
     const entry: HistoryEntry = {
+      createdAt: Date.now(),
       id: randomUUID(),
       text: params.text,
       voice: params.voice,
-      createdAt: Date.now()
     }
     this._cache = [entry, ...this._cache].slice(0, this._resolveHistoryLimit())
     this._persistHistoryToDisk()
     this._emitChanged()
+
     return this._cache
   }
 
-  public clear(): HistoryEntry[] {
+  clear(): HistoryEntry[] {
     this._cache = []
     this._persistHistoryToDisk()
     this._emitChanged()
+
     return this._cache
   }
 
-  public prune(): HistoryEntry[] {
+  prune(): HistoryEntry[] {
     const limited = this._cache.slice(0, this._resolveHistoryLimit())
     if (limited.length === this._cache.length) {
       return this._cache
@@ -67,6 +68,7 @@ export class HistoryDal {
     this._cache = limited
     this._persistHistoryToDisk()
     this._emitChanged()
+
     return this._cache
   }
 
@@ -79,6 +81,7 @@ export class HistoryDal {
     if (limit > 0) {
       return limit
     }
+
     return constant().history.defaultEntryLimit
   }
 

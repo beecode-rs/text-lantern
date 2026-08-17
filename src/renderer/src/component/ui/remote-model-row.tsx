@@ -1,14 +1,14 @@
-import { Download } from 'lucide-react'
 import { StarBadge } from '@src/renderer/src/component/ui/star-badge'
 import { formatSingleton } from '@src/renderer/src/lib/format'
 import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import type { RemoteVoice } from '@src/shared/types'
+import { Download } from 'lucide-react'
 
 export function RemoteModelRow({
   voice,
   isInstalled,
   isDownloading,
-  onDownload
+  onDownload,
 }: {
   voice: RemoteVoice
   isInstalled: boolean

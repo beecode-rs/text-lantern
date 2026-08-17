@@ -1,10 +1,9 @@
 import { AppStarter, setAppBootLogger } from '@beecode/msh-app-boot'
-import { app } from 'electron'
-
 import { ElectronApp } from '@src/main/app-boot/electron-app'
 import { MainWindowLifeCycle } from '@src/main/app-boot/init/main-window-life-cycle'
 import { APP_NAME } from '@src/main/util/constants'
 import { logger } from '@src/main/util/logger'
+import { app } from 'electron'
 
 app.setName(APP_NAME)
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
@@ -20,7 +19,7 @@ if (gotLock) {
     mainWindowLifeCycle.show()
   })
 
-  app.whenReady().then(() => {
+  void app.whenReady().then(() => {
     void appStarter.start().catch((err: unknown) => {
       logger().error('app boot failed:', err)
     })

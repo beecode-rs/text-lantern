@@ -1,35 +1,34 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-
 import { LANGUAGES_RAW, type LanguageInfo } from '@src/shared/language/languages-raw'
 
 export class LanguageCatalog {
   protected readonly _languages: readonly LanguageInfo[]
 
-  public constructor() {
+  constructor() {
     this._languages = this._mergeLanguages({
       base: LANGUAGES_RAW,
-      user: this._parseUserLanguages({ raw: this._readEnvVar({ name: 'languages' }) })
+      user: this._parseUserLanguages({ raw: this._readEnvVar({ name: 'languages' }) }),
     })
   }
 
-  public list(): readonly LanguageInfo[] {
+  list(): readonly LanguageInfo[] {
     return this._languages
   }
 
-  public getDisplayName(params: { code: string }): string {
+  getDisplayName(params: { code: string }): string {
     const match = this._languages.find((language) => {
       return language.code === params.code
     })
+
     return match?.name ?? params.code
   }
 
   protected _readEnvVar(params: { name: string }): string | undefined {
-    const globalProcess = (
-      globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }
-    ).process
+    const globalProcess = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process
     if (!globalProcess) {
       return undefined
     }
+
     return globalProcess.env?.[params.name]
   }
 
@@ -42,12 +41,10 @@ export class LanguageCatalog {
     try {
       parsed = JSON.parse(params.raw)
     } catch {
-      console.warn('[languages] env var "languages" is not valid JSON; ignoring it.')
       return []
     }
 
     if (!Array.isArray(parsed)) {
-      console.warn('[languages] env var "languages" is not a JSON array; ignoring it.')
       return []
     }
 
@@ -64,14 +61,12 @@ export class LanguageCatalog {
       if (!code || !name) {
         return []
       }
+
       return [{ code, name }]
     })
   }
 
-  protected _mergeLanguages(params: {
-    base: readonly LanguageInfo[]
-    user: readonly LanguageInfo[]
-  }): LanguageInfo[] {
+  protected _mergeLanguages(params: { base: readonly LanguageInfo[]; user: readonly LanguageInfo[] }): LanguageInfo[] {
     const byCode = new Map<string, LanguageInfo>()
     params.base.forEach((entry) => {
       byCode.set(entry.code, entry)
@@ -79,6 +74,7 @@ export class LanguageCatalog {
     params.user.forEach((entry) => {
       byCode.set(entry.code, entry)
     })
+
     return [...byCode.values()]
   }
 }

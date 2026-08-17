@@ -1,15 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
-import { Square, Loader2, AlertTriangle } from 'lucide-react'
-import type { TtsStatus } from '@src/shared/types'
 import { api } from '@src/renderer/src/api'
 import { StreamPlayer } from '@src/renderer/src/lib/stream-player'
+import type { TtsStatus } from '@src/shared/types'
+import { AlertTriangle, Loader2, Square } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 export function NowPlaying(): React.JSX.Element {
   const [status, setStatus] = useState<TtsStatus>({ state: 'idle' })
   const playerRef = useRef<StreamPlayer | null>(null)
-  if (playerRef.current === null) {
-    playerRef.current = new StreamPlayer()
-  }
+  playerRef.current ??= new StreamPlayer()
 
   useEffect(() => {
     const offStatus = api.onTtsStatus(setStatus)
@@ -20,7 +18,7 @@ export function NowPlaying(): React.JSX.Element {
         return
       }
       player.onDone = () => {
-        api.playbackEnded()
+        void api.playbackEnded()
       }
       player.start({ sampleRate })
     })
@@ -63,9 +61,7 @@ export function NowPlaying(): React.JSX.Element {
                 Reading <span className="opacity-70 selectable">· {status.voice}</span>
               </span>
             )}
-            {status.state === 'error' && (
-              <span className="truncate selectable">{status.error}</span>
-            )}
+            {status.state === 'error' && <span className="truncate selectable">{status.error}</span>}
           </div>
 
           {busy && (

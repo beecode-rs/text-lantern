@@ -60,7 +60,7 @@ export const LANGUAGES_RAW = [
   { code: 'ur', name: 'Urdu' },
   { code: 'vi', name: 'Vietnamese' },
   { code: 'vo', name: 'Volapük' },
-  { code: 'yi', name: 'Yiddish' }
+  { code: 'yi', name: 'Yiddish' },
 ] as const
 
 export type Language = (typeof LANGUAGES_RAW)[number]['code']

@@ -1,20 +1,18 @@
-import { Menu, Tray as ElectronTray, type BrowserWindow } from 'electron'
-
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-
 import { ttsServiceSingleton } from '@src/main/business/service/tts-service'
 import { settingsDalSingleton } from '@src/main/dal/settings-dal'
 import { APP_NAME } from '@src/main/util/constants'
 import { trayIconImageUtilSingleton } from '@src/main/util/tray-icon-image-util'
 import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import type { Lang } from '@src/shared/types'
+import { type BrowserWindow, Tray as ElectronTray, Menu } from 'electron'
 
 export class Tray {
-  private _tray: Electron.Tray | null = null
+  protected _tray: Electron.Tray | null = null
 
-  private _trayWindow: BrowserWindow | null = null
+  protected _trayWindow: BrowserWindow | null = null
 
-  public create(params: { window: BrowserWindow }): Electron.Tray {
+  create(params: { window: BrowserWindow }): Electron.Tray {
     this._trayWindow = params.window
     this._tray = new ElectronTray(trayIconImageUtilSingleton().outlineIcon())
     this._tray.setToolTip(APP_NAME)
@@ -23,17 +21,18 @@ export class Tray {
       params.window.show()
       params.window.focus()
     })
+
     return this._tray
   }
 
-  public refreshMenu(): void {
+  refreshMenu(): void {
     if (!this._tray || !this._trayWindow) {
       return
     }
     this._tray.setContextMenu(Menu.buildFromTemplate(this._buildTrayMenuTemplate()))
   }
 
-  public setReading(reading: boolean): void {
+  setReading(reading: boolean): void {
     if (!this._tray) {
       return
     }
@@ -46,7 +45,7 @@ export class Tray {
     }
   }
 
-  public destroy(): void {
+  destroy(): void {
     this._tray?.destroy()
     this._tray = null
   }
@@ -57,40 +56,41 @@ export class Tray {
       void ttsServiceSingleton().speak({ lang, settings: settingsDalSingleton().get() })
     }
     const readAutoItem: Electron.MenuItemConstructorOptions = {
-      label: 'Read selection (auto)',
       click: () => {
         read('auto')
-      }
+      },
+      label: 'Read selection (auto)',
     }
     const items: Electron.MenuItemConstructorOptions[] = [readAutoItem]
     settings.languageBindings.forEach((binding) => {
       items.push({
-        label: `Read — ${languageCatalogSingleton().getDisplayName({ code: binding.langCode })} (${binding.voice})`,
         click: () => {
           read(binding.langCode)
-        }
+        },
+        label: `Read — ${languageCatalogSingleton().getDisplayName({ code: binding.langCode })} (${binding.voice})`,
       })
     })
     items.push(
       { type: 'separator' },
       {
-        label: 'Stop',
         click: () => {
           void ttsServiceSingleton().stop()
-        }
+        },
+        label: 'Stop',
       },
       { type: 'separator' },
       {
-        label: 'Settings…',
         click: (): void => {
           if (this._trayWindow) {
             this._trayWindow.show()
             this._trayWindow.focus()
           }
-        }
+        },
+        label: 'Settings…',
       },
-      { role: 'quit', label: `Quit ${APP_NAME}` }
+      { label: `Quit ${APP_NAME}`, role: 'quit' },
     )
+
     return items
   }
 }

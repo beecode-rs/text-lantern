@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
 import { api } from '@src/renderer/src/api'
+import iconUrl from '@src/renderer/src/asset/icon.png'
 import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
 import type { Settings } from '@src/shared/types'
-import iconUrl from '@src/renderer/src/asset/icon.png'
+import { useEffect, useState } from 'react'
 
 export function AboutSettings(): React.JSX.Element {
   const [settings, setSettings] = useState<Settings | null>(null)
@@ -28,9 +28,9 @@ export function AboutSettings(): React.JSX.Element {
           </div>
         </div>
         <p className="text-sm text-text/70 leading-relaxed">
-          Press a global shortcut to read the selected text aloud with neural Piper voices. Everything
-          runs on your device — nothing is sent anywhere. Language is auto-detected from the text or
-          chosen via a per-language shortcut.
+          Press a global shortcut to read the selected text aloud with neural Piper voices. Everything runs on your
+          device — nothing is sent anywhere. Language is auto-detected from the text or chosen via a per-language
+          shortcut.
         </p>
         {bindingList}
       </section>
@@ -81,6 +81,7 @@ export function AboutSettings(): React.JSX.Element {
     if (!params.settings || params.settings.languageBindings.length === 0) {
       return null
     }
+
     return (
       <div className="text-xs text-text/55 mt-1">
         {params.settings.languageBindings.map((binding, index) => {
@@ -100,6 +101,7 @@ export function AboutSettings(): React.JSX.Element {
     if (params.index > 0) {
       return ' · '
     }
+
     return ''
   }
 }

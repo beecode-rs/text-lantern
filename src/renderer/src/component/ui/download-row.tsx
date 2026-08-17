@@ -1,11 +1,11 @@
-import { Check, RefreshCw, X } from 'lucide-react'
 import type { VoiceDownload, VoiceDownloadState } from '@src/shared/types'
+import { Check, RefreshCw, X } from 'lucide-react'
 
 export function DownloadRow({
   name,
   download,
   onRetry,
-  onDismiss
+  onDismiss,
 }: {
   name: string
   download: VoiceDownload
@@ -13,12 +13,13 @@ export function DownloadRow({
   onDismiss?: () => void
 }): React.JSX.Element {
   const pct = Math.round(download.progress * 100)
+
   return (
     <div className={getCardClassName({ state: download.state })}>
       <div className="flex items-center justify-between text-sm">
         <span className="truncate selectable">{name}</span>
         <div className="flex items-center gap-1">
-          {getStatusBadge({ state: download.state, pct })}
+          {getStatusBadge({ pct, state: download.state })}
           {download.state === 'error' && onRetry !== undefined && (
             <button
               type="button"
@@ -42,10 +43,7 @@ export function DownloadRow({
         </div>
       </div>
       <div className="mt-2 h-1.5 rounded-full bg-mid-gray/25 overflow-hidden">
-        <div
-          className={getBarClassName({ state: download.state })}
-          style={{ width: `${pct}%` }}
-        />
+        <div className={getBarClassName({ state: download.state })} style={{ width: `${String(pct)}%` }} />
       </div>
     </div>
   )
