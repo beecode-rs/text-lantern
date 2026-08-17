@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Sidebar, type Section } from '@src/renderer/src/component/sidebar'
 import { NowPlaying } from '@src/renderer/src/component/now-playing'
 import { SettingsSection } from '@src/renderer/src/component/settings-section'
+import { ShortcutSetupPrompt } from '@src/renderer/src/component/ui/shortcut-setup-prompt'
 import { useSettingsStore } from '@src/renderer/src/store/settings'
 import { useHistoryStore } from '@src/renderer/src/store/history'
 import { useModelsStore } from '@src/renderer/src/store/models'
@@ -11,6 +12,7 @@ import { useTheme } from '@src/renderer/src/lib/use-theme'
 
 export default function App(): React.JSX.Element {
   const [section, setSection] = useState<Section>('general')
+  const [isSetupPromptVisible, setIsSetupPromptVisible] = useState(false)
   const settings = useSettingsStore((s) => s.settings)
   const loadSettings = useSettingsStore((s) => s.load)
   const replaceSettings = useSettingsStore((s) => s.replace)
@@ -18,6 +20,8 @@ export default function App(): React.JSX.Element {
   const replaceHistory = useHistoryStore((s) => s.replace)
   const appendLog = useModelsStore((s) => s.appendLog)
   const setProgress = useModelsStore((s) => s.setProgress)
+  const hasCompletedDownload = useModelsStore((s) => s.hasCompletedDownload)
+  const acknowledgeCompletedDownload = useModelsStore((s) => s.acknowledgeCompletedDownload)
   const appendConfigLog = useConfigBackupStore((s) => s.appendLog)
   const setConfigProgress = useConfigBackupStore((s) => s.setProgress)
 
@@ -59,6 +63,25 @@ export default function App(): React.JSX.Element {
     setConfigProgress
   ])
 
+  useEffect(() => {
+    if (!hasCompletedDownload) {
+      return
+    }
+    if (settings === null) {
+      return
+    }
+    if (settings.languageBindings.length > 0) {
+      acknowledgeCompletedDownload()
+      return
+    }
+    setIsSetupPromptVisible(true)
+  }, [hasCompletedDownload, settings, acknowledgeCompletedDownload])
+
+  const closeSetupPrompt = (): void => {
+    setIsSetupPromptVisible(false)
+    acknowledgeCompletedDownload()
+  }
+
   useTheme(settings?.theme)
 
   if (!settings) {
@@ -81,6 +104,16 @@ export default function App(): React.JSX.Element {
       </div>
 
       <NowPlaying />
+
+      {isSetupPromptVisible && (
+        <ShortcutSetupPrompt
+          onSetup={() => {
+            closeSetupPrompt()
+            setSection('languages')
+          }}
+          onDismiss={closeSetupPrompt}
+        />
+      )}
     </div>
   )
 }

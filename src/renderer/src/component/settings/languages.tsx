@@ -7,7 +7,7 @@ import { Row } from '@src/renderer/src/component/ui/row'
 import { ShortcutInput } from '@src/renderer/src/component/ui/shortcut-input'
 import { StarBadge } from '@src/renderer/src/component/ui/star-badge'
 import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
-import type { LanguageBinding } from '@src/shared/types'
+import type { LanguageBinding, Settings } from '@src/shared/types'
 
 const BINDING_GRID = 'grid grid-cols-[minmax(130px,170px)_minmax(120px,190px)_minmax(150px,160px)_minmax(0,1fr)] items-center gap-2 px-4'
 
@@ -62,9 +62,11 @@ export function LanguagesSettings(): React.JSX.Element {
       name: languageCatalogSingleton().getDisplayName({ code: binding.langCode })
     }
   })
-  const isFallbackMissing = !settings.languageBindings.some((binding) => {
-    return binding.langCode === settings.fallbackLang
-  })
+  const isFallbackMissing =
+    settings.fallbackLang !== '' &&
+    !settings.languageBindings.some((binding) => {
+      return binding.langCode === settings.fallbackLang
+    })
   const isAutoDisabled = settings.languageBindings.length === 0
 
   const fallbackSelectValue = getFallbackSelectValue({ isAutoDisabled, fallbackLang: settings.fallbackLang })
@@ -86,7 +88,7 @@ export function LanguagesSettings(): React.JSX.Element {
   const removeBinding = (id: string): void => {
     void update({
       languageBindings: settings.languageBindings.filter((b) => {
-        return b.id === id
+        return b.id !== id
       })
     })
   }
@@ -95,12 +97,7 @@ export function LanguagesSettings(): React.JSX.Element {
     const usedCodes = settings.languageBindings.map((b) => {
       return b.langCode
     })
-    const langCode =
-      languageCatalogSingleton()
-        .list()
-        .find((l) => {
-          return !usedCodes.includes(l.code)
-        })?.code ?? ''
+    const langCode = pickUnusedLangCode({ usedCodes, voices })
     const voice = findVoiceForLangCode({ voices, langCode })
     const newBinding: LanguageBinding = {
       id: crypto.randomUUID(),
@@ -108,7 +105,11 @@ export function LanguagesSettings(): React.JSX.Element {
       voice,
       shortcut: ''
     }
-    void update({ languageBindings: [...settings.languageBindings, newBinding] })
+    const patch: Partial<Settings> = { languageBindings: [...settings.languageBindings, newBinding] }
+    if (settings.fallbackLang === '' && langCode !== '') {
+      patch.fallbackLang = langCode
+    }
+    void update(patch)
   }
 
   return (
@@ -136,6 +137,12 @@ export function LanguagesSettings(): React.JSX.Element {
                 <Trash2 size={13} />
               </span>
             </div>
+            {settings.languageBindings.length === 0 && (
+              <p className="px-4 py-6 text-sm text-text/50 text-center">
+                No languages yet. Download a voice in <strong>Models</strong>, then add it here and
+                record a shortcut.
+              </p>
+            )}
             {settings.languageBindings.map((binding) => {
               const usedByOthers = settings.languageBindings
                 .filter((b) => {
@@ -322,6 +329,30 @@ export function LanguagesSettings(): React.JSX.Element {
       return params.binding
     }
     return { ...params.binding, ...params.patch }
+  }
+
+  function pickUnusedLangCode(params: {
+    usedCodes: string[]
+    voices: { name: string; lang: string }[]
+  }): string {
+    const catalogCodes = new Set(
+      languageCatalogSingleton().list().map((l) => {
+        return l.code
+      })
+    )
+    const installedVoice = params.voices.find((v) => {
+      return catalogCodes.has(v.lang) && !params.usedCodes.includes(v.lang)
+    })
+    if (installedVoice) {
+      return installedVoice.lang
+    }
+    return (
+      languageCatalogSingleton()
+        .list()
+        .find((l) => {
+          return !params.usedCodes.includes(l.code)
+        })?.code ?? ''
+    )
   }
 
   function findVoiceForLangCode(params: { voices: { name: string; lang: string }[]; langCode: string }): string {

@@ -14,6 +14,7 @@ interface ModelsStore {
   remote: RemoteVoice[]
   isSearching: boolean
   searchError: string | null
+  hasCompletedDownload: boolean
 
   load: () => Promise<void>
   refreshEngine: () => Promise<void>
@@ -24,6 +25,7 @@ interface ModelsStore {
   search: (query: string) => Promise<void>
   appendLog: (line: string) => void
   setProgress: (name: string, p: number) => void
+  acknowledgeCompletedDownload: () => void
 }
 
 export const useModelsStore = create<ModelsStore>((set, get) => {
@@ -59,6 +61,7 @@ export const useModelsStore = create<ModelsStore>((set, get) => {
     remote: [],
     isSearching: false,
     searchError: null,
+    hasCompletedDownload: false,
 
     load: async () => {
       set({ isLoading: true })
@@ -72,7 +75,7 @@ export const useModelsStore = create<ModelsStore>((set, get) => {
       set({ downloads: { ...get().downloads, [name]: { progress: 0, state: 'downloading' } } })
       try {
         const voices = await api.downloadVoice(name)
-        set({ voices })
+        set({ voices, hasCompletedDownload: true })
         markDownloadDone(name)
       } catch (err) {
         get().appendLog(`Download failed for ${name}: ${String(err)}`)
@@ -91,7 +94,7 @@ export const useModelsStore = create<ModelsStore>((set, get) => {
       const ok = await api.installEngine(voiceNames)
       const isEngineInstalled = await api.isEngineInstalled()
       const voices = await api.listVoices()
-      set({ isInstalling: false, isEngineInstalled, voices })
+      set({ isInstalling: false, isEngineInstalled, voices, hasCompletedDownload: voices.length > 0 })
       if (!ok) {
         get().appendLog('Engine install finished but did not verify.')
       }
@@ -114,6 +117,9 @@ export const useModelsStore = create<ModelsStore>((set, get) => {
         return
       }
       set({ downloads: { ...get().downloads, [name]: { progress: p, state: 'downloading' } } })
+    },
+    acknowledgeCompletedDownload: () => {
+      set({ hasCompletedDownload: false })
     }
   }
 })

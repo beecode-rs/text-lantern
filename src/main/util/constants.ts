@@ -4,7 +4,7 @@ import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 import packageJson from '#packageJson' with { type: 'json' }
 
 import { objectUtil } from '@src/main/util/object-util'
-import type { LanguageBinding, Settings } from '@src/shared/types'
+import type { Settings } from '@src/shared/types'
 import {
   DEFAULT_ENGLISH_VOICE_NAME,
   DEFAULT_SERBIAN_VOICE_NAME
@@ -17,23 +17,9 @@ export const constant = singletonPattern(() => {
   const englishVoiceName = DEFAULT_ENGLISH_VOICE_NAME
   const defaultHistoryEntryLimit = 5
   const currentSettingsSchemaVersion = 3
-  const defaultLanguageBindings: LanguageBinding[] = [
-    {
-      id: 'sr',
-      langCode: 'sr',
-      voice: serbianVoiceName,
-      shortcut: 'CommandOrControl+Shift+S'
-    },
-    {
-      id: 'en',
-      langCode: 'en',
-      voice: englishVoiceName,
-      shortcut: 'CommandOrControl+Shift+E'
-    }
-  ]
   const defaultSettings: Settings = {
-    languageBindings: structuredClone(defaultLanguageBindings),
-    fallbackLang: 'en',
+    languageBindings: [],
+    fallbackLang: '',
     autoShortcut: 'CommandOrControl+Shift+R',
     stopShortcut: 'CommandOrControl+Shift+Q',
     rate: 1.0,
@@ -80,7 +66,6 @@ export const constant = singletonPattern(() => {
     },
     settings: {
       currentSchemaVersion: currentSettingsSchemaVersion,
-      defaultLanguageBindings,
       defaultSettings
     },
     textSelection: {

@@ -66,6 +66,14 @@ export class TtsService {
       settings: params.settings
     })
 
+    if (!voice) {
+      this._emitTtsStatus({
+        state: 'error',
+        error: 'No language is set up yet. Open Settings → Languages.'
+      })
+      return
+    }
+
     if (!this._hasVoiceModelFiles({ voice })) {
       this._emitTtsStatus({
         state: 'error',

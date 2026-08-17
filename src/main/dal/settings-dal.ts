@@ -6,6 +6,10 @@ import { constant } from '@src/main/util/constants'
 import { logger } from '@src/main/util/logger'
 import { pathUtil } from '@src/main/util/path-util'
 import type { LanguageBinding, Settings } from '@src/shared/types'
+import {
+  DEFAULT_ENGLISH_VOICE_NAME,
+  DEFAULT_SERBIAN_VOICE_NAME
+} from '@src/shared/voice/default-voice'
 
 interface LegacyShortcuts {
   auto?: string
@@ -77,22 +81,20 @@ export class SettingsDal {
       return null
     }
     const sc = parsed.shortcuts ?? {}
-    return constant().settings.defaultLanguageBindings.map<LanguageBinding>((binding) => {
-      if (binding.langCode === 'sr') {
-        return {
-          id: binding.id,
-          langCode: 'sr',
-          voice: parsed.voiceSr ?? binding.voice,
-          shortcut: sc.sr ?? binding.shortcut
-        }
-      }
-      return {
-        id: binding.id,
+    return [
+      {
+        id: 'sr',
+        langCode: 'sr',
+        voice: parsed.voiceSr ?? DEFAULT_SERBIAN_VOICE_NAME,
+        shortcut: sc.sr ?? 'CommandOrControl+Shift+S'
+      },
+      {
+        id: 'en',
         langCode: 'en',
-        voice: parsed.voiceEn ?? binding.voice,
-        shortcut: sc.en ?? binding.shortcut
+        voice: parsed.voiceEn ?? DEFAULT_ENGLISH_VOICE_NAME,
+        shortcut: sc.en ?? 'CommandOrControl+Shift+E'
       }
-    })
+    ]
   }
 
   protected _migrateLegacyRate(params: {
@@ -117,15 +119,17 @@ export class SettingsDal {
     parsed: Partial<Settings> & LegacySettings
   }): Settings {
     const { defaults, parsed } = params
+    const legacyBindings = this._migrateLegacyBindings({ parsed })
     const bindings = Array.isArray(parsed.languageBindings)
       ? parsed.languageBindings
-      : this._migrateLegacyBindings({ parsed }) ?? defaults.languageBindings
+      : legacyBindings ?? defaults.languageBindings
     const autoShortcut = parsed.autoShortcut ?? parsed.shortcuts?.auto ?? defaults.autoShortcut
     const stopShortcut = parsed.stopShortcut ?? parsed.shortcuts?.stop ?? defaults.stopShortcut
     const rate = this._migrateLegacyRate({ rate: parsed.rate, schemaVersion: parsed.schemaVersion }) ?? defaults.rate
+    const fallbackLang = this._resolveFallbackLang({ parsed, legacyBindings, defaults })
     return {
       languageBindings: bindings,
-      fallbackLang: parsed.fallbackLang ?? defaults.fallbackLang,
+      fallbackLang,
       autoShortcut,
       stopShortcut,
       rate,
@@ -138,6 +142,20 @@ export class SettingsDal {
       historyLimit: parsed.historyLimit ?? defaults.historyLimit,
       schemaVersion: constant().settings.currentSchemaVersion
     }
+  }
+
+  protected _resolveFallbackLang(params: {
+    parsed: Partial<Settings> & LegacySettings
+    legacyBindings: LanguageBinding[] | null
+    defaults: Settings
+  }): string {
+    if (params.parsed.fallbackLang !== undefined) {
+      return params.parsed.fallbackLang
+    }
+    if (params.legacyBindings !== null) {
+      return 'en'
+    }
+    return params.defaults.fallbackLang
   }
 
   protected _persistSettingsToDisk(): void {
