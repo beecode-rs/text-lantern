@@ -1,8 +1,9 @@
 import { LifeCycle } from '@beecode/msh-app-boot'
-import { logger } from '@src/main/util/logger'
 import { app } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
+
+import { logger } from '#src/main/util/logger'
 
 export class UserDataMigrationLifeCycle extends LifeCycle {
   constructor() {

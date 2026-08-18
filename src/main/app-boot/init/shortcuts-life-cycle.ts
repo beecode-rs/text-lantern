@@ -1,5 +1,6 @@
 import { LifeCycle } from '@beecode/msh-app-boot'
-import { shortcutsSingleton } from '@src/main/lib/shortcuts'
+
+import { shortcutsSingleton } from '#src/main/lib/shortcuts'
 
 export class ShortcutsLifeCycle extends LifeCycle {
   constructor() {

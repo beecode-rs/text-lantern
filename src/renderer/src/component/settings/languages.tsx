@@ -1,13 +1,14 @@
-import { Row } from '@src/renderer/src/component/ui/row'
-import { SettingsGroup } from '@src/renderer/src/component/ui/settings-group'
-import { ShortcutInput } from '@src/renderer/src/component/ui/shortcut-input'
-import { StarBadge } from '@src/renderer/src/component/ui/star-badge'
-import { useModelsStore } from '@src/renderer/src/store/models'
-import { useSettingsStore } from '@src/renderer/src/store/settings'
-import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
-import type { LanguageBinding, Settings } from '@src/shared/types'
 import { AlertTriangle, Plus, Trash2 } from 'lucide-react'
 import { useEffect } from 'react'
+
+import { Row } from '#src/renderer/src/component/ui/row'
+import { SettingsGroup } from '#src/renderer/src/component/ui/settings-group'
+import { ShortcutInput } from '#src/renderer/src/component/ui/shortcut-input'
+import { StarBadge } from '#src/renderer/src/component/ui/star-badge'
+import { useModelsStore } from '#src/renderer/src/store/models'
+import { useSettingsStore } from '#src/renderer/src/store/settings'
+import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
+import type { LanguageBinding, Settings } from '#src/shared/types'
 
 const BINDING_GRID =
   'grid grid-cols-[minmax(130px,170px)_minmax(120px,190px)_minmax(150px,160px)_minmax(0,1fr)] items-center gap-2 px-4'

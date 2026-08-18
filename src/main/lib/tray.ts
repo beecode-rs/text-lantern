@@ -1,11 +1,12 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-import { ttsServiceSingleton } from '@src/main/business/service/tts-service'
-import { settingsDalSingleton } from '@src/main/dal/settings-dal'
-import { APP_NAME } from '@src/main/util/constants'
-import { trayIconImageUtilSingleton } from '@src/main/util/tray-icon-image-util'
-import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
-import type { Lang } from '@src/shared/types'
 import { type BrowserWindow, Tray as ElectronTray, Menu } from 'electron'
+
+import { ttsServiceSingleton } from '#src/main/business/service/tts-service'
+import { settingsDalSingleton } from '#src/main/dal/settings-dal'
+import { APP_NAME } from '#src/main/util/constants'
+import { trayIconImageUtilSingleton } from '#src/main/util/tray-icon-image-util'
+import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
+import type { Lang } from '#src/shared/types'
 
 export class Tray {
   protected _tray: Electron.Tray | null = null

@@ -1,6 +1,7 @@
-import { api } from '@src/renderer/src/api'
-import type { RemoteVoice, Voice, VoiceDownload } from '@src/shared/types'
 import { create } from 'zustand'
+
+import { api } from '#src/renderer/src/api'
+import type { RemoteVoice, Voice, VoiceDownload } from '#src/shared/types'
 
 const DONE_DISMISS_DELAY_MS = 3000
 

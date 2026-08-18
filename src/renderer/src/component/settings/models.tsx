@@ -1,11 +1,12 @@
-import { DownloadModels } from '@src/renderer/src/component/settings/download-models'
-import { DownloadRow } from '@src/renderer/src/component/ui/download-row'
-import { ModelCard } from '@src/renderer/src/component/ui/model-card'
-import { useModelsStore } from '@src/renderer/src/store/models'
-import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
-import { DEFAULT_VOICE_OPTIONS } from '@src/shared/voice/default-voice'
 import { AlertTriangle, Download, RefreshCw, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+
+import { DownloadModels } from '#src/renderer/src/component/settings/download-models'
+import { DownloadRow } from '#src/renderer/src/component/ui/download-row'
+import { ModelCard } from '#src/renderer/src/component/ui/model-card'
+import { useModelsStore } from '#src/renderer/src/store/models'
+import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
+import { DEFAULT_VOICE_OPTIONS } from '#src/shared/voice/default-voice'
 
 export function ModelsSettings(): React.JSX.Element {
   const {

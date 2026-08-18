@@ -1,5 +1,6 @@
-import { type HistoryEntry, type Settings, type TtsStatus } from '@src/shared/types'
 import { type IpcRendererEvent, ipcRenderer } from 'electron'
+
+import { type HistoryEntry, type Settings, type TtsStatus } from '#src/shared/types'
 
 export type ChannelPayloads = {
   'config:log': string

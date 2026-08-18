@@ -1,5 +1,6 @@
-import type { ThemePreference } from '@src/shared/types'
 import { useEffect } from 'react'
+
+import type { ThemePreference } from '#src/shared/types'
 
 const DARK_MEDIA_QUERY = '(prefers-color-scheme: dark)'
 

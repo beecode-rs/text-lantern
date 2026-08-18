@@ -1,8 +1,9 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-import { type Frame, FrameReader } from '@src/main/lib/piper/_frame-reader'
-import { constant } from '@src/main/util/constants'
-import { pathUtil } from '@src/main/util/path-util'
 import { type ChildProcess, spawn } from 'node:child_process'
+
+import { type Frame, FrameReader } from '#src/main/lib/piper/_frame-reader'
+import { constant } from '#src/main/util/constants'
+import { pathUtil } from '#src/main/util/path-util'
 
 const MSG_READY = 0x01
 const MSG_AUDIO = 0x02

@@ -1,6 +1,7 @@
 import { LifeCycle } from '@beecode/msh-app-boot'
-import { ipcController } from '@src/main/controller/ipc-controller'
 import type { BrowserWindow } from 'electron'
+
+import { ipcController } from '#src/main/controller/ipc-controller'
 
 export class IpcLifeCycle extends LifeCycle {
   protected readonly _windowGetter: () => BrowserWindow | null

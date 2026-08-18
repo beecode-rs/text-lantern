@@ -1,11 +1,12 @@
 import { LifeCycle } from '@beecode/msh-app-boot'
-import { settingsDalSingleton } from '@src/main/dal/settings-dal'
-import { constant } from '@src/main/util/constants'
-import { logger } from '@src/main/util/logger'
-import type { ThemePreference } from '@src/shared/types'
 import { BrowserWindow, app, nativeTheme, shell } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+import { settingsDalSingleton } from '#src/main/dal/settings-dal'
+import { constant } from '#src/main/util/constants'
+import { logger } from '#src/main/util/logger'
+import type { ThemePreference } from '#src/shared/types'
 
 export class MainWindowLifeCycle extends LifeCycle {
   protected _win: BrowserWindow | null = null

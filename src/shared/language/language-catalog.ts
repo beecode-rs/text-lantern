@@ -1,5 +1,6 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-import { LANGUAGES_RAW, type LanguageInfo } from '@src/shared/language/languages-raw'
+
+import { LANGUAGES_RAW, type LanguageInfo } from '#src/shared/language/languages-raw'
 
 export class LanguageCatalog {
   protected readonly _languages: readonly LanguageInfo[]

@@ -1,6 +1,7 @@
-import { channelSubscriber } from '@src/preload/_channel-subscriber'
-import type { TtsApi } from '@src/shared/types'
 import { contextBridge, ipcRenderer } from 'electron'
+
+import { channelSubscriber } from '#src/preload/_channel-subscriber'
+import type { TtsApi } from '#src/shared/types'
 
 const api: TtsApi = {
   clearHistory: () => {

@@ -1,13 +1,14 @@
-import { DownloadRow } from '@src/renderer/src/component/ui/download-row'
-import { Row } from '@src/renderer/src/component/ui/row'
-import { Select, type SelectOption } from '@src/renderer/src/component/ui/select'
-import { SettingsGroup } from '@src/renderer/src/component/ui/settings-group'
-import { Slider } from '@src/renderer/src/component/ui/slider'
-import { Toggle } from '@src/renderer/src/component/ui/toggle'
-import { useConfigBackupStore } from '@src/renderer/src/store/config-backup'
-import { useSettingsStore } from '@src/renderer/src/store/settings'
-import type { ThemePreference, VoiceDownload } from '@src/shared/types'
 import { Save, Upload } from 'lucide-react'
+
+import { DownloadRow } from '#src/renderer/src/component/ui/download-row'
+import { Row } from '#src/renderer/src/component/ui/row'
+import { Select, type SelectOption } from '#src/renderer/src/component/ui/select'
+import { SettingsGroup } from '#src/renderer/src/component/ui/settings-group'
+import { Slider } from '#src/renderer/src/component/ui/slider'
+import { Toggle } from '#src/renderer/src/component/ui/toggle'
+import { useConfigBackupStore } from '#src/renderer/src/store/config-backup'
+import { useSettingsStore } from '#src/renderer/src/store/settings'
+import type { ThemePreference, VoiceDownload } from '#src/shared/types'
 
 const THEME_OPTIONS: SelectOption<ThemePreference>[] = [
   { label: 'System', value: 'system' },

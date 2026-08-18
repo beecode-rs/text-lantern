@@ -1,12 +1,13 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-import { constant } from '@src/main/util/constants'
-import { pathUtil } from '@src/main/util/path-util'
-import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
-import type { RemoteVoice } from '@src/shared/types'
 import { type ChildProcess, spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+
+import { constant } from '#src/main/util/constants'
+import { pathUtil } from '#src/main/util/path-util'
+import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
+import type { RemoteVoice } from '#src/shared/types'
 
 interface HfTreeEntry {
   type: 'file' | 'directory'

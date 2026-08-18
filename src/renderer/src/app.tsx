@@ -1,14 +1,15 @@
-import { api } from '@src/renderer/src/api'
-import { NowPlaying } from '@src/renderer/src/component/now-playing'
-import { SettingsSection } from '@src/renderer/src/component/settings-section'
-import { type Section, Sidebar } from '@src/renderer/src/component/sidebar'
-import { ShortcutSetupPrompt } from '@src/renderer/src/component/ui/shortcut-setup-prompt'
-import { useTheme } from '@src/renderer/src/lib/use-theme'
-import { useConfigBackupStore } from '@src/renderer/src/store/config-backup'
-import { useHistoryStore } from '@src/renderer/src/store/history'
-import { useModelsStore } from '@src/renderer/src/store/models'
-import { useSettingsStore } from '@src/renderer/src/store/settings'
 import { useEffect, useState } from 'react'
+
+import { api } from '#src/renderer/src/api'
+import { NowPlaying } from '#src/renderer/src/component/now-playing'
+import { SettingsSection } from '#src/renderer/src/component/settings-section'
+import { type Section, Sidebar } from '#src/renderer/src/component/sidebar'
+import { ShortcutSetupPrompt } from '#src/renderer/src/component/ui/shortcut-setup-prompt'
+import { useTheme } from '#src/renderer/src/lib/use-theme'
+import { useConfigBackupStore } from '#src/renderer/src/store/config-backup'
+import { useHistoryStore } from '#src/renderer/src/store/history'
+import { useModelsStore } from '#src/renderer/src/store/models'
+import { useSettingsStore } from '#src/renderer/src/store/settings'
 
 export default function App(): React.JSX.Element {
   const [section, setSection] = useState<Section>('general')

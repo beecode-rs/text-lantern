@@ -1,6 +1,7 @@
-import { api } from '@src/renderer/src/api'
-import { useModelsStore } from '@src/renderer/src/store/models'
 import { create } from 'zustand'
+
+import { api } from '#src/renderer/src/api'
+import { useModelsStore } from '#src/renderer/src/store/models'
 
 interface ConfigBackupStore {
   isExporting: boolean

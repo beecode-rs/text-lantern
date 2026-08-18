@@ -1,6 +1,7 @@
-import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
-import type { Lang, Settings } from '@src/shared/types'
 import { detect } from 'tinyld'
+
+import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
+import type { Lang, Settings } from '#src/shared/types'
 
 const TTS_LANGUAGE_CODES = new Set<string>(
   languageCatalogSingleton()

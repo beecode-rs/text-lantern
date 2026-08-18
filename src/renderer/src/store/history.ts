@@ -1,6 +1,7 @@
-import { api } from '@src/renderer/src/api'
-import type { HistoryEntry } from '@src/shared/types'
 import { create } from 'zustand'
+
+import { api } from '#src/renderer/src/api'
+import type { HistoryEntry } from '#src/shared/types'
 
 interface HistoryStore {
   entries: HistoryEntry[]

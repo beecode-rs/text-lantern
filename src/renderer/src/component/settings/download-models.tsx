@@ -1,10 +1,11 @@
-import { DefaultVoiceRow } from '@src/renderer/src/component/ui/default-voice-row'
-import { DownloadRow } from '@src/renderer/src/component/ui/download-row'
-import { RemoteModelRow } from '@src/renderer/src/component/ui/remote-model-row'
-import { useModelsStore } from '@src/renderer/src/store/models'
-import { DEFAULT_VOICE_OPTIONS } from '@src/shared/voice/default-voice'
 import { ArrowLeft, Download, Loader2, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
+
+import { DefaultVoiceRow } from '#src/renderer/src/component/ui/default-voice-row'
+import { DownloadRow } from '#src/renderer/src/component/ui/download-row'
+import { RemoteModelRow } from '#src/renderer/src/component/ui/remote-model-row'
+import { useModelsStore } from '#src/renderer/src/store/models'
+import { DEFAULT_VOICE_OPTIONS } from '#src/shared/voice/default-voice'
 
 export function DownloadModels({ onBack }: { onBack: () => void }): React.JSX.Element {
   const { voices, remote, isSearching, searchError, downloads, search, download, dismissDownload } = useModelsStore()

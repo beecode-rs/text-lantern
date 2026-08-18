@@ -1,12 +1,13 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-import { settingsDalSingleton } from '@src/main/dal/settings-dal'
-import { constant } from '@src/main/util/constants'
-import { logger } from '@src/main/util/logger'
-import { pathUtil } from '@src/main/util/path-util'
-import type { HistoryEntry } from '@src/shared/types'
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
+
+import { settingsDalSingleton } from '#src/main/dal/settings-dal'
+import { constant } from '#src/main/util/constants'
+import { logger } from '#src/main/util/logger'
+import { pathUtil } from '#src/main/util/path-util'
+import type { HistoryEntry } from '#src/shared/types'
 
 export class HistoryDal {
   readonly events: EventEmitter

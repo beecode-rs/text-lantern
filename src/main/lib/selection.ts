@@ -1,6 +1,7 @@
-import { APP_NAME, constant } from '@src/main/util/constants'
 import { clipboard } from 'electron'
 import { execFile } from 'node:child_process'
+
+import { APP_NAME, constant } from '#src/main/util/constants'
 
 const COPY_MAX_POLLS = Math.round(constant().textSelection.copyTimeoutMs / constant().textSelection.copyPollStepMs)
 const COPY_POLL_STEP_SECONDS = constant().textSelection.copyPollStepMs / 1000

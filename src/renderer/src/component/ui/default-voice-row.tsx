@@ -1,7 +1,8 @@
-import { StarBadge } from '@src/renderer/src/component/ui/star-badge'
-import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
-import type { DefaultVoiceOption } from '@src/shared/voice/default-voice'
 import { Download } from 'lucide-react'
+
+import { StarBadge } from '#src/renderer/src/component/ui/star-badge'
+import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
+import type { DefaultVoiceOption } from '#src/shared/voice/default-voice'
 
 export function DefaultVoiceRow({
   option,

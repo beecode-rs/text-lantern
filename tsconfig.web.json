@@ -15,7 +15,7 @@
 		"moduleResolution": "Bundler",
 		"noEmit": true,
 		"paths": {
-			"@src/*": [
+			"#src/*": [
 				"./src/*"
 			]
 		},

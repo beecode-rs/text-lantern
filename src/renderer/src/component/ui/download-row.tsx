@@ -1,5 +1,6 @@
-import type { VoiceDownload, VoiceDownloadState } from '@src/shared/types'
 import { Check, RefreshCw, X } from 'lucide-react'
+
+import type { VoiceDownload, VoiceDownloadState } from '#src/shared/types'
 
 export function DownloadRow({
   name,

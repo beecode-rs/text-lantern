@@ -1,6 +1,7 @@
-import { acceleratorSingleton } from '@src/renderer/src/lib/accelerator'
-import { formatSingleton } from '@src/renderer/src/lib/format'
 import { useEffect, useState } from 'react'
+
+import { acceleratorSingleton } from '#src/renderer/src/lib/accelerator'
+import { formatSingleton } from '#src/renderer/src/lib/format'
 
 export function ShortcutInput({
   value,

@@ -1,10 +1,11 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-import { constant } from '@src/main/util/constants'
-import { logger } from '@src/main/util/logger'
-import { pathUtil } from '@src/main/util/path-util'
-import type { LanguageBinding, Settings } from '@src/shared/types'
-import { DEFAULT_ENGLISH_VOICE_NAME, DEFAULT_SERBIAN_VOICE_NAME } from '@src/shared/voice/default-voice'
 import fs from 'node:fs'
+
+import { constant } from '#src/main/util/constants'
+import { logger } from '#src/main/util/logger'
+import { pathUtil } from '#src/main/util/path-util'
+import type { LanguageBinding, Settings } from '#src/shared/types'
+import { DEFAULT_ENGLISH_VOICE_NAME, DEFAULT_SERBIAN_VOICE_NAME } from '#src/shared/voice/default-voice'
 
 interface LegacyShortcuts {
   auto?: string

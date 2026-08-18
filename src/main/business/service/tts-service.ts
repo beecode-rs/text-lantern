@@ -1,15 +1,16 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-import { TextService } from '@src/main/business/service/text-service'
-import { historyDalSingleton } from '@src/main/dal/history-dal'
-import { piperServerSingleton } from '@src/main/lib/piper/server'
-import { Selection } from '@src/main/lib/selection'
-import { constant } from '@src/main/util/constants'
-import { langUtil } from '@src/main/util/lang-util'
-import { pathUtil } from '@src/main/util/path-util'
-import type { Lang, Settings, TtsStatus } from '@src/shared/types'
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
 import path from 'node:path'
+
+import { TextService } from '#src/main/business/service/text-service'
+import { historyDalSingleton } from '#src/main/dal/history-dal'
+import { piperServerSingleton } from '#src/main/lib/piper/server'
+import { Selection } from '#src/main/lib/selection'
+import { constant } from '#src/main/util/constants'
+import { langUtil } from '#src/main/util/lang-util'
+import { pathUtil } from '#src/main/util/path-util'
+import type { Lang, Settings, TtsStatus } from '#src/shared/types'
 
 export class TtsService {
   readonly events: EventEmitter

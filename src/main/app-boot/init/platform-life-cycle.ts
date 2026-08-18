@@ -1,7 +1,8 @@
 import { LifeCycle } from '@beecode/msh-app-boot'
-import { pathUtil } from '@src/main/util/path-util'
 import { app, nativeImage, systemPreferences } from 'electron'
 import path from 'node:path'
+
+import { pathUtil } from '#src/main/util/path-util'
 
 export class PlatformLifeCycle extends LifeCycle {
   constructor() {

@@ -1,7 +1,8 @@
-import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
-import type { HistoryEntry } from '@src/shared/types'
 import { Clock, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
+
+import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
+import type { HistoryEntry } from '#src/shared/types'
 
 const PREVIEW_CHARS = 160
 

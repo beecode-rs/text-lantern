@@ -1,8 +1,9 @@
-import { api } from '@src/renderer/src/api'
-import { StreamPlayer } from '@src/renderer/src/lib/stream-player'
-import type { TtsStatus } from '@src/shared/types'
 import { AlertTriangle, Loader2, Square } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+
+import { api } from '#src/renderer/src/api'
+import { StreamPlayer } from '#src/renderer/src/lib/stream-player'
+import type { TtsStatus } from '#src/shared/types'
 
 export function NowPlaying(): React.JSX.Element {
   const [status, setStatus] = useState<TtsStatus>({ state: 'idle' })

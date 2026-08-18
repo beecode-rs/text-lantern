@@ -1,12 +1,13 @@
-import { api } from '@src/renderer/src/api'
-import { SettingsGroup } from '@src/renderer/src/component/ui/settings-group'
-import { useModelsStore } from '@src/renderer/src/store/models'
-import { useSettingsStore } from '@src/renderer/src/store/settings'
-import { useTestStore } from '@src/renderer/src/store/test'
-import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
-import type { TtsStatus } from '@src/shared/types'
 import { Square, Volume2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+
+import { api } from '#src/renderer/src/api'
+import { SettingsGroup } from '#src/renderer/src/component/ui/settings-group'
+import { useModelsStore } from '#src/renderer/src/store/models'
+import { useSettingsStore } from '#src/renderer/src/store/settings'
+import { useTestStore } from '#src/renderer/src/store/test'
+import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
+import type { TtsStatus } from '#src/shared/types'
 
 export function TestSettings(): React.JSX.Element {
   const settings = useSettingsStore((s) => {

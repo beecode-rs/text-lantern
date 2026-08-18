@@ -1,6 +1,7 @@
-import { api } from '@src/renderer/src/api'
-import type { Settings } from '@src/shared/types'
 import { create } from 'zustand'
+
+import { api } from '#src/renderer/src/api'
+import type { Settings } from '#src/shared/types'
 
 interface SettingsStore {
   settings: Settings | null

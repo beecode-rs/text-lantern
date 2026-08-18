@@ -1,10 +1,11 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-import { settingsDalSingleton } from '@src/main/dal/settings-dal'
-import { langUtil } from '@src/main/util/lang-util'
-import { pathUtil } from '@src/main/util/path-util'
-import type { Voice } from '@src/shared/types'
 import fs from 'node:fs'
 import path from 'node:path'
+
+import { settingsDalSingleton } from '#src/main/dal/settings-dal'
+import { langUtil } from '#src/main/util/lang-util'
+import { pathUtil } from '#src/main/util/path-util'
+import type { Voice } from '#src/shared/types'
 
 export class VoiceModelDal {
   listVoices(): Voice[] {

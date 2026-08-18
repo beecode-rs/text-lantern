@@ -1,6 +1,7 @@
 import { LifeCycle } from '@beecode/msh-app-boot'
-import { traySingleton } from '@src/main/lib/tray'
 import type { BrowserWindow } from 'electron'
+
+import { traySingleton } from '#src/main/lib/tray'
 
 export class TrayLifeCycle extends LifeCycle {
   protected readonly _windowGetter: () => BrowserWindow | null

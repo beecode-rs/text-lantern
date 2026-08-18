@@ -1,13 +1,14 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-import { settingsDalSingleton } from '@src/main/dal/settings-dal'
-import { voiceModelDalSingleton } from '@src/main/dal/voice-model-dal'
-import { piperEngineSingleton } from '@src/main/lib/piper/engine'
-import { constant } from '@src/main/util/constants'
-import { logger } from '@src/main/util/logger'
-import { pathUtil } from '@src/main/util/path-util'
-import type { ConfigBackup, LanguageBinding, Settings, ThemePreference } from '@src/shared/types'
 import fs from 'node:fs'
 import path from 'node:path'
+
+import { settingsDalSingleton } from '#src/main/dal/settings-dal'
+import { voiceModelDalSingleton } from '#src/main/dal/voice-model-dal'
+import { piperEngineSingleton } from '#src/main/lib/piper/engine'
+import { constant } from '#src/main/util/constants'
+import { logger } from '#src/main/util/logger'
+import { pathUtil } from '#src/main/util/path-util'
+import type { ConfigBackup, LanguageBinding, Settings, ThemePreference } from '#src/shared/types'
 
 const VOICE_NAME_PATTERN = /^[A-Za-z0-9_-]+$/
 

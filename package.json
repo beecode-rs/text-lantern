@@ -6,7 +6,8 @@
 	"author": "milosbugarinovic",
 	"type": "module",
 	"imports": {
-		"#packageJson": "./package.json"
+		"#packageJson": "./package.json",
+		"#src/*": "./src/*"
 	},
 	"main": "./out/main/index.js",
 	"scripts": {

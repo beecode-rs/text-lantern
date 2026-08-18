@@ -1,8 +1,9 @@
-import { api } from '@src/renderer/src/api'
-import iconUrl from '@src/renderer/src/asset/icon.png'
-import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
-import type { Settings } from '@src/shared/types'
 import { useEffect, useState } from 'react'
+
+import { api } from '#src/renderer/src/api'
+import iconUrl from '#src/renderer/src/asset/icon.png'
+import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
+import type { Settings } from '#src/shared/types'
 
 export function AboutSettings(): React.JSX.Element {
   const [settings, setSettings] = useState<Settings | null>(null)

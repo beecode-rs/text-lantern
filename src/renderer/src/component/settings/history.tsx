@@ -1,11 +1,12 @@
-import { api } from '@src/renderer/src/api'
-import { HistoryItem } from '@src/renderer/src/component/settings/history-item'
-import { Row } from '@src/renderer/src/component/ui/row'
-import { SettingsGroup } from '@src/renderer/src/component/ui/settings-group'
-import { useHistoryStore } from '@src/renderer/src/store/history'
-import { useSettingsStore } from '@src/renderer/src/store/settings'
-import type { HistoryEntry } from '@src/shared/types'
 import { Trash2 } from 'lucide-react'
+
+import { api } from '#src/renderer/src/api'
+import { HistoryItem } from '#src/renderer/src/component/settings/history-item'
+import { Row } from '#src/renderer/src/component/ui/row'
+import { SettingsGroup } from '#src/renderer/src/component/ui/settings-group'
+import { useHistoryStore } from '#src/renderer/src/store/history'
+import { useSettingsStore } from '#src/renderer/src/store/settings'
+import type { HistoryEntry } from '#src/shared/types'
 
 export function HistorySettings(): React.JSX.Element {
   const settings = useSettingsStore((s) => {

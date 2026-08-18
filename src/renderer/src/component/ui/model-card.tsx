@@ -1,8 +1,9 @@
-import { StarBadge } from '@src/renderer/src/component/ui/star-badge'
-import { formatSingleton } from '@src/renderer/src/lib/format'
-import { languageCatalogSingleton } from '@src/shared/language/language-catalog'
-import type { Voice } from '@src/shared/types'
 import { Trash2 } from 'lucide-react'
+
+import { StarBadge } from '#src/renderer/src/component/ui/star-badge'
+import { formatSingleton } from '#src/renderer/src/lib/format'
+import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
+import type { Voice } from '#src/shared/types'
 
 export function ModelCard({ voice, onDelete }: { voice: Voice; onDelete: () => void }): React.JSX.Element {
   return (
