@@ -179,4 +179,6 @@ tts-script/
 
 - Serbian voice: [`phantom9623/piper-serbian-tts`](https://huggingface.co/phantom9623/piper-serbian-tts)
 - English voice & extras: [rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices)
-- Engine: [Piper](https://github.com/rhasspy/piper) (via the `piper-tts` PyPI package)
+- Engine: [Piper](https://github.com/OHF-voice/piper1-gpl) (via the `piper-tts` PyPI package, GPL-3.0)
+- Phonemization: [eSpeak NG](https://github.com/espeak-ng/espeak-ng)
+- Language detection: [tinyld](https://github.com/komodojp/tinyld)

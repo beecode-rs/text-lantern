@@ -5,6 +5,18 @@ import iconUrl from '#src/renderer/src/asset/icon.png'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
 import type { Settings } from '#src/shared/types'
 
+const credits = [
+  { label: 'Piper TTS engine (piper-tts, GPL-3.0)', url: 'https://github.com/OHF-voice/piper1-gpl' },
+  { label: 'rhasspy/piper-voices (English + more)', url: 'https://huggingface.co/rhasspy/piper-voices' },
+  {
+    label: 'phantom9623/piper-serbian-tts (Serbian voice)',
+    url: 'https://huggingface.co/phantom9623/piper-serbian-tts',
+  },
+  { label: 'eSpeak NG (phonemization)', url: 'https://github.com/espeak-ng/espeak-ng' },
+  { label: 'tinyld (language auto-detection)', url: 'https://github.com/komodojp/tinyld' },
+  { label: 'Handy — the dictation app this UI takes after', url: 'https://handy.computer' },
+]
+
 export function AboutSettings(): React.JSX.Element {
   const [settings, setSettings] = useState<Settings | null>(null)
   useEffect(() => {
@@ -38,42 +50,19 @@ export function AboutSettings(): React.JSX.Element {
 
       <section className="rounded-xl border border-mid-gray/25 bg-mid-gray/5 p-5 flex flex-col gap-2 text-sm">
         <h2 className="text-sm font-semibold mb-1">Credits</h2>
-        <a
-          className="text-logo-primary hover:underline"
-          href="https://github.com/rhasspy/piper"
-          onClick={(e) => {
-            e.preventDefault()
-          }}
-        >
-          Piper TTS engine
-        </a>
-        <a
-          className="text-logo-primary hover:underline"
-          href="https://huggingface.co/rhasspy/piper-voices"
-          onClick={(e) => {
-            e.preventDefault()
-          }}
-        >
-          rhasspy/piper-voices (English + more)
-        </a>
-        <a
-          className="text-logo-primary hover:underline"
-          href="https://huggingface.co/phantom9623/piper-serbian-tts"
-          onClick={(e) => {
-            e.preventDefault()
-          }}
-        >
-          phantom9623/piper-serbian-tts (Serbian voice)
-        </a>
-        <a
-          className="text-logo-primary hover:underline"
-          href="https://handy.computer"
-          onClick={(e) => {
-            e.preventDefault()
-          }}
-        >
-          Handy — the dictation app this UI takes after
-        </a>
+        {credits.map((credit) => {
+          return (
+            <a
+              key={credit.url}
+              className="text-logo-primary hover:underline"
+              href={credit.url}
+              rel="noreferrer"
+              target="_blank"
+            >
+              {credit.label}
+            </a>
+          )
+        })}
       </section>
     </div>
   )
