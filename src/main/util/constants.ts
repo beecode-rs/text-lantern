@@ -21,6 +21,7 @@ export const constant = singletonPattern(() => {
     maxChars: 6000,
     rate: 1.0,
     schemaVersion: currentSettingsSchemaVersion,
+    shouldBleepWhileLoadingModel: true,
     shouldCleanText: true,
     shouldStartHidden: true,
     shouldStripBrackets: false,

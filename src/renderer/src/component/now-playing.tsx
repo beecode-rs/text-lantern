@@ -3,12 +3,17 @@ import { useEffect, useRef, useState } from 'react'
 
 import { api } from '#src/renderer/src/api'
 import { StreamPlayer } from '#src/renderer/src/lib/stream-player'
+import { WaitingBeeper } from '#src/renderer/src/lib/waiting-beeper'
+import { useSettingsStore } from '#src/renderer/src/store/settings'
 import type { TtsStatus } from '#src/shared/types'
 
 export function NowPlaying(): React.JSX.Element {
   const [status, setStatus] = useState<TtsStatus>({ state: 'idle' })
+  const shouldBleepWhileLoadingModel = useSettingsStore((s) => s.settings?.shouldBleepWhileLoadingModel ?? true)
   const playerRef = useRef<StreamPlayer | null>(null)
   playerRef.current ??= new StreamPlayer()
+  const beeperRef = useRef<WaitingBeeper | null>(null)
+  beeperRef.current ??= new WaitingBeeper()
 
   useEffect(() => {
     const offStatus = api.onTtsStatus(setStatus)
@@ -42,8 +47,17 @@ export function NowPlaying(): React.JSX.Element {
       offChunk()
       offEnd()
       offStop()
+      beeperRef.current?.stop()
     }
   }, [])
+
+  useEffect(() => {
+    if (status.state === 'synthesizing' && shouldBleepWhileLoadingModel) {
+      beeperRef.current?.start()
+    } else {
+      beeperRef.current?.stop()
+    }
+  }, [status.state, shouldBleepWhileLoadingModel])
 
   const busy = status.state === 'synthesizing' || status.state === 'reading'
 

@@ -1,4 +1,5 @@
-import { Save, Upload } from 'lucide-react'
+import { Save, Upload, Volume2 } from 'lucide-react'
+import { useRef } from 'react'
 
 import { DownloadRow } from '#src/renderer/src/component/ui/download-row'
 import { Row } from '#src/renderer/src/component/ui/row'
@@ -6,6 +7,7 @@ import { Select, type SelectOption } from '#src/renderer/src/component/ui/select
 import { SettingsGroup } from '#src/renderer/src/component/ui/settings-group'
 import { Slider } from '#src/renderer/src/component/ui/slider'
 import { Toggle } from '#src/renderer/src/component/ui/toggle'
+import { WaitingBeeper } from '#src/renderer/src/lib/waiting-beeper'
 import { useConfigBackupStore } from '#src/renderer/src/store/config-backup'
 import { useSettingsStore } from '#src/renderer/src/store/settings'
 import type { ThemePreference, VoiceDownload } from '#src/shared/types'
@@ -18,6 +20,8 @@ const THEME_OPTIONS: SelectOption<ThemePreference>[] = [
 
 export function GeneralSettings(): React.JSX.Element {
   const settings = useSettingsStore((s) => s.settings)
+  const beeperRef = useRef<WaitingBeeper | null>(null)
+  beeperRef.current ??= new WaitingBeeper()
   const update = useSettingsStore((s) => s.update)
   const isExporting = useConfigBackupStore((s) => s.isExporting)
   const isImporting = useConfigBackupStore((s) => s.isImporting)
@@ -68,6 +72,33 @@ export function GeneralSettings(): React.JSX.Element {
               return `${v.toFixed(2)}×`
             }}
           />
+        </Row>
+      </SettingsGroup>
+
+      <SettingsGroup
+        title="Audio feedback"
+        description="A soft repeating tone while the voice model is loading, so you know the app is working."
+      >
+        <Row title="Loading bleep" description="Plays only when loading takes longer than a second.">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                beeperRef.current?.preview()
+              }}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors"
+            >
+              <Volume2 size={13} />
+              Preview
+            </button>
+            <Toggle
+              checked={settings.shouldBleepWhileLoadingModel}
+              onChange={(v) => {
+                void update({ shouldBleepWhileLoadingModel: v })
+              }}
+              ariaLabel="Loading bleep"
+            />
+          </div>
         </Row>
       </SettingsGroup>
 

@@ -3,10 +3,12 @@ import { type NativeImage, nativeImage } from 'electron'
 
 const ICON_WIDTH = 28
 const ICON_HEIGHT = 20
+const MARK_HORIZONTAL_STRETCH = 1.18
+const SAMPLES_PER_AXIS = 3
 
-const BUBBLE = { r: 2, x0: 3, x1: 14, y0: 4, y1: 12 }
-const TAIL = { cap: 8, slope: 1.2, x0: 4, y0: 11, y1: 15 }
-const WAVES = { angleMaxDeg: 50, cx: 14, cy: 8, radii: [2.5, 4.5, 6.5], tolerance: 0.8 }
+const ORB = { r: 2.6, x0: 5, x1: 15.5, y0: 3.3, y1: 15.2 }
+const TAIL = { x0: 8.1, xb: 8.3, xt: 11.2, y0: 14.9, y1: 18.1 }
+const ARCS = { angleMaxDeg: 44, cx: 12, cy: 9.65, halfThickness: 0.68, radii: [6.15, 8.45, 10.75] }
 
 export class TrayIconImageUtil {
   protected _cachedIcons: { outline: NativeImage; filled: NativeImage } | undefined
@@ -19,56 +21,70 @@ export class TrayIconImageUtil {
     return this._buildIconsOnce().filled
   }
 
-  protected _isPixelInsideSpeechBubble(px: number, py: number): boolean {
-    const { x0, y0, x1, y1, r } = BUBBLE
-    let rx = px
-    if (px < x0 + r) {
-      rx = x0 + r
-    } else if (px > x1 - r) {
-      rx = x1 - r
-    }
-    let ry = py
-    if (py < y0 + r) {
-      ry = y0 + r
-    } else if (py > y1 - r) {
-      ry = y1 - r
-    }
-    const dx = px - rx
-    const dy = py - ry
-
-    return px >= x0 && px <= x1 && py >= y0 && py <= y1 && dx * dx + dy * dy <= r * r
-  }
-
-  protected _isPixelInsideTail(px: number, py: number): boolean {
-    const { x0, slope, y0, y1, cap } = TAIL
-    if (py < y0 || py > y1) {
+  protected _isPointInsideOrb(x: number, y: number): boolean {
+    const { r, x0, x1, y0, y1 } = ORB
+    if (x < x0 || x > x1 || y < y0 || y > y1) {
       return false
     }
-    const xLimit = Math.min(x0 + (py - y0) * slope, cap)
+    const cornerX = Math.min(Math.max(x, x0 + r), x1 - r)
+    const cornerY = Math.min(Math.max(y, y0 + r), y1 - r)
+    const dx = x - cornerX
+    const dy = y - cornerY
 
-    return px >= x0 && px <= xLimit
+    return dx * dx + dy * dy <= r * r
   }
 
-  protected _isPixelOnWave(px: number, py: number): boolean {
-    const { cx, cy, radii, angleMaxDeg, tolerance } = WAVES
-    const ddx = px - cx
-    if (ddx < 0) {
+  protected _isPointInsideTail(x: number, y: number): boolean {
+    const { x0, xb, xt, y0, y1 } = TAIL
+    if (y < y0 || y > y1) {
       return false
     }
-    const ddy = py - cy
-    const dist = Math.hypot(ddx, ddy)
-    const angleDeg = Math.abs((Math.atan2(ddy, ddx) * 180) / Math.PI)
+    const xMax = xt + ((y - y0) * (xb - xt)) / (y1 - y0)
+
+    return x >= x0 && x <= xMax
+  }
+
+  protected _isPointOnArc(x: number, y: number): boolean {
+    const { angleMaxDeg, cx, cy, halfThickness, radii } = ARCS
+    const dx = x - cx
+    if (dx < 0) {
+      return false
+    }
+    const dy = y - cy
+    const angleDeg = Math.abs((Math.atan2(dy, dx) * 180) / Math.PI)
     if (angleDeg > angleMaxDeg) {
       return false
     }
+    const dist = Math.hypot(dx, dy)
 
-    return radii.some((ri) => {
-      return Math.abs(dist - ri) <= tolerance
+    return radii.some((radius) => {
+      return Math.abs(dist - radius) <= halfThickness
     })
   }
 
+  protected _isPointInsideMark(x: number, y: number): boolean {
+    const canvasCenterX = ICON_WIDTH / 2
+    const shapeX = canvasCenterX + (x - canvasCenterX) / MARK_HORIZONTAL_STRETCH
+
+    return this._isPointInsideOrb(shapeX, y) || this._isPointInsideTail(shapeX, y) || this._isPointOnArc(shapeX, y)
+  }
+
   protected _isPixelInsideMark(px: number, py: number): boolean {
-    return this._isPixelInsideSpeechBubble(px, py) || this._isPixelInsideTail(px, py) || this._isPixelOnWave(px, py)
+    const sampleTotal = SAMPLES_PER_AXIS * SAMPLES_PER_AXIS
+    const samples = Array.from({ length: sampleTotal }, (_unused, i) => {
+      const sampleX = px + ((i % SAMPLES_PER_AXIS) + 0.5) / SAMPLES_PER_AXIS
+      const sampleY = py + (Math.floor(i / SAMPLES_PER_AXIS) + 0.5) / SAMPLES_PER_AXIS
+      if (this._isPointInsideMark(sampleX, sampleY)) {
+        return 1
+      }
+
+      return 0
+    })
+    const hitCount = samples.reduce<number>((acc, hit) => {
+      return acc + hit
+    }, 0)
+
+    return hitCount * 2 >= sampleTotal
   }
 
   protected _buildMarkPixelGrid(): Uint8Array {

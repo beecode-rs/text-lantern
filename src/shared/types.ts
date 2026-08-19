@@ -15,6 +15,7 @@ export interface Settings {
   autoShortcut: string
   stopShortcut: string
   rate: number
+  shouldBleepWhileLoadingModel: boolean
   shouldCleanText: boolean
   shouldStripBrackets: boolean
   shouldStartHidden: boolean

@@ -192,6 +192,9 @@ export class ConfigBackupService {
     if (this._isNumber(params.settings.rate)) {
       patch.rate = this._clampedRate({ rate: params.settings.rate })
     }
+    if (this._isBoolean(params.settings.shouldBleepWhileLoadingModel)) {
+      patch.shouldBleepWhileLoadingModel = params.settings.shouldBleepWhileLoadingModel
+    }
     if (this._isBoolean(params.settings.shouldCleanText)) {
       patch.shouldCleanText = params.settings.shouldCleanText
     }

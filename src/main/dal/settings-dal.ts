@@ -144,6 +144,7 @@ export class SettingsDal {
       maxChars: parsed.maxChars ?? defaults.maxChars,
       rate,
       schemaVersion: constant().settings.currentSchemaVersion,
+      shouldBleepWhileLoadingModel: parsed.shouldBleepWhileLoadingModel ?? defaults.shouldBleepWhileLoadingModel,
       shouldCleanText: parsed.shouldCleanText ?? parsed.cleanText ?? defaults.shouldCleanText,
       shouldStartHidden: parsed.shouldStartHidden ?? parsed.startHidden ?? defaults.shouldStartHidden,
       shouldStripBrackets: parsed.shouldStripBrackets ?? parsed.stripBrackets ?? defaults.shouldStripBrackets,
