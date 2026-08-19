@@ -73,11 +73,13 @@ export class MainWindowLifeCycle extends LifeCycle {
       if (this._destroying) {
         return
       }
-      if (!app.isPackaged) {
+      e.preventDefault()
+      if (settingsDalSingleton().get().shouldCloseToTray) {
+        win.hide()
+
         return
       }
-      e.preventDefault()
-      win.hide()
+      app.quit()
     })
 
     this._attachDevDiagnostics({ win })

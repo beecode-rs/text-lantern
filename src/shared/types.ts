@@ -19,6 +19,7 @@ export interface Settings {
   shouldCleanText: boolean
   shouldStripBrackets: boolean
   shouldStartHidden: boolean
+  shouldCloseToTray: boolean
   theme: ThemePreference
   maxChars: number
   historyLimit: number

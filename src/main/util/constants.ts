@@ -23,6 +23,7 @@ export const constant = singletonPattern(() => {
     schemaVersion: currentSettingsSchemaVersion,
     shouldBleepWhileLoadingModel: true,
     shouldCleanText: true,
+    shouldCloseToTray: false,
     shouldStartHidden: true,
     shouldStripBrackets: false,
     stopShortcut: 'CommandOrControl+Shift+Q',

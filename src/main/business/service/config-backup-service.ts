@@ -198,6 +198,9 @@ export class ConfigBackupService {
     if (this._isBoolean(params.settings.shouldCleanText)) {
       patch.shouldCleanText = params.settings.shouldCleanText
     }
+    if (this._isBoolean(params.settings.shouldCloseToTray)) {
+      patch.shouldCloseToTray = params.settings.shouldCloseToTray
+    }
     if (this._isBoolean(params.settings.shouldStripBrackets)) {
       patch.shouldStripBrackets = params.settings.shouldStripBrackets
     }

@@ -144,6 +144,15 @@ export function GeneralSettings(): React.JSX.Element {
             ariaLabel="Start hidden"
           />
         </Row>
+        <Row title="Close to tray" description="When off, closing the window quits the app.">
+          <Toggle
+            checked={settings.shouldCloseToTray}
+            onChange={(v) => {
+              void update({ shouldCloseToTray: v })
+            }}
+            ariaLabel="Close to tray"
+          />
+        </Row>
       </SettingsGroup>
 
       <SettingsGroup

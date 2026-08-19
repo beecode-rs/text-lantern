@@ -146,6 +146,7 @@ export class SettingsDal {
       schemaVersion: constant().settings.currentSchemaVersion,
       shouldBleepWhileLoadingModel: parsed.shouldBleepWhileLoadingModel ?? defaults.shouldBleepWhileLoadingModel,
       shouldCleanText: parsed.shouldCleanText ?? parsed.cleanText ?? defaults.shouldCleanText,
+      shouldCloseToTray: parsed.shouldCloseToTray ?? defaults.shouldCloseToTray,
       shouldStartHidden: parsed.shouldStartHidden ?? parsed.startHidden ?? defaults.shouldStartHidden,
       shouldStripBrackets: parsed.shouldStripBrackets ?? parsed.stripBrackets ?? defaults.shouldStripBrackets,
       stopShortcut,
