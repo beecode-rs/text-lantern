@@ -1,6 +1,7 @@
 import { Clock, RotateCcw, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
+import { ConfirmDialog } from '#src/renderer/src/component/ui/confirm-dialog'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
 import type { HistoryEntry } from '#src/shared/types'
 
@@ -16,6 +17,7 @@ export function HistoryItem({
   onRemove: (entry: HistoryEntry) => void
 }): React.JSX.Element {
   const [expanded, setExpanded] = useState(false)
+  const [isRemoveConfirmOpen, setIsRemoveConfirmOpen] = useState(false)
   const langCode = entry.voice.split('_')[0]
   const langName = languageCatalogSingleton().getDisplayName({ code: langCode })
   const time = new Date(entry.createdAt)
@@ -38,7 +40,7 @@ export function HistoryItem({
           <button
             type="button"
             onClick={() => {
-              onRemove(entry)
+              setIsRemoveConfirmOpen(true)
             }}
             title="Remove entry"
             className="p-1.5 rounded-md text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-colors"
@@ -69,6 +71,20 @@ export function HistoryItem({
         >
           {toggleLabel}
         </button>
+      )}
+      {isRemoveConfirmOpen && (
+        <ConfirmDialog
+          title="Remove entry"
+          message="Remove this reading from history? This cannot be undone."
+          confirmLabel="Remove"
+          onConfirm={() => {
+            setIsRemoveConfirmOpen(false)
+            onRemove(entry)
+          }}
+          onCancel={() => {
+            setIsRemoveConfirmOpen(false)
+          }}
+        />
       )}
     </div>
   )
