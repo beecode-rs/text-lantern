@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { api } from '#src/renderer/src/api'
 import iconUrl from '#src/renderer/src/asset/icon.png'
+import { SettingsPage } from '#src/renderer/src/component/ui/settings-page'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
 import type { Settings } from '#src/shared/types'
 
@@ -26,7 +27,7 @@ export function AboutSettings(): React.JSX.Element {
   const bindingList = getBindingList({ settings })
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
+    <SettingsPage>
       <header>
         <h1 className="text-xl font-semibold">About</h1>
         <p className="text-sm text-text/55 mt-1">On-device text-to-speech, inspired by Handy.</p>
@@ -64,7 +65,7 @@ export function AboutSettings(): React.JSX.Element {
           )
         })}
       </section>
-    </div>
+    </SettingsPage>
   )
 
   function getBindingList(params: { settings: Settings | null }): React.JSX.Element | null {

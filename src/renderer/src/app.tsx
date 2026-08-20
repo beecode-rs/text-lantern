@@ -96,7 +96,7 @@ export default function App(): React.JSX.Element {
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar active={section} onChange={setSection} />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-x-auto overflow-y-auto">
           <div className="p-6">
             <SettingsSection active={section} />
           </div>

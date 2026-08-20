@@ -6,6 +6,7 @@ import { DownloadTabPredefined } from '#src/renderer/src/component/settings/down
 import { DownloadTabSearch } from '#src/renderer/src/component/settings/download-tab-search'
 import { ModelsTabInstalled } from '#src/renderer/src/component/settings/models-tab-installed'
 import { DownloadRow } from '#src/renderer/src/component/ui/download-row'
+import { SettingsPage } from '#src/renderer/src/component/ui/settings-page'
 import { TabBar, type TabItem } from '#src/renderer/src/component/ui/tab-bar'
 import { useModelsStore } from '#src/renderer/src/store/models'
 
@@ -65,7 +66,7 @@ export function ModelsSettings(): React.JSX.Element {
   const activeTabPanel = getActiveTabPanel({ activeTab, downloadingNames, installedNames })
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
+    <SettingsPage>
       <header>
         <h1 className="text-xl font-semibold">Models</h1>
         <p className="text-sm text-text/55 mt-1">
@@ -97,7 +98,7 @@ export function ModelsSettings(): React.JSX.Element {
       )}
 
       {activeTabPanel}
-    </div>
+    </SettingsPage>
   )
 
   function getActiveTabPanel(params: {

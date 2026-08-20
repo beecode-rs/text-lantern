@@ -1,9 +1,12 @@
 import { Trash2 } from 'lucide-react'
+import { useState } from 'react'
 
 import { api } from '#src/renderer/src/api'
 import { HistoryItem } from '#src/renderer/src/component/settings/history-item'
+import { ConfirmDialog } from '#src/renderer/src/component/ui/confirm-dialog'
 import { Row } from '#src/renderer/src/component/ui/row'
 import { SettingsGroup } from '#src/renderer/src/component/ui/settings-group'
+import { SettingsPage } from '#src/renderer/src/component/ui/settings-page'
 import { useHistoryStore } from '#src/renderer/src/store/history'
 import { useSettingsStore } from '#src/renderer/src/store/settings'
 import type { HistoryEntry } from '#src/shared/types'
@@ -21,6 +24,7 @@ export function HistorySettings(): React.JSX.Element {
   const clear = useHistoryStore((s) => {
     return s.clear
   })
+  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false)
 
   if (!settings) {
     return <></>
@@ -32,10 +36,16 @@ export function HistorySettings(): React.JSX.Element {
   }
 
   const limitLabel = getLimitLabel({ historyLimit: settings.historyLimit })
-  const entryList = getEntryList({ clear, entries, onReplay })
+  const entryList = getEntryList({
+    entries,
+    onReplay,
+    onRequestClear: () => {
+      setIsClearConfirmOpen(true)
+    },
+  })
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
+    <SettingsPage>
       <header>
         <h1 className="text-xl font-semibold">History</h1>
         <p className="text-sm text-text/55 mt-1">
@@ -58,7 +68,22 @@ export function HistorySettings(): React.JSX.Element {
       </SettingsGroup>
 
       {entryList}
-    </div>
+
+      {isClearConfirmOpen && (
+        <ConfirmDialog
+          title="Clear history"
+          message={`Clear all ${String(entries.length)} entries from history? This cannot be undone.`}
+          confirmLabel="Clear"
+          onConfirm={() => {
+            void clear()
+            setIsClearConfirmOpen(false)
+          }}
+          onCancel={() => {
+            setIsClearConfirmOpen(false)
+          }}
+        />
+      )}
+    </SettingsPage>
   )
 
   function getLimitLabel(params: { historyLimit: number }): string {
@@ -72,7 +97,7 @@ export function HistorySettings(): React.JSX.Element {
   function getEntryList(params: {
     entries: HistoryEntry[]
     onReplay: (entry: HistoryEntry) => void
-    clear: () => Promise<void>
+    onRequestClear: () => void
   }): React.JSX.Element {
     if (params.entries.length === 0) {
       return (
@@ -88,7 +113,7 @@ export function HistorySettings(): React.JSX.Element {
           <button
             type="button"
             onClick={() => {
-              void params.clear()
+              params.onRequestClear()
             }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-mid-gray/40 text-text/80 hover:bg-mid-gray/15 transition-colors"
           >

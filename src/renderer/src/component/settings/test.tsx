@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { api } from '#src/renderer/src/api'
 import { SettingsGroup } from '#src/renderer/src/component/ui/settings-group'
+import { SettingsPage } from '#src/renderer/src/component/ui/settings-page'
 import { useModelsStore } from '#src/renderer/src/store/models'
 import { useSettingsStore } from '#src/renderer/src/store/settings'
 import { useTestStore } from '#src/renderer/src/store/test'
@@ -121,7 +122,7 @@ export function TestSettings(): React.JSX.Element {
   })
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
+    <SettingsPage>
       <header>
         <h1 className="text-xl font-semibold">Test</h1>
         <p className="text-sm text-text/55 mt-1">
@@ -130,7 +131,7 @@ export function TestSettings(): React.JSX.Element {
       </header>
 
       {body}
-    </div>
+    </SettingsPage>
   )
 
   function getBody(params: {

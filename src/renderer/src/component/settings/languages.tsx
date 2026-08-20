@@ -1,8 +1,10 @@
 import { AlertTriangle, Plus, Trash2 } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
+import { ConfirmDialog } from '#src/renderer/src/component/ui/confirm-dialog'
 import { Row } from '#src/renderer/src/component/ui/row'
 import { SettingsGroup } from '#src/renderer/src/component/ui/settings-group'
+import { SettingsPage } from '#src/renderer/src/component/ui/settings-page'
 import { ShortcutInput } from '#src/renderer/src/component/ui/shortcut-input'
 import { StarBadge } from '#src/renderer/src/component/ui/star-badge'
 import { useModelsStore } from '#src/renderer/src/store/models'
@@ -26,6 +28,7 @@ export function LanguagesSettings(): React.JSX.Element {
   const load = useModelsStore((s) => {
     return s.load
   })
+  const [pendingRemoveBindingId, setPendingRemoveBindingId] = useState<string | null>(null)
 
   useEffect(() => {
     void load()
@@ -72,6 +75,10 @@ export function LanguagesSettings(): React.JSX.Element {
     })
   const isAutoDisabled = settings.languageBindings.length === 0
 
+  const pendingRemoveBinding = settings.languageBindings.find((b) => {
+    return b.id === pendingRemoveBindingId
+  })
+
   const fallbackSelectValue = getFallbackSelectValue({ fallbackLang: settings.fallbackLang, isAutoDisabled })
   const fallbackSelectOptions = buildFallbackSelectOptions({
     fallbackLang: settings.fallbackLang,
@@ -116,7 +123,7 @@ export function LanguagesSettings(): React.JSX.Element {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
+    <SettingsPage>
       <header>
         <h1 className="text-xl font-semibold">Languages</h1>
         <p className="text-sm text-text/55 mt-1">Pair each language with a voice and a global shortcut.</p>
@@ -213,7 +220,7 @@ export function LanguagesSettings(): React.JSX.Element {
                   <button
                     type="button"
                     onClick={() => {
-                      removeBinding(binding.id)
+                      setPendingRemoveBindingId(binding.id)
                     }}
                     title="Remove language"
                     className="justify-self-end p-1.5 rounded-md text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-colors"
@@ -277,7 +284,22 @@ export function LanguagesSettings(): React.JSX.Element {
         need <strong>Accessibility</strong> permission for Text Lantern (System Settings → Privacy &amp; Security),
         because it sends a Cmd+C to copy the selected text. Your clipboard is saved and restored around the grab.
       </p>
-    </div>
+
+      {pendingRemoveBinding !== undefined && (
+        <ConfirmDialog
+          title="Remove language"
+          message={`Remove ${languageCatalogSingleton().getDisplayName({ code: pendingRemoveBinding.langCode })} and its shortcut? You can add the language back later.`}
+          confirmLabel="Remove"
+          onConfirm={() => {
+            removeBinding(pendingRemoveBinding.id)
+            setPendingRemoveBindingId(null)
+          }}
+          onCancel={() => {
+            setPendingRemoveBindingId(null)
+          }}
+        />
+      )}
+    </SettingsPage>
   )
 
   function getFallbackSelectValue(params: { isAutoDisabled: boolean; fallbackLang: string }): string {
