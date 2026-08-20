@@ -8,6 +8,7 @@ import { constant } from '#src/main/util/constants'
 import { pathUtil } from '#src/main/util/path-util'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
 import type { RemoteVoice } from '#src/shared/types'
+import { voiceUrlParser } from '#src/shared/voice/voice-url'
 
 interface HfTreeEntry {
   type: 'file' | 'directory'
@@ -47,60 +48,72 @@ export class PiperEngine {
   }
 
   async downloadVoice(params: { name: string; onProgress: (p: number) => void }): Promise<void> {
-    fs.mkdirSync(pathUtil.modelsDir(), { recursive: true })
     const prefix = this._resolveVoiceDownloadUrlPrefix({ name: params.name })
+    await this._downloadVoiceFilePair({
+      jsonUrl: `${prefix}/${params.name}.onnx.json`,
+      name: params.name,
+      onnxUrl: `${prefix}/${params.name}.onnx`,
+      onProgress: params.onProgress,
+    })
+  }
+
+  async downloadVoiceFromUrl(params: { onProgress: (p: number) => void; url: string }): Promise<string> {
+    const parsed = voiceUrlParser.parse({ url: params.url })
+    if (!parsed) {
+      throw new Error('Not a voice file link — it must point to a .onnx or .onnx.json file.')
+    }
+    await this._downloadVoiceFilePair({
+      jsonUrl: parsed.jsonUrl,
+      name: parsed.name,
+      onnxUrl: parsed.onnxUrl,
+      onProgress: params.onProgress,
+    })
+
+    return parsed.name
+  }
+
+  async searchVoices(params: { query: string }): Promise<RemoteVoice[]> {
+    const codes = this._resolveLangCodes({ query: params.query })
+    if (codes.length === 0) {
+      return []
+    }
+    const voicesPerLang = await Promise.all(
+      codes.map((code) => {
+        return this._fetchRemoteVoicesForLang({ code })
+      }),
+    )
+
+    return voicesPerLang.flat().sort((a, b) => {
+      return a.name.localeCompare(b.name)
+    })
+  }
+
+  protected async _downloadVoiceFilePair(params: {
+    jsonUrl: string
+    name: string
+    onnxUrl: string
+    onProgress: (p: number) => void
+  }): Promise<void> {
+    fs.mkdirSync(pathUtil.modelsDir(), { recursive: true })
     const files = [
-      { ext: 'onnx', weight: 0.97 },
-      { ext: 'onnx.json', weight: 0.03 },
+      { ext: 'onnx', url: params.onnxUrl, weight: 0.97 },
+      { ext: 'onnx.json', url: params.jsonUrl, weight: 0.03 },
     ]
     let base = 0
     await files.reduce(async (acc, f) => {
       await acc
       const dest = path.join(pathUtil.modelsDir(), `${params.name}.${f.ext}`)
-      const url = `${prefix}/${params.name}.${f.ext}`
       await this._downloadFileWithProgress({
         dest,
         onProgress: (p) => {
           params.onProgress(base + p * f.weight)
         },
-        url,
+        url: f.url,
       })
       base += f.weight
       params.onProgress(base)
     }, Promise.resolve())
     params.onProgress(1)
-  }
-
-  async searchVoices(params: { query: string }): Promise<RemoteVoice[]> {
-    const code = this._resolveLangCode({ query: params.query })
-    if (!code) {
-      return []
-    }
-    const url = `${constant().piperEngine.piperVoicesTreeApiUrl}/${encodeURIComponent(code)}?recursive=true`
-    let res: Response
-    try {
-      res = await fetch(url)
-    } catch {
-      return []
-    }
-    if (!res.ok) {
-      return []
-    }
-    const entries = (await res.json()) as HfTreeEntry[]
-
-    return entries
-      .filter((entry) => {
-        return entry.path.startsWith(`${code}/`)
-      })
-      .map((entry) => {
-        return this._entryToRemoteVoice({ entry })
-      })
-      .filter((voice): voice is RemoteVoice => {
-        return voice !== null
-      })
-      .sort((a, b) => {
-        return a.name.localeCompare(b.name)
-      })
   }
 
   protected _splitVoiceNameIntoParts(name: string): {
@@ -137,32 +150,46 @@ export class PiperEngine {
     return `${constant().piperEngine.piperVoicesBaseUrl}/${lang}/${langRegion}/${voice}/${quality}`
   }
 
-  protected _resolveLangCode(params: { query: string }): string | null {
-    const q = params.query.trim().toLowerCase()
-    if (!q) {
-      return null
-    }
-    const byCode = languageCatalogSingleton()
-      .list()
-      .find((language) => {
-        return language.code === q
+  protected _resolveLangCodes(params: { query: string }): string[] {
+    const matched = languageCatalogSingleton()
+      .match({ limit: constant().piperEngine.searchMaxLanguageCount, query: params.query })
+      .map((language) => {
+        return language.code
       })
-    if (byCode) {
-      return byCode.code
+    if (matched.length > 0) {
+      return matched
     }
-    const byName = languageCatalogSingleton()
-      .list()
-      .find((language) => {
-        return language.name.toLowerCase() === q
-      })
-    if (byName) {
-      return byName.code
-    }
-    if (/^[a-z]{1,3}$/.test(q)) {
-      return q
+    const rawCode = params.query.trim().toLowerCase()
+    if (/^[a-z]{1,3}$/.test(rawCode)) {
+      return [rawCode]
     }
 
-    return null
+    return []
+  }
+
+  protected async _fetchRemoteVoicesForLang(params: { code: string }): Promise<RemoteVoice[]> {
+    const url = `${constant().piperEngine.piperVoicesTreeApiUrl}/${encodeURIComponent(params.code)}?recursive=true`
+    let res: Response
+    try {
+      res = await fetch(url)
+    } catch {
+      return []
+    }
+    if (!res.ok) {
+      return []
+    }
+    const entries = (await res.json()) as HfTreeEntry[]
+
+    return entries
+      .filter((entry) => {
+        return entry.path.startsWith(`${params.code}/`)
+      })
+      .map((entry) => {
+        return this._entryToRemoteVoice({ entry })
+      })
+      .filter((voice): voice is RemoteVoice => {
+        return voice !== null
+      })
   }
 
   protected _entryToRemoteVoice(params: { entry: HfTreeEntry }): RemoteVoice | null {

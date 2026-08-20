@@ -2,6 +2,7 @@ import { create } from 'zustand'
 
 import { api } from '#src/renderer/src/api'
 import type { RemoteVoice, Voice, VoiceDownload } from '#src/shared/types'
+import { voiceUrlParser } from '#src/shared/voice/voice-url'
 
 const DONE_DISMISS_DELAY_MS = 3000
 
@@ -20,6 +21,7 @@ interface ModelsStore {
   load: () => Promise<void>
   refreshEngine: () => Promise<void>
   download: (name: string) => Promise<void>
+  downloadFromUrl: (url: string) => Promise<void>
   remove: (name: string) => Promise<void>
   dismissDownload: (name: string) => void
   installEngine: (voiceNames: string[]) => Promise<void>
@@ -75,6 +77,23 @@ export const useModelsStore = create<ModelsStore>((set, get) => {
       } catch (err) {
         get().appendLog(`Download failed for ${name}: ${String(err)}`)
         markDownloadFailed(name)
+      }
+    },
+    downloadFromUrl: async (url) => {
+      const parsed = voiceUrlParser.parse({ url })
+      if (!parsed) {
+        get().appendLog(`Invalid voice URL: ${url}`)
+
+        return
+      }
+      set({ downloads: { ...get().downloads, [parsed.name]: { progress: 0, state: 'downloading' } } })
+      try {
+        const voices = await api.downloadVoiceFromUrl(url)
+        set({ hasCompletedDownload: true, voices })
+        markDownloadDone(parsed.name)
+      } catch (err) {
+        get().appendLog(`Download failed for ${parsed.name}: ${String(err)}`)
+        markDownloadFailed(parsed.name)
       }
     },
     downloads: {},

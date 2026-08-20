@@ -92,7 +92,7 @@ export function HistorySettings(): React.JSX.Element {
             }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-mid-gray/40 text-text/80 hover:bg-mid-gray/15 transition-colors"
           >
-            <Trash2 size={13} /> Clear
+            <Trash2 size={13} className="text-red-500" /> Clear
           </button>
         </div>
         {params.entries.map((entry) => {

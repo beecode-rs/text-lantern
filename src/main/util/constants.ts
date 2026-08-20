@@ -51,6 +51,7 @@ export const constant = singletonPattern(() => {
       englishVoiceName,
       piperVoicesBaseUrl: 'https://huggingface.co/rhasspy/piper-voices/resolve/main',
       piperVoicesTreeApiUrl: 'https://huggingface.co/api/models/rhasspy/piper-voices/tree/main',
+      searchMaxLanguageCount: 3,
       serbianVoiceName,
       serbianVoicesRepoUrl: 'https://huggingface.co/phantom9623/piper-serbian-tts/resolve/main',
     },

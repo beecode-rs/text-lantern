@@ -14,6 +14,9 @@ const api: TtsApi = {
   downloadVoice: (name) => {
     return ipcRenderer.invoke('models:download', name)
   },
+  downloadVoiceFromUrl: (url) => {
+    return ipcRenderer.invoke('models:downloadFromUrl', url)
+  },
   exportConfig: () => {
     return ipcRenderer.invoke('config:export')
   },
@@ -51,6 +54,10 @@ const api: TtsApi = {
   onSettingsChanged: channelSubscriber.createForChannel({ channel: 'settings:changed' }),
   onStopPlayback: channelSubscriber.createForChannel({ channel: 'tts:stopPlayback' }),
   onTtsStatus: channelSubscriber.createForChannel({ channel: 'tts:status' }),
+
+  openModelsFolder: () => {
+    return ipcRenderer.invoke('models:openModelsFolder')
+  },
   playbackEnded: () => {
     return ipcRenderer.invoke('tts:playbackEnded')
   },

@@ -24,7 +24,7 @@ export function ModelCard({ voice, onDelete }: { voice: Voice; onDelete: () => v
           type="button"
           onClick={onDelete}
           title="Delete voice"
-          className="p-1.5 rounded-md text-text/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+          className="p-1.5 rounded-md text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-colors"
         >
           <Trash2 size={15} />
         </button>

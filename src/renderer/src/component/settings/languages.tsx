@@ -136,9 +136,6 @@ export function LanguagesSettings(): React.JSX.Element {
               <span>Language</span>
               <span>Voice</span>
               <span>Shortcut</span>
-              <span className="justify-self-end">
-                <Trash2 size={13} />
-              </span>
             </div>
             {settings.languageBindings.length === 0 && (
               <p className="px-4 py-6 text-sm text-text/50 text-center">
@@ -219,7 +216,7 @@ export function LanguagesSettings(): React.JSX.Element {
                       removeBinding(binding.id)
                     }}
                     title="Remove language"
-                    className="justify-self-end p-1.5 rounded-md text-text/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                    className="justify-self-end p-1.5 rounded-md text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-colors"
                   >
                     <Trash2 size={15} />
                   </button>

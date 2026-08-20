@@ -88,8 +88,10 @@ export interface TtsApi {
   isEngineInstalled(): Promise<boolean>
   installEngine(voiceNames: string[]): Promise<boolean>
   downloadVoice(name: string): Promise<Voice[]>
+  downloadVoiceFromUrl(url: string): Promise<Voice[]>
   deleteVoice(name: string): Promise<Voice[]>
   searchVoices(query: string): Promise<RemoteVoice[]>
+  openModelsFolder(): Promise<boolean>
 
   speak(lang: Lang, text?: string, options?: TtsSpeakOptions): Promise<boolean>
   stop(): Promise<boolean>

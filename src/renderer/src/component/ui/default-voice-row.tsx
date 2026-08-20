@@ -28,6 +28,11 @@ export function DefaultVoiceRow({
         </div>
         <div className="text-xs text-text/55 mt-0.5">
           <code className="selectable">{option.voiceName}</code>
+          <span className="mx-1">·</span>
+          from{' '}
+          <a className="text-logo-primary hover:underline" href={option.repoUrl} rel="noreferrer" target="_blank">
+            {option.repoName}
+          </a>
         </div>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">

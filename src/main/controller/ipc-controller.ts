@@ -1,4 +1,5 @@
-import { type BrowserWindow, dialog, ipcMain } from 'electron'
+import { type BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import fs from 'node:fs'
 
 import { configBackupServiceSingleton } from '#src/main/business/service/config-backup-service'
 import { ttsServiceSingleton } from '#src/main/business/service/tts-service'
@@ -9,7 +10,9 @@ import { piperEngineSingleton } from '#src/main/lib/piper/engine'
 import { shortcutsSingleton } from '#src/main/lib/shortcuts'
 import { traySingleton } from '#src/main/lib/tray'
 import { constant } from '#src/main/util/constants'
+import { pathUtil } from '#src/main/util/path-util'
 import type { HistoryEntry, Lang, Settings, TtsSpeakOptions } from '#src/shared/types'
+import { voiceUrlParser } from '#src/shared/voice/voice-url'
 
 const handledChannels = [
   'settings:get',
@@ -18,8 +21,10 @@ const handledChannels = [
   'models:engineInstalled',
   'models:installEngine',
   'models:download',
+  'models:downloadFromUrl',
   'models:delete',
   'models:search',
+  'models:openModelsFolder',
   'tts:speak',
   'tts:stop',
   'tts:playbackEnded',
@@ -72,6 +77,20 @@ export const ipcController = {
 
       return voiceModelDalSingleton().listVoices()
     })
+    ipcMain.handle('models:downloadFromUrl', async (e, url: string) => {
+      const parsed = voiceUrlParser.parse({ url })
+      if (!parsed) {
+        throw new Error('Not a voice file link — it must point to a .onnx or .onnx.json file.')
+      }
+      await piperEngineSingleton().downloadVoiceFromUrl({
+        onProgress: (p) => {
+          e.sender.send('models:progress', { name: parsed.name, progress: p })
+        },
+        url,
+      })
+
+      return voiceModelDalSingleton().listVoices()
+    })
     ipcMain.handle('models:delete', (_e, name: string) => {
       voiceModelDalSingleton().deleteVoice({ name })
 
@@ -79,6 +98,12 @@ export const ipcController = {
     })
     ipcMain.handle('models:search', (_e, query: string) => {
       return piperEngineSingleton().searchVoices({ query })
+    })
+    ipcMain.handle('models:openModelsFolder', async () => {
+      fs.mkdirSync(pathUtil.modelsDir(), { recursive: true })
+      const errorMessage = await shell.openPath(pathUtil.modelsDir())
+
+      return errorMessage === ''
     })
 
     ipcMain.handle('tts:speak', (_e, lang: Lang, text?: string, options?: TtsSpeakOptions) => {
