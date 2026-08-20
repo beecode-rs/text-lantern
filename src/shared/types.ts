@@ -108,6 +108,7 @@ export interface TtsApi {
 
   getHistory(): Promise<HistoryEntry[]>
   clearHistory(): Promise<boolean>
+  removeHistoryEntry(id: string): Promise<boolean>
 
   onSettingsChanged(cb: (s: Settings) => void): () => void
   onTtsStatus(cb: (s: TtsStatus) => void): () => void

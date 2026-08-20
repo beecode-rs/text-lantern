@@ -32,6 +32,7 @@ const handledChannels = [
   'app:showSettings',
   'history:get',
   'history:clear',
+  'history:remove',
   'config:export',
   'config:import',
 ]
@@ -145,6 +146,11 @@ export const ipcController = {
     })
     ipcMain.handle('history:clear', () => {
       historyDalSingleton().clear()
+
+      return true
+    })
+    ipcMain.handle('history:remove', (_e, id: string) => {
+      historyDalSingleton().remove({ id })
 
       return true
     })

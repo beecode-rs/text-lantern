@@ -61,6 +61,9 @@ const api: TtsApi = {
   playbackEnded: () => {
     return ipcRenderer.invoke('tts:playbackEnded')
   },
+  removeHistoryEntry: (id) => {
+    return ipcRenderer.invoke('history:remove', id)
+  },
   reregisterShortcuts: () => {
     return ipcRenderer.invoke('shortcuts:reregister')
   },

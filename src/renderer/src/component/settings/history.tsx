@@ -24,6 +24,9 @@ export function HistorySettings(): React.JSX.Element {
   const clear = useHistoryStore((s) => {
     return s.clear
   })
+  const remove = useHistoryStore((s) => {
+    return s.remove
+  })
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false)
 
   if (!settings) {
@@ -35,9 +38,14 @@ export function HistorySettings(): React.JSX.Element {
     void api.speak(lang, entry.text, { shouldSkipHistory: true })
   }
 
+  const onRemove = (entry: HistoryEntry): void => {
+    void remove(entry.id)
+  }
+
   const limitLabel = getLimitLabel({ historyLimit: settings.historyLimit })
   const entryList = getEntryList({
     entries,
+    onRemove,
     onReplay,
     onRequestClear: () => {
       setIsClearConfirmOpen(true)
@@ -97,6 +105,7 @@ export function HistorySettings(): React.JSX.Element {
   function getEntryList(params: {
     entries: HistoryEntry[]
     onReplay: (entry: HistoryEntry) => void
+    onRemove: (entry: HistoryEntry) => void
     onRequestClear: () => void
   }): React.JSX.Element {
     if (params.entries.length === 0) {
@@ -121,7 +130,7 @@ export function HistorySettings(): React.JSX.Element {
           </button>
         </div>
         {params.entries.map((entry) => {
-          return <HistoryItem key={entry.id} entry={entry} onReplay={params.onReplay} />
+          return <HistoryItem key={entry.id} entry={entry} onReplay={params.onReplay} onRemove={params.onRemove} />
         })}
       </div>
     )

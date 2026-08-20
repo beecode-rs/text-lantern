@@ -61,6 +61,20 @@ export class HistoryDal {
     return this._cache
   }
 
+  remove(params: { id: string }): HistoryEntry[] {
+    const filtered = this._cache.filter((entry) => {
+      return entry.id !== params.id
+    })
+    if (filtered.length === this._cache.length) {
+      return this._cache
+    }
+    this._cache = filtered
+    this._persistHistoryToDisk()
+    this._emitChanged()
+
+    return this._cache
+  }
+
   prune(): HistoryEntry[] {
     const limited = this._cache.slice(0, this._resolveHistoryLimit())
     if (limited.length === this._cache.length) {

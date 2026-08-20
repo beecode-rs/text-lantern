@@ -7,6 +7,7 @@ interface HistoryStore {
   entries: HistoryEntry[]
   load: () => Promise<void>
   clear: () => Promise<void>
+  remove: (id: string) => Promise<void>
   replace: (entries: HistoryEntry[]) => void
 }
 
@@ -18,6 +19,9 @@ export const useHistoryStore = create<HistoryStore>((set) => ({
   load: async () => {
     const entries = await api.getHistory()
     set({ entries })
+  },
+  remove: async (id) => {
+    await api.removeHistoryEntry(id)
   },
   replace: (entries) => {
     set({ entries })
