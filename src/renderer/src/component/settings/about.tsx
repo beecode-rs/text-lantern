@@ -15,7 +15,7 @@ const credits = [
   },
   { label: 'eSpeak NG (phonemization)', url: 'https://github.com/espeak-ng/espeak-ng' },
   { label: 'tinyld (language auto-detection)', url: 'https://github.com/komodojp/tinyld' },
-  { label: 'Handy — the dictation app this UI takes after', url: 'https://handy.computer' },
+  { label: 'Handy — the dictation app that inspired this app', url: 'https://handy.computer' },
 ]
 
 export function AboutSettings(): React.JSX.Element {
