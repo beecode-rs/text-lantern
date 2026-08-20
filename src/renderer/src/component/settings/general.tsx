@@ -21,7 +21,7 @@ export function GeneralSettings(): React.JSX.Element {
   return (
     <SettingsPage>
       <header>
-        <h1 className="text-xl font-semibold">General</h1>
+        <h1 className="text-xl font-semibold">Settings</h1>
         <p className="text-sm text-text/55 mt-1">Appearance, window behavior, speech and backups.</p>
       </header>
 

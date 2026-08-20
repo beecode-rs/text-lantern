@@ -1,4 +1,4 @@
-import { BookOpen, Cpu, History, Info, Languages, Volume2 } from 'lucide-react'
+import { Cpu, History, Info, Languages, Settings, Volume2 } from 'lucide-react'
 import type { ComponentType } from 'react'
 
 import iconUrl from '#src/renderer/src/asset/icon.png'
@@ -6,7 +6,7 @@ import iconUrl from '#src/renderer/src/asset/icon.png'
 export type Section = 'general' | 'models' | 'languages' | 'test' | 'history' | 'about'
 
 const ITEMS: { id: Section; label: string; icon: ComponentType<{ size?: number | string }> }[] = [
-  { icon: BookOpen, id: 'general', label: 'General' },
+  { icon: Settings, id: 'general', label: 'Settings' },
   { icon: Cpu, id: 'models', label: 'Models' },
   { icon: Languages, id: 'languages', label: 'Languages' },
   { icon: Volume2, id: 'test', label: 'Test' },
