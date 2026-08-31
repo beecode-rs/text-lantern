@@ -7,12 +7,12 @@ const api: TtsApi = {
   clearHistory: () => {
     return ipcRenderer.invoke('history:clear')
   },
-  deleteVoice: (name) => {
-    return ipcRenderer.invoke('models:delete', name)
+  deleteVoice: (id) => {
+    return ipcRenderer.invoke('models:delete', id)
   },
 
-  downloadVoice: (name) => {
-    return ipcRenderer.invoke('models:download', name)
+  downloadVoice: (id) => {
+    return ipcRenderer.invoke('models:download', id)
   },
   downloadVoiceFromUrl: (url) => {
     return ipcRenderer.invoke('models:downloadFromUrl', url)
@@ -22,6 +22,9 @@ const api: TtsApi = {
   },
   getHistory: () => {
     return ipcRenderer.invoke('history:get')
+  },
+  getKokoroCatalog: () => {
+    return ipcRenderer.invoke('models:kokoroCatalog')
   },
   getSettings: () => {
     return ipcRenderer.invoke('settings:get')

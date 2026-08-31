@@ -4,13 +4,14 @@ import { useState } from 'react'
 import { InfoTooltip } from '#src/renderer/src/component/ui/info-tooltip'
 import { RemoteModelRow } from '#src/renderer/src/component/ui/remote-model-row'
 import { useModelsStore } from '#src/renderer/src/store/models'
+import { voiceIdParser } from '#src/shared/voice/voice-id'
 
 export function DownloadTabSearch({
-  installedNames,
-  downloadingNames,
+  installedIds,
+  downloadingIds,
 }: {
-  installedNames: Set<string>
-  downloadingNames: string[]
+  installedIds: Set<string>
+  downloadingIds: string[]
 }): React.JSX.Element {
   const { remote, isSearching, searchError, search, download } = useModelsStore()
 
@@ -85,14 +86,16 @@ export function DownloadTabSearch({
       {!isSearching && remote.length > 0 && (
         <div className="flex flex-col gap-2">
           {remote.map((voice) => {
+            const id = voiceIdParser.build({ name: voice.name, provider: voice.provider })
+
             return (
               <RemoteModelRow
-                key={voice.name}
+                key={id}
                 voice={voice}
-                isInstalled={installedNames.has(voice.name)}
-                isDownloading={downloadingNames.includes(voice.name)}
+                isInstalled={installedIds.has(id)}
+                isDownloading={downloadingIds.includes(id)}
                 onDownload={() => {
-                  void download(voice.name)
+                  void download(id)
                 }}
               />
             )

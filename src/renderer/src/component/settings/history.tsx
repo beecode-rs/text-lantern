@@ -10,6 +10,7 @@ import { SettingsPage } from '#src/renderer/src/component/ui/settings-page'
 import { useHistoryStore } from '#src/renderer/src/store/history'
 import { useSettingsStore } from '#src/renderer/src/store/settings'
 import type { HistoryEntry } from '#src/shared/types'
+import { voiceLabelUtil } from '#src/shared/voice/voice-label'
 
 export function HistorySettings(): React.JSX.Element {
   const settings = useSettingsStore((s) => {
@@ -34,7 +35,7 @@ export function HistorySettings(): React.JSX.Element {
   }
 
   const onReplay = (entry: HistoryEntry): void => {
-    const lang = entry.voice.split('_')[0]
+    const lang = voiceLabelUtil.langCode({ id: entry.voice })
     void api.speak(lang, entry.text, { shouldSkipHistory: true })
   }
 

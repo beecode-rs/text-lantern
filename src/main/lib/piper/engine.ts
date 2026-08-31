@@ -7,7 +7,7 @@ import path from 'node:path'
 import { constant } from '#src/main/util/constants'
 import { pathUtil } from '#src/main/util/path-util'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
-import type { RemoteVoice } from '#src/shared/types'
+import { type RemoteVoice, TtsProvider } from '#src/shared/types'
 import { voiceUrlParser } from '#src/shared/voice/voice-url'
 
 interface HfTreeEntry {
@@ -204,6 +204,7 @@ export class PiperEngine {
     return {
       lang,
       name,
+      provider: TtsProvider.PIPER,
       quality,
       sizeBytes: entry.lfs?.size ?? entry.size,
     }

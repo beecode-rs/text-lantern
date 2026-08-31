@@ -1,21 +1,22 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 import { EventEmitter } from 'node:events'
-import fs from 'node:fs'
-import path from 'node:path'
 
 import { TextService } from '#src/main/business/service/text-service'
 import { historyDalSingleton } from '#src/main/dal/history-dal'
-import { piperServerSingleton } from '#src/main/lib/piper/server'
 import { Selection } from '#src/main/lib/selection'
+import { ttsProviderRegistrySingleton } from '#src/main/lib/tts/provider-registry'
+import type { TtsProviderAdapter } from '#src/main/lib/tts/tts-provider'
 import { constant } from '#src/main/util/constants'
 import { langUtil } from '#src/main/util/lang-util'
-import { pathUtil } from '#src/main/util/path-util'
 import type { Lang, Settings, TtsStatus } from '#src/shared/types'
+import { voiceIdParser } from '#src/shared/voice/voice-id'
 
 export class TtsService {
   readonly events: EventEmitter
 
   protected _active: object | null = null
+
+  protected _activeProvider: TtsProviderAdapter | null = null
 
   constructor() {
     this.events = new EventEmitter()
@@ -23,15 +24,19 @@ export class TtsService {
   }
 
   async prewarmVoice(params: { voice: string }): Promise<void> {
-    if (!params.voice || !this._hasVoiceModelFiles({ voice: params.voice })) {
+    try {
+      if (!params.voice) {
+        return
+      }
+      const { provider: voiceProvider } = voiceIdParser.parse({ id: params.voice })
+      const provider = ttsProviderRegistrySingleton().providerFor({ provider: voiceProvider })
+      if (!provider.hasVoiceModelFiles({ voice: params.voice })) {
+        return
+      }
+      await provider.ensureReadyForVoice({ voice: params.voice })
+    } catch {
       return
     }
-    const { onnx } = this._voiceModelPaths({ voice: params.voice })
-    await piperServerSingleton()
-      .ensureReady({ modelPath: onnx })
-      .catch(() => {
-        return undefined
-      })
   }
 
   async speak(params: { lang: Lang; text?: string; shouldSkipHistory?: boolean; settings: Settings }): Promise<void> {
@@ -74,7 +79,10 @@ export class TtsService {
       return
     }
 
-    if (!this._hasVoiceModelFiles({ voice })) {
+    const { provider: voiceProvider } = voiceIdParser.parse({ id: voice })
+    const provider = ttsProviderRegistrySingleton().providerFor({ provider: voiceProvider })
+
+    if (!provider.hasVoiceModelFiles({ voice })) {
       this._emitTtsStatus({
         error: `Voice "${voice}" is not downloaded. Open Settings → Models.`,
         state: 'error',
@@ -85,6 +93,7 @@ export class TtsService {
 
     const token: object = {}
     this._active = token
+    this._activeProvider = provider
     this._emitTtsStatus({ state: 'synthesizing', voice })
     if (!params.shouldSkipHistory) {
       historyDalSingleton().add({ text: capped, voice })
@@ -92,9 +101,7 @@ export class TtsService {
 
     let sampleRate: number
     try {
-      const ready = await piperServerSingleton().ensureReady({
-        modelPath: this._voiceModelPaths({ voice }).onnx,
-      })
+      const ready = await provider.ensureReadyForVoice({ voice })
       sampleRate = ready.sampleRate
     } catch (error) {
       if (this._active === token) {
@@ -110,8 +117,9 @@ export class TtsService {
     }
 
     void this._streamFromServer({
-      lengthScale: this._lengthScaleFromSpeed(params.settings.rate),
+      provider,
       sampleRate,
+      speed: params.settings.rate,
       text: capped,
       token,
       voice,
@@ -119,10 +127,12 @@ export class TtsService {
   }
 
   async stop(): Promise<void> {
+    const provider = this._activeProvider
     this._active = null
+    this._activeProvider = null
     this.events.emit('stopPlayback')
     this._emitIdle()
-    await piperServerSingleton().cancelActive()
+    await provider?.cancelActive()
   }
 
   playbackEnded(): void {
@@ -134,7 +144,7 @@ export class TtsService {
   }
 
   dispose(): void {
-    piperServerSingleton().dispose()
+    ttsProviderRegistrySingleton().disposeAll()
   }
 
   protected _emitTtsStatus(status: TtsStatus): void {
@@ -184,27 +194,6 @@ export class TtsService {
     return params.text
   }
 
-  protected _voiceModelPaths(params: { voice: string }): { onnx: string; json: string } {
-    const onnx = path.join(pathUtil.modelsDir(), `${params.voice}.onnx`)
-    const json = path.join(pathUtil.modelsDir(), `${params.voice}.onnx.json`)
-
-    return { json, onnx }
-  }
-
-  protected _hasVoiceModelFiles(params: { voice: string }): boolean {
-    const { onnx, json } = this._voiceModelPaths({ voice: params.voice })
-
-    return fs.existsSync(onnx) && fs.existsSync(json)
-  }
-
-  protected _lengthScaleFromSpeed(speed: number): number {
-    if (speed > 0) {
-      return 1 / speed
-    }
-
-    return 1
-  }
-
   protected _errorMessage(error: unknown): string {
     if (error instanceof Error) {
       return error.message
@@ -229,11 +218,12 @@ export class TtsService {
   }
 
   protected async _streamFromServer(params: {
-    text: string
-    lengthScale: number
+    provider: TtsProviderAdapter
     sampleRate: number
-    voice: string
+    speed: number
+    text: string
     token: object
+    voice: string
   }): Promise<void> {
     const streamState = { isStarted: false }
     let remainder: Buffer = Buffer.alloc(0)
@@ -251,7 +241,7 @@ export class TtsService {
     }
 
     try {
-      await piperServerSingleton().synthesize({ lengthScale: params.lengthScale, text: params.text }, { onChunk })
+      await params.provider.synthesize({ onChunk, speed: params.speed, text: params.text, voice: params.voice })
       if (this._active !== params.token) {
         return
       }
@@ -261,7 +251,7 @@ export class TtsService {
         }
         this.events.emit('audioEnd')
       } else {
-        this._emitTtsStatus({ error: 'Piper produced no audio.', state: 'error' })
+        this._emitTtsStatus({ error: `${params.provider.provider} produced no audio.`, state: 'error' })
       }
     } catch (error) {
       if (this._active !== params.token) {

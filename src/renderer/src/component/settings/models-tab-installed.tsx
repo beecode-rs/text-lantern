@@ -6,12 +6,13 @@ import { ModelCard } from '#src/renderer/src/component/ui/model-card'
 import { useModelsStore } from '#src/renderer/src/store/models'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
 import { DEFAULT_VOICE_OPTIONS } from '#src/shared/voice/default-voice'
+import { voiceIdParser } from '#src/shared/voice/voice-id'
 
 export function ModelsTabInstalled(): React.JSX.Element {
   const { voices, isEngineInstalled, isInstalling, logs, installEngine, remove } = useModelsStore()
 
   const [query, setQuery] = useState('')
-  const [pendingDeleteVoiceName, setPendingDeleteVoiceName] = useState<string | null>(null)
+  const [pendingDeleteVoiceId, setPendingDeleteVoiceId] = useState<string | null>(null)
   const [selectedVoiceNames, setSelectedVoiceNames] = useState<string[]>(() => {
     return DEFAULT_VOICE_OPTIONS.map((option) => {
       return option.voiceName
@@ -32,7 +33,7 @@ export function ModelsTabInstalled(): React.JSX.Element {
   const installButtonIcon = getInstallButtonIcon({ isInstalling })
   const installButtonLabel = getInstallButtonLabel({ isInstalling })
   const installedCountLabel = getInstalledCountLabel({ count: voices.length })
-  const voiceList = getVoiceList({ filtered, onRequestDelete: setPendingDeleteVoiceName, voices })
+  const voiceList = getVoiceList({ filtered, onRequestDelete: setPendingDeleteVoiceId, voices })
 
   return (
     <>
@@ -91,16 +92,16 @@ export function ModelsTabInstalled(): React.JSX.Element {
         {voiceList}
       </section>
 
-      {pendingDeleteVoiceName !== null && (
+      {pendingDeleteVoiceId !== null && (
         <ConfirmDialog
           title="Delete voice"
-          message={`Delete "${pendingDeleteVoiceName}" from your device? The voice files will be removed. You can download it again later.`}
+          message={getDeleteMessage({ id: pendingDeleteVoiceId })}
           onConfirm={() => {
-            void remove(pendingDeleteVoiceName)
-            setPendingDeleteVoiceName(null)
+            void remove(pendingDeleteVoiceId)
+            setPendingDeleteVoiceId(null)
           }}
           onCancel={() => {
-            setPendingDeleteVoiceName(null)
+            setPendingDeleteVoiceId(null)
           }}
         />
       )}
@@ -174,7 +175,7 @@ export function ModelsTabInstalled(): React.JSX.Element {
   function getVoiceList(params: {
     filtered: typeof voices
     voices: typeof voices
-    onRequestDelete: (name: string) => void
+    onRequestDelete: (id: string) => void
   }): React.JSX.Element {
     if (params.filtered.length === 0) {
       return (
@@ -185,18 +186,26 @@ export function ModelsTabInstalled(): React.JSX.Element {
     return (
       <div className="flex flex-col gap-2">
         {params.filtered.map((voice) => {
+          const id = voiceIdParser.build({ name: voice.name, provider: voice.provider })
+
           return (
             <ModelCard
-              key={voice.name}
+              key={id}
               voice={voice}
               onDelete={() => {
-                params.onRequestDelete(voice.name)
+                params.onRequestDelete(id)
               }}
             />
           )
         })}
       </div>
     )
+  }
+
+  function getDeleteMessage(params: { id: string }): string {
+    const name = voiceIdParser.parse({ id: params.id }).name
+
+    return `Delete "${name}" from your device? The voice files will be removed. You can download it again later.`
   }
 
   function getEmptyVoicesMessage(params: { voices: typeof voices }): string {

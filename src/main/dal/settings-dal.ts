@@ -4,8 +4,9 @@ import fs from 'node:fs'
 import { constant } from '#src/main/util/constants'
 import { logger } from '#src/main/util/logger'
 import { pathUtil } from '#src/main/util/path-util'
-import type { LanguageBinding, Settings } from '#src/shared/types'
+import { type LanguageBinding, type Settings, TtsProvider } from '#src/shared/types'
 import { DEFAULT_ENGLISH_VOICE_NAME, DEFAULT_SERBIAN_VOICE_NAME } from '#src/shared/voice/default-voice'
+import { voiceIdParser } from '#src/shared/voice/voice-id'
 
 interface LegacyShortcuts {
   auto?: string
@@ -102,10 +103,11 @@ export class SettingsDal {
     schemaVersion: number | undefined
   }): number | undefined {
     const { rate, schemaVersion } = params
+    const rateSemanticsChangedAtSchemaVersion = 2
     if (rate === undefined) {
       return undefined
     }
-    if ((schemaVersion ?? 1) >= constant().settings.currentSchemaVersion) {
+    if ((schemaVersion ?? 1) >= rateSemanticsChangedAtSchemaVersion) {
       return rate
     }
     if (rate > 0) {
@@ -113,6 +115,28 @@ export class SettingsDal {
     }
 
     return 1
+  }
+
+  protected _migrateVoiceIds(params: {
+    bindings: LanguageBinding[]
+    schemaVersion: number | undefined
+  }): LanguageBinding[] {
+    const { bindings, schemaVersion } = params
+    const providerQualifiedVoiceIdSchemaVersion = 4
+    if ((schemaVersion ?? 1) >= providerQualifiedVoiceIdSchemaVersion) {
+      return bindings
+    }
+
+    return bindings.map((binding) => {
+      if (typeof binding.voice !== 'string' || binding.voice === '' || binding.voice.includes('/')) {
+        return binding
+      }
+
+      return {
+        ...binding,
+        voice: voiceIdParser.build({ name: binding.voice, provider: TtsProvider.PIPER }),
+      }
+    })
   }
 
   protected _resolveBindings(params: {
@@ -130,7 +154,8 @@ export class SettingsDal {
   protected _buildSettings(params: { defaults: Settings; parsed: Partial<Settings> & LegacySettings }): Settings {
     const { defaults, parsed } = params
     const legacyBindings = this._migrateLegacyBindings({ parsed })
-    const bindings = this._resolveBindings({ defaults: defaults.languageBindings, legacyBindings, parsed })
+    const resolvedBindings = this._resolveBindings({ defaults: defaults.languageBindings, legacyBindings, parsed })
+    const bindings = this._migrateVoiceIds({ bindings: resolvedBindings, schemaVersion: parsed.schemaVersion })
     const autoShortcut = parsed.autoShortcut ?? parsed.shortcuts?.auto ?? defaults.autoShortcut
     const stopShortcut = parsed.stopShortcut ?? parsed.shortcuts?.stop ?? defaults.stopShortcut
     const rate = this._migrateLegacyRate({ rate: parsed.rate, schemaVersion: parsed.schemaVersion }) ?? defaults.rate

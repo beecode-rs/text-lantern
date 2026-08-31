@@ -9,6 +9,8 @@ import { useSettingsStore } from '#src/renderer/src/store/settings'
 import { useTestStore } from '#src/renderer/src/store/test'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
 import type { TtsStatus } from '#src/shared/types'
+import { voiceIdParser } from '#src/shared/voice/voice-id'
+import { voiceLabelUtil } from '#src/shared/voice/voice-label'
 
 export function TestSettings(): React.JSX.Element {
   const settings = useSettingsStore((s) => {
@@ -49,9 +51,7 @@ export function TestSettings(): React.JSX.Element {
     }
 
     return settings.languageBindings.filter((binding) => {
-      return voices.some((voice) => {
-        return voice.name === binding.voice
-      })
+      return isVoiceConnected(binding.voice)
     })
   }, [settings, voices])
 
@@ -86,11 +86,7 @@ export function TestSettings(): React.JSX.Element {
   const fallbackBinding = settings.languageBindings.find((binding) => {
     return binding.langCode === settings.fallbackLang
   })
-  const isFallbackVoiceConnected =
-    fallbackBinding !== undefined &&
-    voices.some((voice) => {
-      return voice.name === fallbackBinding.voice
-    })
+  const isFallbackVoiceConnected = fallbackBinding !== undefined && isVoiceConnected(fallbackBinding.voice)
   const autoLabel = getAutoLabel({
     fallbackBinding,
     fallbackLang: settings.fallbackLang,
@@ -177,7 +173,8 @@ export function TestSettings(): React.JSX.Element {
               {params.connectedBindings.map((binding) => {
                 return (
                   <option key={binding.id} value={binding.langCode}>
-                    {languageCatalogSingleton().getDisplayName({ code: binding.langCode })} · {binding.voice}
+                    {languageCatalogSingleton().getDisplayName({ code: binding.langCode })} ·{' '}
+                    {voiceLabelUtil.displayName({ id: binding.voice })}
                   </option>
                 )
               })}
@@ -213,13 +210,21 @@ export function TestSettings(): React.JSX.Element {
     )
   }
 
+  function isVoiceConnected(voiceId: string): boolean {
+    const parsedVoiceId = voiceIdParser.parse({ id: voiceId })
+
+    return voices.some((voice) => {
+      return voice.provider === parsedVoiceId.provider && voice.name === parsedVoiceId.name
+    })
+  }
+
   function getAutoLabel(params: {
     isFallbackVoiceConnected: boolean
     fallbackBinding: { voice: string } | undefined
     fallbackLang: string
   }): string {
     if (params.isFallbackVoiceConnected && params.fallbackBinding) {
-      return `Auto-detect · ${params.fallbackBinding.voice}`
+      return `Auto-detect · ${voiceLabelUtil.displayName({ id: params.fallbackBinding.voice })}`
     }
 
     return `Auto-detect · fallback: ${languageCatalogSingleton().getDisplayName({ code: params.fallbackLang })}`

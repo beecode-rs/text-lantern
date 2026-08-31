@@ -7,6 +7,7 @@ import { APP_NAME } from '#src/main/util/constants'
 import { trayIconImageUtilSingleton } from '#src/main/util/tray-icon-image-util'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
 import type { Lang } from '#src/shared/types'
+import { voiceLabelUtil } from '#src/shared/voice/voice-label'
 
 export class Tray {
   protected _tray: Electron.Tray | null = null
@@ -68,7 +69,7 @@ export class Tray {
         click: () => {
           read(binding.langCode)
         },
-        label: `Read — ${languageCatalogSingleton().getDisplayName({ code: binding.langCode })} (${binding.voice})`,
+        label: `Read — ${languageCatalogSingleton().getDisplayName({ code: binding.langCode })} (${voiceLabelUtil.displayName({ id: binding.voice })})`,
       })
     })
     items.push(

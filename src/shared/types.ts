@@ -1,3 +1,5 @@
+import type { KokoroVoice } from '#src/shared/voice/kokoro-voice-catalog'
+
 export interface LanguageBinding {
   id: string
   langCode: string
@@ -26,12 +28,18 @@ export interface Settings {
   schemaVersion: number
 }
 
+export enum TtsProvider {
+  KOKORO = 'KOKORO',
+  PIPER = 'PIPER',
+}
+
 export interface Voice {
   name: string
   hasJson: boolean
   sizeBytes: number
   lang: string
   isInUse: boolean
+  provider: TtsProvider
 }
 
 export interface RemoteVoice {
@@ -39,6 +47,7 @@ export interface RemoteVoice {
   lang: string
   quality: string
   sizeBytes: number
+  provider: TtsProvider
 }
 
 export type VoiceDownloadState = 'downloading' | 'done' | 'error'
@@ -87,10 +96,11 @@ export interface TtsApi {
   listVoices(): Promise<Voice[]>
   isEngineInstalled(): Promise<boolean>
   installEngine(voiceNames: string[]): Promise<boolean>
-  downloadVoice(name: string): Promise<Voice[]>
+  downloadVoice(id: string): Promise<Voice[]>
   downloadVoiceFromUrl(url: string): Promise<Voice[]>
-  deleteVoice(name: string): Promise<Voice[]>
+  deleteVoice(id: string): Promise<Voice[]>
   searchVoices(query: string): Promise<RemoteVoice[]>
+  getKokoroCatalog(): Promise<KokoroVoice[]>
   openModelsFolder(): Promise<boolean>
 
   speak(lang: Lang, text?: string, options?: TtsSpeakOptions): Promise<boolean>
@@ -117,6 +127,6 @@ export interface TtsApi {
   onAudioEnd(cb: () => void): () => void
   onStopPlayback(cb: () => void): () => void
   onModelsLog(cb: (line: string) => void): () => void
-  onModelsProgress(cb: (p: { name: string; progress: number }) => void): () => void
+  onModelsProgress(cb: (p: { id: string; name: string; progress: number }) => void): () => void
   onHistoryChanged(cb: (entries: HistoryEntry[]) => void): () => void
 }

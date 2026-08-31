@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ConfirmDialog } from '#src/renderer/src/component/ui/confirm-dialog'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
 import type { HistoryEntry } from '#src/shared/types'
+import { voiceLabelUtil } from '#src/shared/voice/voice-label'
 
 const PREVIEW_CHARS = 160
 
@@ -18,7 +19,7 @@ export function HistoryItem({
 }): React.JSX.Element {
   const [expanded, setExpanded] = useState(false)
   const [isRemoveConfirmOpen, setIsRemoveConfirmOpen] = useState(false)
-  const langCode = entry.voice.split('_')[0]
+  const langCode = voiceLabelUtil.langCode({ id: entry.voice })
   const langName = languageCatalogSingleton().getDisplayName({ code: langCode })
   const time = new Date(entry.createdAt)
   const isLong = entry.text.length > PREVIEW_CHARS
@@ -33,7 +34,7 @@ export function HistoryItem({
           <span className="whitespace-nowrap">{time.toLocaleString()}</span>
           <span className="shrink-0">·</span>
           <span className="selectable truncate">
-            {langName} · {entry.voice}
+            {langName} · {voiceLabelUtil.displayName({ id: entry.voice })}
           </span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">

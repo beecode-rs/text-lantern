@@ -6,6 +6,7 @@ import { StreamPlayer } from '#src/renderer/src/lib/stream-player'
 import { WaitingBeeper } from '#src/renderer/src/lib/waiting-beeper'
 import { useSettingsStore } from '#src/renderer/src/store/settings'
 import type { TtsStatus } from '#src/shared/types'
+import { voiceLabelUtil } from '#src/shared/voice/voice-label'
 
 export function NowPlaying(): React.JSX.Element {
   const [status, setStatus] = useState<TtsStatus>({ state: 'idle' })
@@ -73,7 +74,8 @@ export function NowPlaying(): React.JSX.Element {
             {status.state === 'synthesizing' && <span>Synthesizing…</span>}
             {status.state === 'reading' && (
               <span className="truncate">
-                Reading <span className="opacity-70 selectable">· {status.voice}</span>
+                Reading{' '}
+                <span className="opacity-70 selectable">· {voiceLabelUtil.displayName({ id: status.voice })}</span>
               </span>
             )}
             {status.state === 'error' && <span className="truncate selectable">{status.error}</span>}

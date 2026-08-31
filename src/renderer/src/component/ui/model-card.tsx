@@ -4,6 +4,7 @@ import { StarBadge } from '#src/renderer/src/component/ui/star-badge'
 import { formatSingleton } from '#src/renderer/src/lib/format'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
 import type { Voice } from '#src/shared/types'
+import { voiceLabelUtil } from '#src/shared/voice/voice-label'
 
 export function ModelCard({ voice, onDelete }: { voice: Voice; onDelete: () => void }): React.JSX.Element {
   return (
@@ -11,6 +12,9 @@ export function ModelCard({ voice, onDelete }: { voice: Voice; onDelete: () => v
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium truncate selectable">{voice.name}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-text/45">
+            {voiceLabelUtil.providerLabel({ provider: voice.provider })}
+          </span>
           {voice.isInUse && <StarBadge>in use</StarBadge>}
         </div>
         <div className="text-xs text-text/55 mt-0.5">

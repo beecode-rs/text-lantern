@@ -2,6 +2,14 @@ import { app } from 'electron'
 import path from 'node:path'
 
 export const pathUtil = {
+  kokoroModelDir(): string {
+    return path.join(this.modelsDir(), 'kokoro', 'model')
+  },
+
+  kokoroVoicesDir(): string {
+    return path.join(this.modelsDir(), 'kokoro', 'voices')
+  },
+
   modelsDir(): string {
     return path.join(this.projectRoot(), 'models')
   },

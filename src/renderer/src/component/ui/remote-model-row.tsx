@@ -21,6 +21,8 @@ export function RemoteModelRow({
     downloadLabel = 'Downloading…'
   }
 
+  const isSizeShown = voice.sizeBytes > 0
+
   return (
     <div className="flex items-center gap-3 px-4 py-3 border border-mid-gray/25 rounded-xl bg-mid-gray/5">
       <div className="min-w-0 flex-1">
@@ -29,8 +31,13 @@ export function RemoteModelRow({
           {isInstalled && <StarBadge>installed</StarBadge>}
         </div>
         <div className="text-xs text-text/55 mt-0.5">
-          {languageCatalogSingleton().getDisplayName({ code: voice.lang })} · {voice.quality} ·{' '}
-          {formatSingleton().formatBytes(voice.sizeBytes)}
+          {languageCatalogSingleton().getDisplayName({ code: voice.lang })} · {voice.quality}
+          {isSizeShown && (
+            <>
+              {' · '}
+              {formatSingleton().formatBytes(voice.sizeBytes)}
+            </>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">

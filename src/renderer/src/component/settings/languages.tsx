@@ -10,7 +10,9 @@ import { StarBadge } from '#src/renderer/src/component/ui/star-badge'
 import { useModelsStore } from '#src/renderer/src/store/models'
 import { useSettingsStore } from '#src/renderer/src/store/settings'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
-import type { LanguageBinding, Settings } from '#src/shared/types'
+import type { LanguageBinding, Settings, TtsProvider } from '#src/shared/types'
+import { voiceIdParser } from '#src/shared/voice/voice-id'
+import { voiceLabelUtil } from '#src/shared/voice/voice-label'
 
 const BINDING_GRID =
   'grid grid-cols-[minmax(130px,170px)_minmax(120px,190px)_minmax(150px,160px)_minmax(0,1fr)] items-center gap-2 px-4'
@@ -165,11 +167,19 @@ export function LanguagesSettings(): React.JSX.Element {
               const rowVoices = [...voices].sort((a, b) => {
                 const aRank = langMatchRank({ lang: a.lang, langCode: binding.langCode })
                 const bRank = langMatchRank({ lang: b.lang, langCode: binding.langCode })
+                if (aRank !== bRank) {
+                  return aRank - bRank
+                }
+                if (a.provider !== b.provider) {
+                  return a.provider.localeCompare(b.provider)
+                }
 
-                return aRank - bRank
+                return a.name.localeCompare(b.name)
               })
+              const bindingVoiceId = voiceIdParser.parse({ id: binding.voice })
+              const selectedVoiceId = voiceIdParser.build(bindingVoiceId)
               const voiceMissing = !voices.some((v) => {
-                return v.name === binding.voice
+                return v.provider === bindingVoiceId.provider && v.name === bindingVoiceId.name
               })
 
               return (
@@ -195,17 +205,23 @@ export function LanguagesSettings(): React.JSX.Element {
                     </select>
                   </div>
                   <select
-                    value={binding.voice}
+                    value={selectedVoiceId}
                     onChange={(e) => {
                       setBinding(binding.id, { voice: e.target.value })
                     }}
                     className="w-full max-w-[190px] min-w-0 truncate px-2 py-1.5 text-sm rounded-lg border border-mid-gray/40 bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors"
                   >
-                    {voiceMissing && <option value={binding.voice}>{binding.voice} (missing)</option>}
+                    {voiceMissing && (
+                      <option value={selectedVoiceId}>
+                        {voiceLabelUtil.displayName({ id: binding.voice })} (missing)
+                      </option>
+                    )}
                     {rowVoices.map((v) => {
+                      const voiceId = voiceIdParser.build({ name: v.name, provider: v.provider })
+
                       return (
-                        <option key={v.name} value={v.name}>
-                          {v.name}
+                        <option key={voiceId} value={voiceId}>
+                          {voiceLabelUtil.displayName({ id: voiceId })}
                         </option>
                       )
                     })}
@@ -374,15 +390,22 @@ export function LanguagesSettings(): React.JSX.Element {
     )
   }
 
-  function findVoiceForLangCode(params: { voices: { name: string; lang: string }[]; langCode: string }): string {
+  function findVoiceForLangCode(params: {
+    voices: { lang: string; name: string; provider: TtsProvider }[]
+    langCode: string
+  }): string {
     const matched = params.voices.find((v) => {
       return v.lang === params.langCode
     })
     if (matched) {
-      return matched.name
+      return voiceIdParser.build({ name: matched.name, provider: matched.provider })
     }
+    if (params.voices.length === 0) {
+      return ''
+    }
+    const fallback = params.voices[0]
 
-    return params.voices[0]?.name ?? ''
+    return voiceIdParser.build({ name: fallback.name, provider: fallback.provider })
   }
 
   function langMatchRank(params: { lang: string; langCode: string }): number {

@@ -12,7 +12,7 @@ export const constant = singletonPattern(() => {
   const serbianVoiceName = DEFAULT_SERBIAN_VOICE_NAME
   const englishVoiceName = DEFAULT_ENGLISH_VOICE_NAME
   const defaultHistoryEntryLimit = 5
-  const currentSettingsSchemaVersion = 3
+  const currentSettingsSchemaVersion = 4
   const defaultSettings: Settings = {
     autoShortcut: 'CommandOrControl+Shift+R',
     fallbackLang: '',
@@ -38,6 +38,17 @@ export const constant = singletonPattern(() => {
     },
     history: {
       defaultEntryLimit: defaultHistoryEntryLimit,
+    },
+    kokoroEngine: {
+      downloadTimeoutMs: 900000,
+      markerFileSuffix: '.installed',
+      modelBaseUrl: 'https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main',
+      modelFiles: [
+        { path: 'config.json', sizeBytes: 44 },
+        { path: 'tokenizer.json', sizeBytes: 3497 },
+        { path: 'tokenizer_config.json', sizeBytes: 113 },
+        { path: 'onnx/model_quantized.onnx', sizeBytes: 92361116 },
+      ],
     },
     logger: {
       defaultLogLevel: LogLevel.INFO,

@@ -35,8 +35,8 @@ export default function App(): React.JSX.Element {
     const offLog = api.onModelsLog((line) => {
       appendLog(line)
     })
-    const offProgress = api.onModelsProgress(({ name, progress }) => {
-      setProgress(name, progress)
+    const offProgress = api.onModelsProgress(({ id, progress }) => {
+      setProgress(id, progress)
     })
     const offConfigLog = api.onConfigLog((line) => {
       appendConfigLog(line)

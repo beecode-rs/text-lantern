@@ -1,16 +1,23 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 import fs from 'node:fs'
-import path from 'node:path'
 
 import { settingsDalSingleton } from '#src/main/dal/settings-dal'
 import { voiceModelDalSingleton } from '#src/main/dal/voice-model-dal'
+import { kokoroEngineSingleton } from '#src/main/lib/kokoro/engine'
 import { piperEngineSingleton } from '#src/main/lib/piper/engine'
+import { ttsProviderRegistrySingleton } from '#src/main/lib/tts/provider-registry'
 import { constant } from '#src/main/util/constants'
 import { logger } from '#src/main/util/logger'
-import { pathUtil } from '#src/main/util/path-util'
-import type { ConfigBackup, LanguageBinding, Settings, ThemePreference } from '#src/shared/types'
+import {
+  type ConfigBackup,
+  type LanguageBinding,
+  type Settings,
+  type ThemePreference,
+  TtsProvider,
+} from '#src/shared/types'
+import { voiceIdParser } from '#src/shared/voice/voice-id'
 
-const VOICE_NAME_PATTERN = /^[A-Za-z0-9_-]+$/
+const VOICE_ID_PATTERN = /^([A-Z]+\/)?[A-Za-z0-9_-]+$/
 
 type UnknownRecord = Record<string, unknown>
 
@@ -36,15 +43,15 @@ export class ConfigBackupService {
   }): Promise<{ didSucceed: boolean; failedVoices: string[] }> {
     const backup = this._readBackupFile({ filePath: params.filePath })
     const failedVoices = await this._downloadEachMissingVoice({
-      names: this._downloadNamesFromBackup({ backup }),
       onLog: params.onLog,
       onProgress: params.onProgress,
+      voiceIds: this._downloadVoiceIdsFromBackup({ backup }),
     })
-    const missingReferencedVoices = this._referencedVoiceNames({ settings: backup.settings }).filter((name) => {
-      return !this._hasVoiceModelFiles({ name })
+    const missingReferencedVoiceIds = this._referencedVoiceIds({ settings: backup.settings }).filter((voiceId) => {
+      return !this._isVoiceDownloaded({ voiceId })
     })
-    if (missingReferencedVoices.length > 0) {
-      params.onLog(`Import aborted — voices still missing: ${missingReferencedVoices.join(', ')}`)
+    if (missingReferencedVoiceIds.length > 0) {
+      params.onLog(`Import aborted — voices still missing: ${missingReferencedVoiceIds.join(', ')}`)
 
       return { didSucceed: false, failedVoices }
     }
@@ -63,7 +70,7 @@ export class ConfigBackupService {
       voices: voiceModelDalSingleton()
         .listVoices()
         .map((voice) => {
-          return voice.name
+          return voiceIdParser.build({ name: voice.name, provider: voice.provider })
         }),
     }
   }
@@ -107,71 +114,92 @@ export class ConfigBackupService {
 
   protected _voicesFromParsed(params: { value: unknown }): string[] {
     if (!Array.isArray(params.value)) {
-      throw new Error('The backup contains an invalid voice name.')
+      throw new Error('The backup contains an invalid voice id.')
     }
-    const isValid = params.value.every((name) => {
-      return this._isString(name) && VOICE_NAME_PATTERN.test(name)
+    const isValid = params.value.every((voiceId) => {
+      return this._isString(voiceId) && VOICE_ID_PATTERN.test(voiceId)
     })
     if (!isValid) {
-      throw new Error('The backup contains an invalid voice name.')
+      throw new Error('The backup contains an invalid voice id.')
     }
 
     return params.value as string[]
   }
 
-  protected _downloadNamesFromBackup(params: { backup: ParsedBackup }): string[] {
-    const referenced = this._referencedVoiceNames({ settings: params.backup.settings })
+  protected _downloadVoiceIdsFromBackup(params: { backup: ParsedBackup }): string[] {
+    const voiceIds = params.backup.voices.map((voiceId) => {
+      return this._qualifiedVoiceId({ voiceId })
+    })
 
-    return Array.from(new Set([...params.backup.voices, ...referenced]))
+    return Array.from(new Set([...voiceIds, ...this._referencedVoiceIds({ settings: params.backup.settings })]))
   }
 
-  protected _referencedVoiceNames(params: { settings: UnknownRecord }): string[] {
+  protected _referencedVoiceIds(params: { settings: UnknownRecord }): string[] {
     const bindings = this._languageBindingsFromBackup({ settings: params.settings })
     if (bindings === null) {
       return []
     }
 
     return bindings.map((binding) => {
-      return binding.voice
+      return this._qualifiedVoiceId({ voiceId: binding.voice })
     })
   }
 
+  protected _qualifiedVoiceId(params: { voiceId: string }): string {
+    const parsed = voiceIdParser.parse({ id: params.voiceId })
+    if (parsed.name.includes('/')) {
+      throw new Error('The backup contains an invalid voice id.')
+    }
+
+    return voiceIdParser.build({ name: parsed.name, provider: parsed.provider })
+  }
+
   protected async _downloadEachMissingVoice(params: {
-    names: string[]
+    voiceIds: string[]
     onLog: (line: string) => void
     onProgress: (p: { name: string; progress: number }) => void
   }): Promise<string[]> {
-    const failedNames: string[] = []
-    await params.names.reduce(async (acc, name) => {
+    const failedVoiceIds: string[] = []
+    await params.voiceIds.reduce(async (acc, voiceId) => {
       await acc
-      if (this._hasVoiceModelFiles({ name })) {
-        params.onLog(`  present: ${name}`)
+      if (this._isVoiceDownloaded({ voiceId })) {
+        params.onLog(`  present: ${voiceId}`)
 
         return
       }
-      params.onLog(`Downloading ${name}…`)
+      params.onLog(`Downloading ${voiceId}…`)
       try {
-        await piperEngineSingleton().downloadVoice({
-          name,
+        await this._downloadVoice({
           onProgress: (p) => {
-            params.onProgress({ name, progress: p })
+            params.onProgress({ name: voiceId, progress: p })
           },
+          voiceId,
         })
-        params.onLog(`  done: ${name}`)
+        params.onLog(`  done: ${voiceId}`)
       } catch (err) {
-        failedNames.push(name)
-        params.onLog(`  failed: ${name}: ${String(err)}`)
+        failedVoiceIds.push(voiceId)
+        params.onLog(`  failed: ${voiceId}: ${String(err)}`)
       }
     }, Promise.resolve())
 
-    return failedNames
+    return failedVoiceIds
   }
 
-  protected _hasVoiceModelFiles(params: { name: string }): boolean {
-    const onnx = path.join(pathUtil.modelsDir(), `${params.name}.onnx`)
-    const json = path.join(pathUtil.modelsDir(), `${params.name}.onnx.json`)
+  protected async _downloadVoice(params: { voiceId: string; onProgress: (p: number) => void }): Promise<void> {
+    const parsed = voiceIdParser.parse({ id: params.voiceId })
+    if (parsed.provider === TtsProvider.KOKORO) {
+      await kokoroEngineSingleton().downloadVoice({ onProgress: params.onProgress, voiceId: parsed.name })
+    } else {
+      await piperEngineSingleton().downloadVoice({ name: parsed.name, onProgress: params.onProgress })
+    }
+  }
 
-    return fs.existsSync(onnx) && fs.existsSync(json)
+  protected _isVoiceDownloaded(params: { voiceId: string }): boolean {
+    const parsed = voiceIdParser.parse({ id: params.voiceId })
+
+    return ttsProviderRegistrySingleton()
+      .providerFor({ provider: parsed.provider })
+      .hasVoiceModelFiles({ voice: params.voiceId })
   }
 
   protected _settingsPatchFromBackup(params: { settings: UnknownRecord }): Partial<Settings> {

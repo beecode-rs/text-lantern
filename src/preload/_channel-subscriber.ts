@@ -7,7 +7,7 @@ export type ChannelPayloads = {
   'config:progress': { name: string; progress: number }
   'history:changed': HistoryEntry[]
   'models:log': string
-  'models:progress': { name: string; progress: number }
+  'models:progress': { id: string; name: string; progress: number }
   'settings:changed': Settings
   'tts:audioChunk': Buffer
   'tts:audioEnd': undefined

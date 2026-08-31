@@ -6,12 +6,15 @@ import { ttsServiceSingleton } from '#src/main/business/service/tts-service'
 import { historyDalSingleton } from '#src/main/dal/history-dal'
 import { settingsDalSingleton } from '#src/main/dal/settings-dal'
 import { voiceModelDalSingleton } from '#src/main/dal/voice-model-dal'
+import { kokoroEngineSingleton } from '#src/main/lib/kokoro/engine'
 import { piperEngineSingleton } from '#src/main/lib/piper/engine'
 import { shortcutsSingleton } from '#src/main/lib/shortcuts'
 import { traySingleton } from '#src/main/lib/tray'
 import { constant } from '#src/main/util/constants'
 import { pathUtil } from '#src/main/util/path-util'
-import type { HistoryEntry, Lang, Settings, TtsSpeakOptions } from '#src/shared/types'
+import { type HistoryEntry, type Lang, type Settings, TtsProvider, type TtsSpeakOptions } from '#src/shared/types'
+import { KOKORO_VOICE_CATALOG } from '#src/shared/voice/kokoro-voice-catalog'
+import { voiceIdParser } from '#src/shared/voice/voice-id'
 import { voiceUrlParser } from '#src/shared/voice/voice-url'
 
 const handledChannels = [
@@ -24,6 +27,7 @@ const handledChannels = [
   'models:downloadFromUrl',
   'models:delete',
   'models:search',
+  'models:kokoroCatalog',
   'models:openModelsFolder',
   'tts:speak',
   'tts:stop',
@@ -68,13 +72,17 @@ export const ipcController = {
 
       return ok
     })
-    ipcMain.handle('models:download', async (e, name: string) => {
-      await piperEngineSingleton().downloadVoice({
-        name,
-        onProgress: (p) => {
-          e.sender.send('models:progress', { name, progress: p })
-        },
-      })
+    ipcMain.handle('models:download', async (e, id: string) => {
+      const parsed = voiceIdParser.parse({ id })
+      const qualifiedId = voiceIdParser.build({ name: parsed.name, provider: parsed.provider })
+      const onProgress = (p: number): void => {
+        e.sender.send('models:progress', { id: qualifiedId, name: parsed.name, progress: p })
+      }
+      if (parsed.provider === TtsProvider.KOKORO) {
+        await kokoroEngineSingleton().downloadVoice({ onProgress, voiceId: parsed.name })
+      } else {
+        await piperEngineSingleton().downloadVoice({ name: parsed.name, onProgress })
+      }
 
       return voiceModelDalSingleton().listVoices()
     })
@@ -85,20 +93,32 @@ export const ipcController = {
       }
       await piperEngineSingleton().downloadVoiceFromUrl({
         onProgress: (p) => {
-          e.sender.send('models:progress', { name: parsed.name, progress: p })
+          e.sender.send('models:progress', {
+            id: voiceIdParser.build({ name: parsed.name, provider: TtsProvider.PIPER }),
+            name: parsed.name,
+            progress: p,
+          })
         },
         url,
       })
 
       return voiceModelDalSingleton().listVoices()
     })
-    ipcMain.handle('models:delete', (_e, name: string) => {
-      voiceModelDalSingleton().deleteVoice({ name })
+    ipcMain.handle('models:delete', (_e, id: string) => {
+      const parsed = voiceIdParser.parse({ id })
+      if (parsed.provider === TtsProvider.KOKORO) {
+        kokoroEngineSingleton().deleteVoice({ voiceId: parsed.name })
+      } else {
+        voiceModelDalSingleton().deleteVoice({ name: parsed.name })
+      }
 
       return voiceModelDalSingleton().listVoices()
     })
     ipcMain.handle('models:search', (_e, query: string) => {
       return piperEngineSingleton().searchVoices({ query })
+    })
+    ipcMain.handle('models:kokoroCatalog', () => {
+      return KOKORO_VOICE_CATALOG
     })
     ipcMain.handle('models:openModelsFolder', async () => {
       fs.mkdirSync(pathUtil.modelsDir(), { recursive: true })

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 
 import { api } from '#src/renderer/src/api'
 import type { RemoteVoice, Voice, VoiceDownload } from '#src/shared/types'
+import { voiceIdParser } from '#src/shared/voice/voice-id'
 import { voiceUrlParser } from '#src/shared/voice/voice-url'
 
 const DONE_DISMISS_DELAY_MS = 3000
@@ -20,20 +21,20 @@ interface ModelsStore {
 
   load: () => Promise<void>
   refreshEngine: () => Promise<void>
-  download: (name: string) => Promise<void>
+  download: (id: string) => Promise<void>
   downloadFromUrl: (url: string) => Promise<void>
-  remove: (name: string) => Promise<void>
-  dismissDownload: (name: string) => void
+  remove: (id: string) => Promise<void>
+  dismissDownload: (id: string) => void
   installEngine: (voiceNames: string[]) => Promise<void>
   search: (query: string) => Promise<void>
   appendLog: (line: string) => void
-  setProgress: (name: string, p: number) => void
+  setProgress: (id: string, p: number) => void
   acknowledgeCompletedDownload: () => void
 }
 
 export const useModelsStore = create<ModelsStore>((set, get) => {
-  const getDownload = (name: string): VoiceDownload | undefined => {
-    return get().downloads[name]
+  const getDownload = (id: string): VoiceDownload | undefined => {
+    return get().downloads[id]
   }
 
   const omitDownload = (downloads: Record<string, VoiceDownload>, key: string): Record<string, VoiceDownload> => {
@@ -42,19 +43,23 @@ export const useModelsStore = create<ModelsStore>((set, get) => {
     return rest
   }
 
-  const markDownloadDone = (name: string): void => {
-    set({ downloads: { ...get().downloads, [name]: { progress: 1, state: 'done' } } })
+  const toQualifiedId = (id: string): string => {
+    return voiceIdParser.build(voiceIdParser.parse({ id }))
+  }
+
+  const markDownloadDone = (id: string): void => {
+    set({ downloads: { ...get().downloads, [id]: { progress: 1, state: 'done' } } })
     setTimeout(() => {
-      if (getDownload(name)?.state === 'done') {
-        set({ downloads: omitDownload(get().downloads, name) })
+      if (getDownload(id)?.state === 'done') {
+        set({ downloads: omitDownload(get().downloads, id) })
       }
     }, DONE_DISMISS_DELAY_MS)
   }
 
-  const markDownloadFailed = (name: string): void => {
-    const failed = getDownload(name)
+  const markDownloadFailed = (id: string): void => {
+    const failed = getDownload(id)
     set({
-      downloads: { ...get().downloads, [name]: { progress: failed?.progress ?? 0, state: 'error' } },
+      downloads: { ...get().downloads, [id]: { progress: failed?.progress ?? 0, state: 'error' } },
     })
   }
 
@@ -65,18 +70,19 @@ export const useModelsStore = create<ModelsStore>((set, get) => {
     appendLog: (line) => {
       set({ logs: [...get().logs, line] })
     },
-    dismissDownload: (name) => {
-      set({ downloads: omitDownload(get().downloads, name) })
+    dismissDownload: (id) => {
+      set({ downloads: omitDownload(get().downloads, id) })
     },
-    download: async (name) => {
-      set({ downloads: { ...get().downloads, [name]: { progress: 0, state: 'downloading' } } })
+    download: async (id) => {
+      const qualifiedId = toQualifiedId(id)
+      set({ downloads: { ...get().downloads, [qualifiedId]: { progress: 0, state: 'downloading' } } })
       try {
-        const voices = await api.downloadVoice(name)
+        const voices = await api.downloadVoice(qualifiedId)
         set({ hasCompletedDownload: true, voices })
-        markDownloadDone(name)
+        markDownloadDone(qualifiedId)
       } catch (err) {
-        get().appendLog(`Download failed for ${name}: ${String(err)}`)
-        markDownloadFailed(name)
+        get().appendLog(`Download failed for ${qualifiedId}: ${String(err)}`)
+        markDownloadFailed(qualifiedId)
       }
     },
     downloadFromUrl: async (url) => {
@@ -86,14 +92,15 @@ export const useModelsStore = create<ModelsStore>((set, get) => {
 
         return
       }
-      set({ downloads: { ...get().downloads, [parsed.name]: { progress: 0, state: 'downloading' } } })
+      const id = toQualifiedId(parsed.name)
+      set({ downloads: { ...get().downloads, [id]: { progress: 0, state: 'downloading' } } })
       try {
         const voices = await api.downloadVoiceFromUrl(url)
         set({ hasCompletedDownload: true, voices })
-        markDownloadDone(parsed.name)
+        markDownloadDone(id)
       } catch (err) {
-        get().appendLog(`Download failed for ${parsed.name}: ${String(err)}`)
-        markDownloadFailed(parsed.name)
+        get().appendLog(`Download failed for ${id}: ${String(err)}`)
+        markDownloadFailed(id)
       }
     },
     downloads: {},
@@ -123,8 +130,8 @@ export const useModelsStore = create<ModelsStore>((set, get) => {
       set({ isEngineInstalled: await api.isEngineInstalled() })
     },
     remote: [],
-    remove: async (name) => {
-      const voices = await api.deleteVoice(name)
+    remove: async (id) => {
+      const voices = await api.deleteVoice(toQualifiedId(id))
       set({ voices })
     },
     search: async (query) => {
@@ -137,12 +144,12 @@ export const useModelsStore = create<ModelsStore>((set, get) => {
       }
     },
     searchError: null,
-    setProgress: (name, p) => {
-      const current = getDownload(name)
+    setProgress: (id, p) => {
+      const current = getDownload(id)
       if (current !== undefined && current.state !== 'downloading') {
         return
       }
-      set({ downloads: { ...get().downloads, [name]: { progress: p, state: 'downloading' } } })
+      set({ downloads: { ...get().downloads, [id]: { progress: p, state: 'downloading' } } })
     },
     voices: [],
   }
