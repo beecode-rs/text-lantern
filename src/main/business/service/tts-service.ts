@@ -8,7 +8,7 @@ import { ttsProviderRegistrySingleton } from '#src/main/lib/tts/provider-registr
 import type { TtsProviderAdapter } from '#src/main/lib/tts/tts-provider'
 import { constant } from '#src/main/util/constants'
 import { langUtil } from '#src/main/util/lang-util'
-import type { Lang, Settings, TtsStatus } from '#src/shared/types'
+import { type Lang, type LanguageBinding, type Settings, TtsState, type TtsStatus } from '#src/shared/types'
 import { voiceIdParser } from '#src/shared/voice/voice-id'
 
 export class TtsService {
@@ -17,6 +17,10 @@ export class TtsService {
   protected _active: object | null = null
 
   protected _activeProvider: TtsProviderAdapter | null = null
+
+  protected _lastStatus: TtsStatus = { state: TtsState.IDLE }
+
+  protected _runGeneration = 0
 
   constructor() {
     this.events = new EventEmitter()
@@ -40,99 +44,119 @@ export class TtsService {
   }
 
   async speak(params: { lang: Lang; text?: string; shouldSkipHistory?: boolean; settings: Settings }): Promise<void> {
-    await this.stop()
+    const runGeneration = await this.stop()
+    this._emitTtsStatus({ state: TtsState.LISTENING })
 
     let rawText: string
     try {
       rawText = await this._resolveInputText({ text: params.text })
     } catch (error) {
-      this._emitTtsStatus({ error: this._selectionErrorMessage(error), state: 'error' })
-
-      return
-    }
-    if (!this._hasText(rawText)) {
-      this._emitIdle()
-
-      return
-    }
-
-    const cleaned = this._cleanTextIfEnabled({ settings: params.settings, text: rawText })
-    if (!this._hasText(cleaned)) {
-      this._emitIdle()
+      if (this._runGeneration !== runGeneration) {
+        return
+      }
+      this._emitTtsStatus({ error: this._selectionErrorMessage(error), state: TtsState.ERROR })
 
       return
     }
 
-    const capped = this._capTextToMaxLength({ maxChars: params.settings.maxChars, text: cleaned })
-    const voice = langUtil.resolveVoice({
-      lang: params.lang,
-      settings: params.settings,
-      text: cleaned,
-    })
-
-    if (!voice) {
-      this._emitTtsStatus({
-        error: 'No language is set up yet. Open Settings → Languages.',
-        state: 'error',
-      })
-
-      return
-    }
-
-    const { provider: voiceProvider } = voiceIdParser.parse({ id: voice })
-    const provider = ttsProviderRegistrySingleton().providerFor({ provider: voiceProvider })
-
-    if (!provider.hasVoiceModelFiles({ voice })) {
-      this._emitTtsStatus({
-        error: `Voice "${voice}" is not downloaded. Open Settings → Models.`,
-        state: 'error',
-      })
-
-      return
-    }
-
-    const token: object = {}
-    this._active = token
-    this._activeProvider = provider
-    this._emitTtsStatus({ state: 'synthesizing', voice })
-    if (!params.shouldSkipHistory) {
-      historyDalSingleton().add({ text: capped, voice })
-    }
-
-    let sampleRate: number
     try {
-      const ready = await provider.ensureReadyForVoice({ voice })
-      sampleRate = ready.sampleRate
-    } catch (error) {
-      if (this._active === token) {
-        this._active = null
-        this._emitTtsStatus({ error: this._errorMessage(error), state: 'error' })
+      if (this._runGeneration !== runGeneration) {
+        return
+      }
+      if (!this._hasText(rawText)) {
+        this._emitIdle()
+
+        return
       }
 
-      return
-    }
+      const cleaned = this._cleanTextIfEnabled({ settings: params.settings, text: rawText })
+      if (!this._hasText(cleaned)) {
+        this._emitIdle()
 
-    if (this._active !== token) {
-      return
-    }
+        return
+      }
 
-    void this._streamFromServer({
-      provider,
-      sampleRate,
-      speed: params.settings.rate,
-      text: capped,
-      token,
-      voice,
-    })
+      const capped = this._capTextToMaxLength({ maxChars: params.settings.maxChars, text: cleaned })
+      const binding = langUtil.resolveVoice({
+        lang: params.lang,
+        settings: params.settings,
+        text: cleaned,
+      })
+
+      if (!binding) {
+        this._emitTtsStatus({
+          error: 'No language is set up yet. Open Settings → Languages.',
+          state: TtsState.ERROR,
+        })
+
+        return
+      }
+
+      const voice = binding.voice
+
+      const { provider: voiceProvider } = voiceIdParser.parse({ id: voice })
+      const provider = ttsProviderRegistrySingleton().providerFor({ provider: voiceProvider })
+
+      if (!provider.hasVoiceModelFiles({ voice })) {
+        this._emitTtsStatus({
+          error: `Voice "${voice}" is not downloaded. Open Settings → Models.`,
+          state: TtsState.ERROR,
+        })
+
+        return
+      }
+
+      const token: object = {}
+      this._active = token
+      this._activeProvider = provider
+      this._emitTtsStatus({ state: TtsState.SYNTHESIZING, voice })
+      if (!params.shouldSkipHistory) {
+        historyDalSingleton().add({ text: capped, voice })
+      }
+
+      let sampleRate: number
+      try {
+        const ready = await provider.ensureReadyForVoice({ voice })
+        sampleRate = ready.sampleRate
+      } catch (error) {
+        if (this._active === token) {
+          this._active = null
+          this._emitTtsStatus({ error: this._errorMessage(error), state: TtsState.ERROR })
+        }
+
+        return
+      }
+
+      if (this._active !== token) {
+        return
+      }
+
+      void this._streamFromServer({
+        provider,
+        sampleRate,
+        speed: this._resolveSpeed({ binding, globalRate: params.settings.rate }),
+        text: capped,
+        token,
+        voice,
+      })
+    } catch (error) {
+      if (this._runGeneration !== runGeneration) {
+        return
+      }
+      this._emitTtsStatus({ error: this._errorMessage(error), state: TtsState.ERROR })
+    }
   }
 
-  async stop(): Promise<void> {
+  async stop(): Promise<number> {
+    const generation = ++this._runGeneration
     const provider = this._activeProvider
     this._active = null
     this._activeProvider = null
     this.events.emit('stopPlayback')
     this._emitIdle()
     await provider?.cancelActive()
+
+    return generation
   }
 
   playbackEnded(): void {
@@ -143,16 +167,21 @@ export class TtsService {
     return this._active !== null
   }
 
+  getStatus(): TtsStatus {
+    return this._lastStatus
+  }
+
   dispose(): void {
     ttsProviderRegistrySingleton().disposeAll()
   }
 
   protected _emitTtsStatus(status: TtsStatus): void {
+    this._lastStatus = status
     this.events.emit('status', status)
   }
 
   protected _emitIdle(): void {
-    this._emitTtsStatus({ state: 'idle' })
+    this._emitTtsStatus({ state: TtsState.IDLE })
   }
 
   protected _hasText(text: string): boolean {
@@ -192,6 +221,14 @@ export class TtsService {
     }
 
     return params.text
+  }
+
+  protected _resolveSpeed(params: { binding: LanguageBinding; globalRate: number }): number {
+    if (params.binding.shouldOverrideRate) {
+      return params.binding.rateOverride
+    }
+
+    return params.globalRate
   }
 
   protected _errorMessage(error: unknown): string {
@@ -234,7 +271,7 @@ export class TtsService {
       }
       if (!streamState.isStarted) {
         streamState.isStarted = true
-        this._emitTtsStatus({ state: 'reading', voice: params.voice })
+        this._emitTtsStatus({ state: TtsState.READING, voice: params.voice })
         this.events.emit('audioStart', { sampleRate: params.sampleRate, voice: params.voice })
       }
       remainder = this._forwardFrames({ chunk, remainder })
@@ -251,13 +288,13 @@ export class TtsService {
         }
         this.events.emit('audioEnd')
       } else {
-        this._emitTtsStatus({ error: `${params.provider.provider} produced no audio.`, state: 'error' })
+        this._emitTtsStatus({ error: `${params.provider.provider} produced no audio.`, state: TtsState.ERROR })
       }
     } catch (error) {
       if (this._active !== params.token) {
         return
       }
-      this._emitTtsStatus({ error: this._errorMessage(error), state: 'error' })
+      this._emitTtsStatus({ error: this._errorMessage(error), state: TtsState.ERROR })
     } finally {
       if (this._active === params.token) {
         this._active = null

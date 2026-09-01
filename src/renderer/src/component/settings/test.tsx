@@ -8,7 +8,7 @@ import { useModelsStore } from '#src/renderer/src/store/models'
 import { useSettingsStore } from '#src/renderer/src/store/settings'
 import { useTestStore } from '#src/renderer/src/store/test'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
-import type { TtsStatus } from '#src/shared/types'
+import { TtsState, type TtsStatus } from '#src/shared/types'
 import { voiceIdParser } from '#src/shared/voice/voice-id'
 import { voiceLabelUtil } from '#src/shared/voice/voice-label'
 
@@ -35,7 +35,7 @@ export function TestSettings(): React.JSX.Element {
     return s.setText
   })
 
-  const [status, setStatus] = useState<TtsStatus>({ state: 'idle' })
+  const [status, setStatus] = useState<TtsStatus>({ state: TtsState.IDLE })
 
   useEffect(() => {
     void loadModels()
@@ -80,7 +80,7 @@ export function TestSettings(): React.JSX.Element {
   }
 
   const hasConnected = connectedBindings.length > 0
-  const isBusy = status.state === 'synthesizing' || status.state === 'reading'
+  const isBusy = status.state === TtsState.SYNTHESIZING || status.state === TtsState.READING
   const canSpeak = hasConnected && text.trim().length > 0 && activeLang !== ''
 
   const fallbackBinding = settings.languageBindings.find((binding) => {

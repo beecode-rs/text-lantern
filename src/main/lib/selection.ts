@@ -21,6 +21,10 @@ repeat ${String(COPY_MAX_POLLS)} times
 end repeat
 return didChange as string`
 
+const WARMUP_SCRIPT = `use framework "AppKit"
+use scripting additions
+tell application "System Events" to get name of first application process`
+
 export class Selection {
   async grab(): Promise<string> {
     const saved = clipboard.readText()
@@ -46,6 +50,10 @@ export class Selection {
     this._restoreClipboard({ saved })
 
     return selection.trim()
+  }
+
+  async warmUp(): Promise<void> {
+    await this._runAppleScript({ source: WARMUP_SCRIPT })
   }
 
   protected _runAppleScript(params: { source: string }): Promise<string> {

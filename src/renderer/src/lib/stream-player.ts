@@ -11,14 +11,14 @@ export class StreamPlayer {
   protected _generation = 0
   onDone: (() => void) | null = null
 
-  start(params: { sampleRate: number }): void {
+  start(params: { sampleRate: number; startDelayMs?: number }): void {
     this._generation += 1
     this._streaming = true
     this._inputEnded = false
     this._activeSources.clear()
-    this._nextTime = 0
     this._sampleRate = params.sampleRate
     this._ensureContext()
+    this._nextTime = (this._ctx?.currentTime ?? 0) + (params.startDelayMs ?? 0) / 1000
     void this._ctx?.resume()
   }
 

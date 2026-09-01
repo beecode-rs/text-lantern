@@ -241,6 +241,9 @@ export class ConfigBackupService {
     if (this._isNumber(params.settings.maxChars)) {
       patch.maxChars = Math.max(0, Math.floor(params.settings.maxChars))
     }
+    if (this._isNumber(params.settings.playbackStartDelayMs)) {
+      patch.playbackStartDelayMs = Math.min(2000, Math.max(0, Math.floor(params.settings.playbackStartDelayMs)))
+    }
     if (this._isNumber(params.settings.historyLimit)) {
       patch.historyLimit = Math.max(0, Math.floor(params.settings.historyLimit))
     }
@@ -269,7 +272,33 @@ export class ConfigBackupService {
       return null
     }
 
-    return bindings as LanguageBinding[]
+    return (bindings as LanguageBinding[]).map((binding) => {
+      return this._bindingFromBackup({ binding })
+    })
+  }
+
+  protected _bindingFromBackup(params: { binding: LanguageBinding }): LanguageBinding {
+    return {
+      ...params.binding,
+      rateOverride: this._rateOverrideFromBackup({ rateOverride: params.binding.rateOverride }),
+      shouldOverrideRate: this._shouldOverrideRateFromBackup({ shouldOverrideRate: params.binding.shouldOverrideRate }),
+    }
+  }
+
+  protected _rateOverrideFromBackup(params: { rateOverride: unknown }): number {
+    if (this._isNumber(params.rateOverride)) {
+      return this._clampedRate({ rate: params.rateOverride })
+    }
+
+    return constant().settings.defaultSettings.rate
+  }
+
+  protected _shouldOverrideRateFromBackup(params: { shouldOverrideRate: unknown }): boolean {
+    if (this._isBoolean(params.shouldOverrideRate)) {
+      return params.shouldOverrideRate
+    }
+
+    return false
   }
 
   protected _clampedRate(params: { rate: number }): number {

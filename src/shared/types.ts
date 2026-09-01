@@ -5,6 +5,8 @@ export interface LanguageBinding {
   langCode: string
   voice: string
   shortcut: string
+  shouldOverrideRate: boolean
+  rateOverride: number
 }
 
 export type Lang = 'auto' | (string & {})
@@ -17,6 +19,7 @@ export interface Settings {
   autoShortcut: string
   stopShortcut: string
   rate: number
+  playbackStartDelayMs: number
   shouldBleepWhileLoadingModel: boolean
   shouldCleanText: boolean
   shouldStripBrackets: boolean
@@ -57,11 +60,20 @@ export interface VoiceDownload {
   state: VoiceDownloadState
 }
 
+export enum TtsState {
+  IDLE = 'IDLE',
+  LISTENING = 'LISTENING',
+  SYNTHESIZING = 'SYNTHESIZING',
+  READING = 'READING',
+  ERROR = 'ERROR',
+}
+
 export type TtsStatus =
-  | { state: 'idle' }
-  | { state: 'synthesizing'; voice: string }
-  | { state: 'reading'; voice: string }
-  | { state: 'error'; error: string }
+  | { state: TtsState.IDLE }
+  | { state: TtsState.LISTENING }
+  | { state: TtsState.SYNTHESIZING; voice: string }
+  | { state: TtsState.READING; voice: string }
+  | { state: TtsState.ERROR; error: string }
 
 export interface HistoryEntry {
   id: string
@@ -103,6 +115,7 @@ export interface TtsApi {
   getKokoroCatalog(): Promise<KokoroVoice[]>
   openModelsFolder(): Promise<boolean>
 
+  getTtsStatus(): Promise<TtsStatus>
   speak(lang: Lang, text?: string, options?: TtsSpeakOptions): Promise<boolean>
   stop(): Promise<boolean>
   playbackEnded(): Promise<boolean>

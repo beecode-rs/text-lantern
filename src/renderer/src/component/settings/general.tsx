@@ -1,22 +1,21 @@
 import { AppWindow, DatabaseBackup, Volume2 } from 'lucide-react'
-import { useState } from 'react'
 
 import { GeneralTabBackup } from '#src/renderer/src/component/settings/general-tab-backup'
 import { GeneralTabSpeech } from '#src/renderer/src/component/settings/general-tab-speech'
 import { GeneralTabWindow } from '#src/renderer/src/component/settings/general-tab-window'
 import { SettingsPage } from '#src/renderer/src/component/ui/settings-page'
 import { TabBar, type TabItem } from '#src/renderer/src/component/ui/tab-bar'
-
-type GeneralTab = 'window' | 'speech' | 'backup'
+import { GeneralTab, usePageTabsStore } from '#src/renderer/src/store/page-tabs'
 
 const TABS: TabItem<GeneralTab>[] = [
-  { icon: AppWindow, id: 'window', label: 'Window' },
-  { icon: Volume2, id: 'speech', label: 'Speech' },
-  { icon: DatabaseBackup, id: 'backup', label: 'Backup' },
+  { icon: AppWindow, id: GeneralTab.WINDOW, label: 'Window' },
+  { icon: Volume2, id: GeneralTab.SPEECH, label: 'Speech' },
+  { icon: DatabaseBackup, id: GeneralTab.BACKUP, label: 'Backup' },
 ]
 
 export function GeneralSettings(): React.JSX.Element {
-  const [activeTab, setActiveTab] = useState<GeneralTab>('window')
+  const activeTab = usePageTabsStore((s) => s.generalTab)
+  const setActiveTab = usePageTabsStore((s) => s.setGeneralTab)
 
   return (
     <SettingsPage>
@@ -33,13 +32,13 @@ export function GeneralSettings(): React.JSX.Element {
 
   function getActiveTabPanel(params: { activeTab: GeneralTab }): React.JSX.Element {
     switch (params.activeTab) {
-      case 'window': {
+      case GeneralTab.WINDOW: {
         return <GeneralTabWindow />
       }
-      case 'speech': {
+      case GeneralTab.SPEECH: {
         return <GeneralTabSpeech />
       }
-      case 'backup': {
+      case GeneralTab.BACKUP: {
         return <GeneralTabBackup />
       }
     }

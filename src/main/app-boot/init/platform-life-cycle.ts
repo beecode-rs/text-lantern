@@ -2,6 +2,7 @@ import { LifeCycle } from '@beecode/msh-app-boot'
 import { app, nativeImage, systemPreferences } from 'electron'
 import path from 'node:path'
 
+import { Selection } from '#src/main/lib/selection'
 import { pathUtil } from '#src/main/util/path-util'
 
 export class PlatformLifeCycle extends LifeCycle {
@@ -12,6 +13,9 @@ export class PlatformLifeCycle extends LifeCycle {
   protected _createFn(): Promise<void> {
     if (process.platform === 'darwin') {
       void systemPreferences.isTrustedAccessibilityClient(true)
+      void new Selection().warmUp().catch(() => {
+        return undefined
+      })
     }
     this._applyDockIcon()
 

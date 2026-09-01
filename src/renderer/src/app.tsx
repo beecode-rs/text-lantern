@@ -86,21 +86,24 @@ export default function App(): React.JSX.Element {
 
   useTheme(settings?.theme)
 
-  if (!settings) {
-    return <div className="h-screen flex items-center justify-center text-text/50 text-sm">Loading…</div>
-  }
-
   return (
     <div className="h-screen flex flex-col bg-background text-text">
       <div className="app-region-drag h-7 shrink-0" />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar active={section} onChange={setSection} />
-        <main className="flex-1 overflow-x-auto overflow-y-auto">
-          <div className="p-6">
-            <SettingsSection active={section} />
-          </div>
-        </main>
+        {settings === null && (
+          <div className="flex-1 flex items-center justify-center text-text/50 text-sm">Loading…</div>
+        )}
+        {settings !== null && (
+          <>
+            <Sidebar active={section} onChange={setSection} />
+            <main className="flex-1 overflow-x-auto overflow-y-auto">
+              <div className="p-6">
+                <SettingsSection active={section} />
+              </div>
+            </main>
+          </>
+        )}
       </div>
 
       <NowPlaying />

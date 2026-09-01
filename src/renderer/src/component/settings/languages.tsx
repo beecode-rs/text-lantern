@@ -6,7 +6,9 @@ import { Row } from '#src/renderer/src/component/ui/row'
 import { SettingsGroup } from '#src/renderer/src/component/ui/settings-group'
 import { SettingsPage } from '#src/renderer/src/component/ui/settings-page'
 import { ShortcutInput } from '#src/renderer/src/component/ui/shortcut-input'
+import { Slider } from '#src/renderer/src/component/ui/slider'
 import { StarBadge } from '#src/renderer/src/component/ui/star-badge'
+import { Toggle } from '#src/renderer/src/component/ui/toggle'
 import { useModelsStore } from '#src/renderer/src/store/models'
 import { useSettingsStore } from '#src/renderer/src/store/settings'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
@@ -15,7 +17,7 @@ import { voiceIdParser } from '#src/shared/voice/voice-id'
 import { voiceLabelUtil } from '#src/shared/voice/voice-label'
 
 const BINDING_GRID =
-  'grid grid-cols-[minmax(130px,170px)_minmax(120px,190px)_minmax(150px,160px)_minmax(0,1fr)] items-center gap-2 px-4'
+  'grid grid-cols-[minmax(130px,170px)_minmax(120px,190px)_minmax(150px,160px)_minmax(0,1fr)_auto] items-center gap-2 px-4'
 
 export function LanguagesSettings(): React.JSX.Element {
   const settings = useSettingsStore((s) => {
@@ -114,7 +116,9 @@ export function LanguagesSettings(): React.JSX.Element {
     const newBinding: LanguageBinding = {
       id: crypto.randomUUID(),
       langCode,
+      rateOverride: settings.rate,
       shortcut: '',
+      shouldOverrideRate: false,
       voice,
     }
     const patch: Partial<Settings> = { languageBindings: [...settings.languageBindings, newBinding] }
@@ -140,11 +144,13 @@ export function LanguagesSettings(): React.JSX.Element {
 
       <SettingsGroup title="Language bindings">
         <div className="overflow-x-auto">
-          <div className="min-w-[500px] divide-y divide-mid-gray/15">
+          <div className="min-w-[910px] divide-y divide-mid-gray/15">
             <div className={`${BINDING_GRID} py-2 text-[11px] font-medium uppercase tracking-wide text-text/50`}>
               <span>Language</span>
               <span>Voice</span>
               <span>Shortcut</span>
+              <span>Speed</span>
+              <span />
             </div>
             {settings.languageBindings.length === 0 && (
               <p className="px-4 py-6 text-sm text-text/50 text-center">
@@ -233,6 +239,28 @@ export function LanguagesSettings(): React.JSX.Element {
                       setBinding(binding.id, { shortcut: accel })
                     }}
                   />
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Toggle
+                      checked={binding.shouldOverrideRate}
+                      onChange={(v) => {
+                        setBinding(binding.id, { shouldOverrideRate: v })
+                      }}
+                      ariaLabel="Override speed for this language"
+                    />
+                    <Slider
+                      value={binding.rateOverride}
+                      min={0.5}
+                      max={3}
+                      step={0.05}
+                      disabled={!binding.shouldOverrideRate}
+                      onChange={(v) => {
+                        setBinding(binding.id, { rateOverride: v })
+                      }}
+                      format={(v) => {
+                        return `${v.toFixed(2)}×`
+                      }}
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={() => {

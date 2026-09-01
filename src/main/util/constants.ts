@@ -19,6 +19,7 @@ export const constant = singletonPattern(() => {
     historyLimit: defaultHistoryEntryLimit,
     languageBindings: [],
     maxChars: 6000,
+    playbackStartDelayMs: 500,
     rate: 1.0,
     schemaVersion: currentSettingsSchemaVersion,
     shouldBleepWhileLoadingModel: true,

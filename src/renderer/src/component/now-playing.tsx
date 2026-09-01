@@ -5,11 +5,11 @@ import { api } from '#src/renderer/src/api'
 import { StreamPlayer } from '#src/renderer/src/lib/stream-player'
 import { WaitingBeeper } from '#src/renderer/src/lib/waiting-beeper'
 import { useSettingsStore } from '#src/renderer/src/store/settings'
-import type { TtsStatus } from '#src/shared/types'
+import { TtsState, type TtsStatus } from '#src/shared/types'
 import { voiceLabelUtil } from '#src/shared/voice/voice-label'
 
 export function NowPlaying(): React.JSX.Element {
-  const [status, setStatus] = useState<TtsStatus>({ state: 'idle' })
+  const [status, setStatus] = useState<TtsStatus>({ state: TtsState.IDLE })
   const shouldBleepWhileLoadingModel = useSettingsStore((s) => s.settings?.shouldBleepWhileLoadingModel ?? true)
   const playerRef = useRef<StreamPlayer | null>(null)
   playerRef.current ??= new StreamPlayer()
@@ -17,7 +17,16 @@ export function NowPlaying(): React.JSX.Element {
   beeperRef.current ??= new WaitingBeeper()
 
   useEffect(() => {
-    const offStatus = api.onTtsStatus(setStatus)
+    let isPushReceived = false
+    const offStatus = api.onTtsStatus((status) => {
+      isPushReceived = true
+      setStatus(status)
+    })
+    void api.getTtsStatus().then((status) => {
+      if (!isPushReceived) {
+        setStatus(status)
+      }
+    })
 
     const offStart = api.onAudioStart(({ sampleRate }) => {
       const player = playerRef.current
@@ -27,7 +36,8 @@ export function NowPlaying(): React.JSX.Element {
       player.onDone = () => {
         void api.playbackEnded()
       }
-      player.start({ sampleRate })
+      const startDelayMs = useSettingsStore.getState().settings?.playbackStartDelayMs ?? 500
+      player.start({ sampleRate, startDelayMs })
     })
 
     const offChunk = api.onAudioChunk((samples) => {
@@ -53,32 +63,36 @@ export function NowPlaying(): React.JSX.Element {
   }, [])
 
   useEffect(() => {
-    if (status.state === 'synthesizing' && shouldBleepWhileLoadingModel) {
+    const isAwaitingVoice = status.state === TtsState.LISTENING || status.state === TtsState.SYNTHESIZING
+    if (isAwaitingVoice && shouldBleepWhileLoadingModel) {
       beeperRef.current?.start()
     } else {
       beeperRef.current?.stop()
     }
   }, [status.state, shouldBleepWhileLoadingModel])
 
-  const busy = status.state === 'synthesizing' || status.state === 'reading'
+  // Stop stays hidden during the sub-second LISTENING window to avoid button flicker; the stop shortcut and tray Stop still work.
+  const busy = status.state === TtsState.SYNTHESIZING || status.state === TtsState.READING
 
   return (
     <>
-      {(busy || status.state === 'error') && (
+      {status.state !== TtsState.IDLE && (
         <div className="shrink-0 border-t border-accent/40 bg-background-ui/95 backdrop-blur px-4 py-2.5 flex items-center gap-3 text-white">
-          {status.state === 'synthesizing' && <Loader2 size={15} className="animate-spin" />}
-          {status.state === 'reading' && <Square size={13} className="fill-current" />}
-          {status.state === 'error' && <AlertTriangle size={15} />}
+          {status.state === TtsState.LISTENING && <Loader2 size={15} className="animate-spin" />}
+          {status.state === TtsState.SYNTHESIZING && <Loader2 size={15} className="animate-spin" />}
+          {status.state === TtsState.READING && <Square size={13} className="fill-current" />}
+          {status.state === TtsState.ERROR && <AlertTriangle size={15} />}
 
           <div className="flex-1 min-w-0 text-sm">
-            {status.state === 'synthesizing' && <span>Synthesizing…</span>}
-            {status.state === 'reading' && (
+            {status.state === TtsState.LISTENING && <span>Listening…</span>}
+            {status.state === TtsState.SYNTHESIZING && <span>Synthesizing…</span>}
+            {status.state === TtsState.READING && (
               <span className="truncate">
                 Reading{' '}
                 <span className="opacity-70 selectable">· {voiceLabelUtil.displayName({ id: status.voice })}</span>
               </span>
             )}
-            {status.state === 'error' && <span className="truncate selectable">{status.error}</span>}
+            {status.state === TtsState.ERROR && <span className="truncate selectable">{status.error}</span>}
           </div>
 
           {busy && (

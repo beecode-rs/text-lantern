@@ -11,16 +11,15 @@ import { Select, type SelectOption } from '#src/renderer/src/component/ui/select
 import { SettingsPage } from '#src/renderer/src/component/ui/settings-page'
 import { TabBar, type TabItem } from '#src/renderer/src/component/ui/tab-bar'
 import { useModelsStore } from '#src/renderer/src/store/models'
+import { ModelsTab, usePageTabsStore } from '#src/renderer/src/store/page-tabs'
 import { TtsProvider } from '#src/shared/types'
 import { voiceIdParser } from '#src/shared/voice/voice-id'
 
-type ModelsTab = 'models' | 'search' | 'manual' | 'predefined'
-
 const TABS: TabItem<ModelsTab>[] = [
-  { icon: Cpu, id: 'models', label: 'Models' },
-  { icon: Search, id: 'search', label: 'Search' },
-  { icon: Link2, id: 'manual', label: 'Manual download' },
-  { icon: Star, id: 'predefined', label: 'App favorite' },
+  { icon: Cpu, id: ModelsTab.MODELS, label: 'Models' },
+  { icon: Search, id: ModelsTab.SEARCH, label: 'Search' },
+  { icon: Link2, id: ModelsTab.MANUAL, label: 'Manual download' },
+  { icon: Star, id: ModelsTab.PREDEFINED, label: 'App favorite' },
 ]
 
 const PROVIDER_OPTIONS: SelectOption<TtsProvider>[] = [
@@ -31,7 +30,8 @@ const PROVIDER_OPTIONS: SelectOption<TtsProvider>[] = [
 export function ModelsSettings(): React.JSX.Element {
   const { voices, downloads, load, download, dismissDownload } = useModelsStore()
 
-  const [activeTab, setActiveTab] = useState<ModelsTab>('models')
+  const activeTab = usePageTabsStore((s) => s.modelsTab)
+  const setActiveTab = usePageTabsStore((s) => s.setModelsTab)
   const [provider, setProvider] = useState<TtsProvider>(TtsProvider.PIPER)
 
   useEffect(() => {
@@ -123,16 +123,16 @@ export function ModelsSettings(): React.JSX.Element {
     }
 
     switch (params.activeTab) {
-      case 'models': {
+      case ModelsTab.MODELS: {
         return <ModelsTabInstalled />
       }
-      case 'search': {
+      case ModelsTab.SEARCH: {
         return <DownloadTabSearch downloadingIds={params.downloadingIds} installedIds={params.installedIds} />
       }
-      case 'manual': {
+      case ModelsTab.MANUAL: {
         return <DownloadTabManual />
       }
-      case 'predefined': {
+      case ModelsTab.PREDEFINED: {
         return <DownloadTabPredefined downloadingIds={params.downloadingIds} installedIds={params.installedIds} />
       }
     }

@@ -17,9 +17,8 @@ export class KokoroProvider implements TtsProviderAdapter {
   protected _activeWorkPromise: Promise<void> | null = null
   protected _generation = 0
   protected _modulePromise: Promise<KokoroModule> | null = null
-  protected _sampleRatePromise: Promise<number> | null = null
   protected _ttsPromise: Promise<KokoroTTS> | null = null
-  protected readonly _warmUpText = 'Ready.'
+  protected readonly _sampleRateHz = 24000
 
   hasVoiceModelFiles(params: { voice: string }): boolean {
     const engine = kokoroEngineSingleton()
@@ -29,9 +28,9 @@ export class KokoroProvider implements TtsProviderAdapter {
 
   async ensureReadyForVoice(params: { voice: string }): Promise<{ sampleRate: number }> {
     this._requireDownloaded({ voice: params.voice })
-    const sampleRate = await this._warmedUpSampleRate({ voiceId: this._voiceId({ voice: params.voice }) })
+    await this._loadedTts()
 
-    return { sampleRate }
+    return { sampleRate: this._sampleRateHz }
   }
 
   async synthesize(params: {
@@ -71,7 +70,6 @@ export class KokoroProvider implements TtsProviderAdapter {
     const workSettled = this._activeWorkPromise ?? Promise.resolve()
     const ttsPromise = this._ttsPromise
     this._ttsPromise = null
-    this._sampleRatePromise = null
     void ttsPromise
       ?.then((tts) => {
         return workSettled.then(() => {
@@ -103,27 +101,6 @@ export class KokoroProvider implements TtsProviderAdapter {
     const kokoro = await this._loadedModule()
 
     return kokoro.KokoroTTS.from_pretrained(pathUtil.kokoroModelDir(), { device: 'cpu', dtype: 'q8' })
-  }
-
-  protected _warmedUpSampleRate(params: { voiceId: string }): Promise<number> {
-    this._sampleRatePromise ??= this._warmUp({ voiceId: params.voiceId }).catch((error: unknown) => {
-      this._sampleRatePromise = null
-
-      throw error
-    })
-
-    return this._sampleRatePromise
-  }
-
-  protected _warmUp(params: { voiceId: string }): Promise<number> {
-    const work = this._loadedTts().then((tts) => {
-      return tts.generate(this._warmUpText, { speed: 1, voice: params.voiceId as KokoroVoiceKey }).then((audio) => {
-        return audio.sampling_rate
-      })
-    })
-    this._trackActiveWork(work)
-
-    return work
   }
 
   protected _trackActiveWork(work: Promise<unknown>): void {

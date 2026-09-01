@@ -29,6 +29,9 @@ const api: TtsApi = {
   getSettings: () => {
     return ipcRenderer.invoke('settings:get')
   },
+  getTtsStatus: () => {
+    return ipcRenderer.invoke('tts:getStatus')
+  },
   importConfig: () => {
     return ipcRenderer.invoke('config:import')
   },

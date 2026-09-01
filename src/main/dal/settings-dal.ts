@@ -24,6 +24,9 @@ interface LegacySettings {
   startHidden?: boolean
 }
 
+type PersistedLanguageBinding = Omit<LanguageBinding, 'rateOverride' | 'shouldOverrideRate'> &
+  Partial<Pick<LanguageBinding, 'rateOverride' | 'shouldOverrideRate'>>
+
 export class SettingsDal {
   readonly defaults: Settings
 
@@ -53,7 +56,8 @@ export class SettingsDal {
   }
 
   update(params: { patch: Partial<Settings> }): Settings {
-    this._cache = { ...this._cache, ...params.patch }
+    const patch = this._patchWithBindingRateDefaults({ patch: params.patch })
+    this._cache = { ...this._cache, ...patch }
     this._persistSettingsToDisk()
     this._listeners.forEach((cb) => {
       cb()
@@ -74,7 +78,7 @@ export class SettingsDal {
     return pathUtil.userDataFile('settings.json')
   }
 
-  protected _migrateLegacyBindings(params: { parsed: LegacySettings }): LanguageBinding[] | null {
+  protected _migrateLegacyBindings(params: { parsed: LegacySettings }): PersistedLanguageBinding[] | null {
     const { parsed } = params
     const hasLegacy = parsed.voiceSr ?? parsed.voiceEn ?? parsed.shortcuts
     if (!hasLegacy) {
@@ -141,14 +145,35 @@ export class SettingsDal {
 
   protected _resolveBindings(params: {
     defaults: LanguageBinding[]
-    legacyBindings: LanguageBinding[] | null
+    legacyBindings: PersistedLanguageBinding[] | null
     parsed: Partial<Settings> & LegacySettings
   }): LanguageBinding[] {
     if (Array.isArray(params.parsed.languageBindings)) {
-      return params.parsed.languageBindings
+      return this._withBindingRateDefaults({ bindings: params.parsed.languageBindings })
     }
 
-    return params.legacyBindings ?? params.defaults
+    return this._withBindingRateDefaults({ bindings: params.legacyBindings ?? params.defaults })
+  }
+
+  protected _patchWithBindingRateDefaults(params: { patch: Partial<Settings> }): Partial<Settings> {
+    if (!Array.isArray(params.patch.languageBindings)) {
+      return params.patch
+    }
+
+    return {
+      ...params.patch,
+      languageBindings: this._withBindingRateDefaults({ bindings: params.patch.languageBindings }),
+    }
+  }
+
+  protected _withBindingRateDefaults(params: { bindings: PersistedLanguageBinding[] }): LanguageBinding[] {
+    return params.bindings.map((binding) => {
+      return {
+        ...binding,
+        rateOverride: binding.rateOverride ?? constant().settings.defaultSettings.rate,
+        shouldOverrideRate: binding.shouldOverrideRate ?? false,
+      }
+    })
   }
 
   protected _buildSettings(params: { defaults: Settings; parsed: Partial<Settings> & LegacySettings }): Settings {
@@ -167,6 +192,7 @@ export class SettingsDal {
       historyLimit: parsed.historyLimit ?? defaults.historyLimit,
       languageBindings: bindings,
       maxChars: parsed.maxChars ?? defaults.maxChars,
+      playbackStartDelayMs: parsed.playbackStartDelayMs ?? defaults.playbackStartDelayMs,
       rate,
       schemaVersion: constant().settings.currentSchemaVersion,
       shouldBleepWhileLoadingModel: parsed.shouldBleepWhileLoadingModel ?? defaults.shouldBleepWhileLoadingModel,
@@ -181,7 +207,7 @@ export class SettingsDal {
 
   protected _resolveFallbackLang(params: {
     parsed: Partial<Settings> & LegacySettings
-    legacyBindings: LanguageBinding[] | null
+    legacyBindings: PersistedLanguageBinding[] | null
     defaults: Settings
   }): string {
     if (params.parsed.fallbackLang !== undefined) {

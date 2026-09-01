@@ -35,6 +35,23 @@ export function GeneralTabSpeech(): React.JSX.Element {
             }}
           />
         </Row>
+        <Row
+          title="Start delay"
+          description="A short pause before speaking begins, so Bluetooth headphones have time to wake up and don't cut off the first word."
+        >
+          <Slider
+            value={settings.playbackStartDelayMs}
+            min={0}
+            max={2000}
+            step={50}
+            onChange={(v) => {
+              void update({ playbackStartDelayMs: v })
+            }}
+            format={(v) => {
+              return `${Math.round(v).toString()} ms`
+            }}
+          />
+        </Row>
       </SettingsGroup>
 
       <SettingsGroup

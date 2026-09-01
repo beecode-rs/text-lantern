@@ -29,6 +29,7 @@ const handledChannels = [
   'models:search',
   'models:kokoroCatalog',
   'models:openModelsFolder',
+  'tts:getStatus',
   'tts:speak',
   'tts:stop',
   'tts:playbackEnded',
@@ -127,6 +128,9 @@ export const ipcController = {
       return errorMessage === ''
     })
 
+    ipcMain.handle('tts:getStatus', () => {
+      return ttsServiceSingleton().getStatus()
+    })
     ipcMain.handle('tts:speak', (_e, lang: Lang, text?: string, options?: TtsSpeakOptions) => {
       void ttsServiceSingleton().speak({
         lang,
