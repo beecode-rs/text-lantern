@@ -1,38 +1,32 @@
-import { Cpu, Link2, Search, Star } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 
-import { DownloadTabKokoro } from '#src/renderer/src/component/settings/download-tab-kokoro'
-import { DownloadTabManual } from '#src/renderer/src/component/settings/download-tab-manual'
-import { DownloadTabPredefined } from '#src/renderer/src/component/settings/download-tab-predefined'
-import { DownloadTabSearch } from '#src/renderer/src/component/settings/download-tab-search'
 import { ModelsTabInstalled } from '#src/renderer/src/component/settings/models-tab-installed'
+import { PROVIDER_PAGES, type ProviderPageProps } from '#src/renderer/src/component/settings/provider-page-registry'
 import { DownloadRow } from '#src/renderer/src/component/ui/download-row'
-import { Select, type SelectOption } from '#src/renderer/src/component/ui/select'
 import { SettingsPage } from '#src/renderer/src/component/ui/settings-page'
-import { TabBar, type TabItem } from '#src/renderer/src/component/ui/tab-bar'
 import { useModelsStore } from '#src/renderer/src/store/models'
-import { ModelsTab, usePageTabsStore } from '#src/renderer/src/store/page-tabs'
+import { ModelsProvider, usePageTabsStore } from '#src/renderer/src/store/page-tabs'
 import { TtsProvider } from '#src/shared/types'
+import { TTS_PROVIDER_LABEL } from '#src/shared/voice/tts-provider-label'
 import { voiceIdParser } from '#src/shared/voice/voice-id'
 
-const TABS: TabItem<ModelsTab>[] = [
-  { icon: Cpu, id: ModelsTab.MODELS, label: 'Models' },
-  { icon: Search, id: ModelsTab.SEARCH, label: 'Search' },
-  { icon: Link2, id: ModelsTab.MANUAL, label: 'Manual download' },
-  { icon: Star, id: ModelsTab.PREDEFINED, label: 'App favorite' },
-]
+interface RailItem {
+  id: ModelsProvider | TtsProvider
+  label: string
+}
 
-const PROVIDER_OPTIONS: SelectOption<TtsProvider>[] = [
-  { label: 'Piper', value: TtsProvider.PIPER },
-  { label: 'Kokoro', value: TtsProvider.KOKORO },
+const RAIL_ITEMS: RailItem[] = [
+  { id: ModelsProvider.ALL, label: 'All voices' },
+  ...(Object.keys(PROVIDER_PAGES) as TtsProvider[]).map((provider) => {
+    return { id: provider, label: TTS_PROVIDER_LABEL[provider] }
+  }),
 ]
 
 export function ModelsSettings(): React.JSX.Element {
   const { voices, downloads, load, download, dismissDownload } = useModelsStore()
 
-  const activeTab = usePageTabsStore((s) => s.modelsTab)
-  const setActiveTab = usePageTabsStore((s) => s.setModelsTab)
-  const [provider, setProvider] = useState<TtsProvider>(TtsProvider.PIPER)
+  const modelsProvider = usePageTabsStore((s) => s.modelsProvider)
+  const setModelsProvider = usePageTabsStore((s) => s.setModelsProvider)
 
   useEffect(() => {
     void load()
@@ -73,19 +67,16 @@ export function ModelsSettings(): React.JSX.Element {
     })
   }, [downloads])
 
-  const activePanel = getActivePanel({ activeTab, downloadingIds, installedIds, provider })
+  const activePanel = getActivePanel({ downloadingIds, installedIds, modelsProvider })
 
   return (
     <SettingsPage>
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">Models</h1>
-          {getHeaderSubtitle({ provider })}
-        </div>
-        <Select value={provider} options={PROVIDER_OPTIONS} onChange={setProvider} ariaLabel="Voice provider" />
+      <header>
+        <h1 className="text-xl font-semibold">Models</h1>
+        <p className="text-sm text-text/55 mt-1">
+          Voices are stored in <code className="text-xs">models/</code> and run fully on-device.
+        </p>
       </header>
-
-      {provider === TtsProvider.PIPER && <TabBar tabs={TABS} activeId={activeTab} onChange={setActiveTab} />}
 
       {downloadRows.length > 0 && (
         <section className="flex flex-col gap-2">
@@ -108,50 +99,50 @@ export function ModelsSettings(): React.JSX.Element {
         </section>
       )}
 
-      {activePanel}
+      <div className="flex items-start gap-4">
+        <nav className="flex flex-col gap-1 w-36 shrink-0">
+          {RAIL_ITEMS.map((item) => {
+            const isActive = modelsProvider === item.id
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  setModelsProvider(item.id)
+                }}
+                className={getRailButtonClassName({ isActive })}
+              >
+                {item.label}
+              </button>
+            )
+          })}
+        </nav>
+
+        <div className="flex-1 min-w-0 flex flex-col gap-3">{activePanel}</div>
+      </div>
     </SettingsPage>
   )
 
-  function getActivePanel(params: {
-    activeTab: ModelsTab
-    downloadingIds: string[]
-    installedIds: Set<string>
-    provider: TtsProvider
-  }): React.JSX.Element {
-    if (params.provider === TtsProvider.KOKORO) {
-      return <DownloadTabKokoro downloadingIds={params.downloadingIds} installedIds={params.installedIds} />
+  function getActivePanel(
+    params: ProviderPageProps & { modelsProvider: TtsProvider | ModelsProvider },
+  ): React.JSX.Element {
+    if (params.modelsProvider === ModelsProvider.ALL) {
+      return <ModelsTabInstalled />
     }
 
-    switch (params.activeTab) {
-      case ModelsTab.MODELS: {
-        return <ModelsTabInstalled />
-      }
-      case ModelsTab.SEARCH: {
-        return <DownloadTabSearch downloadingIds={params.downloadingIds} installedIds={params.installedIds} />
-      }
-      case ModelsTab.MANUAL: {
-        return <DownloadTabManual />
-      }
-      case ModelsTab.PREDEFINED: {
-        return <DownloadTabPredefined downloadingIds={params.downloadingIds} installedIds={params.installedIds} />
-      }
-    }
+    const Page = PROVIDER_PAGES[params.modelsProvider].component
+
+    return <Page downloadingIds={params.downloadingIds} installedIds={params.installedIds} />
   }
 
-  function getHeaderSubtitle(params: { provider: TtsProvider }): React.JSX.Element {
-    if (params.provider === TtsProvider.KOKORO) {
-      return (
-        <p className="text-sm text-text/55 mt-1">
-          Kokoro voices are stored in <code className="text-xs">models/kokoro/</code> and run in-app — no engine install
-          needed.
-        </p>
-      )
+  function getRailButtonClassName(params: { isActive: boolean }): string {
+    const base =
+      'w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors text-left'
+    if (params.isActive) {
+      return `${base} bg-logo-primary text-logo-stroke`
     }
 
-    return (
-      <p className="text-sm text-text/55 mt-1">
-        Voices are stored in <code className="text-xs">models/</code>. Browse the catalog or add any Piper voice.
-      </p>
-    )
+    return `${base} text-text/85 hover:bg-mid-gray/20`
   }
 }

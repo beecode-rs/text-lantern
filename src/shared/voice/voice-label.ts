@@ -1,5 +1,6 @@
 import { TtsProvider } from '#src/shared/types'
 import { KOKORO_VOICE_CATALOG } from '#src/shared/voice/kokoro-voice-catalog'
+import { TTS_PROVIDER_LABEL } from '#src/shared/voice/tts-provider-label'
 import { voiceIdParser } from '#src/shared/voice/voice-id'
 
 export const voiceLabelUtil = {
@@ -13,10 +14,6 @@ export const voiceLabelUtil = {
 
     return 'en'
   },
-  _providerLabels: {
-    [TtsProvider.KOKORO]: 'Kokoro',
-    [TtsProvider.PIPER]: 'Piper',
-  } as Record<TtsProvider, string>,
   displayName(params: { id: string }): string {
     const { name, provider } = voiceIdParser.parse({ id: params.id })
 
@@ -31,6 +28,6 @@ export const voiceLabelUtil = {
     return name.split('_')[0]
   },
   providerLabel(params: { provider: TtsProvider }): string {
-    return this._providerLabels[params.provider]
+    return TTS_PROVIDER_LABEL[params.provider]
   },
 }

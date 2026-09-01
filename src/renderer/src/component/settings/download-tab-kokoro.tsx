@@ -15,10 +15,6 @@ export function DownloadTabKokoro({
 
   return (
     <section className="flex flex-col gap-2">
-      <p className="text-sm text-text/55">
-        English-only voices on a single shared model — the ~86 MB model downloads once with your first voice, every
-        voice after that is instant.
-      </p>
       {KOKORO_VOICE_CATALOG.map((voice) => {
         const id = voiceIdParser.build({ name: voice.id, provider: TtsProvider.KOKORO })
 

@@ -52,7 +52,7 @@ export function Sidebar({ active, onChange }: { active: Section; onChange: (s: S
         })}
       </div>
 
-      <div className="mt-auto px-2 text-[11px] text-text/40">Piper TTS · on-device</div>
+      <div className="mt-auto px-2 text-[11px] text-text/40">On-device TTS</div>
     </nav>
   )
 }
