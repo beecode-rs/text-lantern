@@ -14,6 +14,11 @@ const credits = [
     url: 'https://huggingface.co/phantom9623/piper-serbian-tts',
   },
   { label: 'eSpeak NG (phonemization)', url: 'https://github.com/espeak-ng/espeak-ng' },
+  { label: 'Kokoro TTS engine (kokoro-js, Apache-2.0)', url: 'https://github.com/hexgrad/kokoro-js' },
+  {
+    label: 'onnx-community/Kokoro-82M (English voices)',
+    url: 'https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX',
+  },
   { label: 'tinyld (language auto-detection)', url: 'https://github.com/komodojp/tinyld' },
   { label: 'Handy — the dictation app that inspired this app', url: 'https://handy.computer' },
 ]
@@ -42,9 +47,9 @@ export function AboutSettings(): React.JSX.Element {
           </div>
         </div>
         <p className="text-sm text-text/70 leading-relaxed">
-          Press a global shortcut to read the selected text aloud with neural Piper voices. Everything runs on your
-          device — nothing is sent anywhere. Language is auto-detected from the text or chosen via a per-language
-          shortcut.
+          Press a global shortcut to read the selected text aloud with neural Piper and Kokoro voices. Everything runs
+          on your device — nothing is sent anywhere. Language is auto-detected from the text or chosen via a
+          per-language shortcut.
         </p>
         {bindingList}
       </section>
