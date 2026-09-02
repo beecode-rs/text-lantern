@@ -10,9 +10,18 @@ files:
   - build/icons/512x512.png
   - '!node_modules/sharp/**'
   - '!node_modules/@img/**'
+  # @huggingface/transformers statically imports sharp in transformers.node.mjs,
+  # so a resolvable (stub) sharp must exist inside app.asar — the real one is
+  # excluded above. Pure JS, never called for TTS.
+  - from: vendor/sharp
+    to: node_modules/sharp
+    filter:
+      - '**/*'
 asar: true
 asarUnpack:
   - resource/script/piper_server.py
+  # Native binding cannot be dlopen'ed from inside the archive.
+  - '**/node_modules/onnxruntime-node/**'
 mac:
   category: public.app-category.utilities
   identity: null
