@@ -1,6 +1,6 @@
 {
 	"name": "text-lantern",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Text Lantern — a Handy-inspired menu-bar reader that speaks the selected text with Piper TTS.",
 	"license": "MIT",
 	"author": "milosbugarinovic",
