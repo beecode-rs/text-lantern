@@ -211,7 +211,7 @@ export class PiperEngine {
   }
 
   protected _venvPipBinPath(): string {
-    return path.join(pathUtil.venvDir(), 'bin', 'pip')
+    return pathUtil.venvPip()
   }
 
   protected _forwardCommandOutputLineByLine(params: { output: Buffer; onLog?: (line: string) => void }): void {
@@ -381,7 +381,7 @@ export class PiperEngine {
   protected async _ensurePythonVersionMeetsMinimum(params: { onLog: (line: string) => void }): Promise<boolean> {
     const exitCode = await this._runCommandStreamingOutput({
       args: ['-c', 'import sys; sys.exit(0 if (sys.version_info.major, sys.version_info.minor) >= (3, 9) else 1)'],
-      cmd: 'python3',
+      cmd: pathUtil.pythonCommand(),
     })
     if (exitCode !== 0) {
       params.onLog('error: Python 3.9+ is required to run the Piper engine.')
@@ -403,11 +403,11 @@ export class PiperEngine {
     log('Creating virtualenv…')
     const venvExit = await this._runCommandStreamingOutput({
       args: ['-m', 'venv', pathUtil.venvDir()],
-      cmd: 'python3',
+      cmd: pathUtil.pythonCommand(),
       onLog: log,
     })
     if (venvExit !== 0) {
-      log('python3 -m venv failed. On Debian/Ubuntu you may need: sudo apt install python3-venv')
+      log('python -m venv failed. On Debian/Ubuntu you may need: sudo apt install python3-venv')
 
       return false
     }
@@ -427,6 +427,8 @@ export class PiperEngine {
       log('pip install piper-tts failed.')
       if (process.platform === 'darwin') {
         log('On macOS try: brew install espeak-ng   then retry.')
+      } else if (process.platform === 'win32') {
+        log('On Windows try: reinstall Python with "Add python.exe to PATH" checked, then retry.')
       } else {
         log('On Linux try: sudo apt install espeak-ng-dev   then retry.')
       }

@@ -2,6 +2,38 @@ import { app } from 'electron'
 import path from 'node:path'
 
 export const pathUtil = {
+  _bundledPath(params: { segments: string[] }): string {
+    return path.join(this.bundledRoot(), ...params.segments)
+  },
+
+  _venvBinFile(params: { name: string }): string {
+    if (process.platform === 'win32') {
+      return `${params.name}.exe`
+    }
+
+    return params.name
+  },
+
+  appIcon(): string {
+    return this._bundledPath({ segments: ['resource', 'icon.png'] })
+  },
+
+  bundledRoot(): string {
+    if (app.isPackaged) {
+      return app.getAppPath()
+    }
+
+    return this.projectRoot()
+  },
+
+  dataRoot(): string {
+    if (app.isPackaged) {
+      return app.getPath('userData')
+    }
+
+    return this.projectRoot()
+  },
+
   kokoroModelDir(): string {
     return path.join(this.modelsDir(), 'kokoro', 'model')
   },
@@ -11,15 +43,20 @@ export const pathUtil = {
   },
 
   modelsDir(): string {
-    return path.join(this.projectRoot(), 'models')
+    return path.join(this.dataRoot(), 'models')
   },
 
   piperBin(): string {
-    return path.join(this.venvDir(), 'bin', 'piper')
+    return path.join(this.venvBinDir(), this._venvBinFile({ name: 'piper' }))
   },
 
   piperServerScript(): string {
-    return path.join(this.projectRoot(), 'resource', 'script', 'piper_server.py')
+    const asarPath = this._bundledPath({ segments: ['resource', 'script', 'piper_server.py'] })
+    if (!app.isPackaged) {
+      return asarPath
+    }
+
+    return asarPath.replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`)
   },
 
   projectRoot(): string {
@@ -31,15 +68,35 @@ export const pathUtil = {
     return process.cwd()
   },
 
+  pythonCommand(): string {
+    if (process.platform === 'win32') {
+      return 'python'
+    }
+
+    return 'python3'
+  },
+
   userDataFile(name: string): string {
     return path.join(app.getPath('userData'), name)
   },
 
+  venvBinDir(): string {
+    if (process.platform === 'win32') {
+      return path.join(this.venvDir(), 'Scripts')
+    }
+
+    return path.join(this.venvDir(), 'bin')
+  },
+
   venvDir(): string {
-    return path.join(this.projectRoot(), 'bin', 'venv')
+    return path.join(this.dataRoot(), 'bin', 'venv')
+  },
+
+  venvPip(): string {
+    return path.join(this.venvBinDir(), this._venvBinFile({ name: 'pip' }))
   },
 
   venvPython(): string {
-    return path.join(this.venvDir(), 'bin', 'python')
+    return path.join(this.venvBinDir(), this._venvBinFile({ name: 'python' }))
   },
 }

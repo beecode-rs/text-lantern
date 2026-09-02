@@ -1,6 +1,5 @@
 import { LifeCycle } from '@beecode/msh-app-boot'
 import { app, nativeImage, systemPreferences } from 'electron'
-import path from 'node:path'
 
 import { Selection } from '#src/main/lib/selection'
 import { pathUtil } from '#src/main/util/path-util'
@@ -27,7 +26,7 @@ export class PlatformLifeCycle extends LifeCycle {
   }
 
   protected _applyDockIcon(): void {
-    const icon = nativeImage.createFromPath(path.join(pathUtil.projectRoot(), 'resource', 'icon.png'))
+    const icon = nativeImage.createFromPath(pathUtil.appIcon())
     if (icon.isEmpty()) {
       return
     }

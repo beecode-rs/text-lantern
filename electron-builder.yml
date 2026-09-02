@@ -1,0 +1,39 @@
+appId: com.text-lantern.app
+productName: Text Lantern
+directories:
+  output: dist
+files:
+  - out/**
+  - resource/icon.png
+  - resource/script/piper_server.py
+  - build/icons/256x256.png
+  - build/icons/512x512.png
+  - '!node_modules/sharp/**'
+  - '!node_modules/@img/**'
+asar: true
+asarUnpack:
+  - resource/script/piper_server.py
+mac:
+  category: public.app-category.utilities
+  identity: null
+  x64ArchFiles: '**/node_modules/onnxruntime-node/**'
+  artifactName: Text-Lantern-${version}-${arch}.dmg
+  target:
+    - target: dmg
+      arch:
+        - universal
+linux:
+  category: Utility
+  maintainer: milosbugarinovic
+  executableName: text-lantern
+  target:
+    - AppImage
+    - deb
+appImage:
+  artifactName: Text-Lantern-${version}.${ext}
+deb:
+  artifactName: text-lantern_${version}_${arch}.deb
+win:
+  artifactName: Text-Lantern-Setup-${version}.${ext}
+  target:
+    - nsis
