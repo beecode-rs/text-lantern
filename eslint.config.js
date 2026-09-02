@@ -126,6 +126,7 @@ export default defineConfig([
     'node_modules',
     'out/*',
     'resource/*',
+    'vendor/*',
     'src/**/__mocks__/*',
     'src/**/*.d.ts',
     'src/**/*.d.ts.map',

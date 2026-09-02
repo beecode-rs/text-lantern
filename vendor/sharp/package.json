@@ -1,0 +1,6 @@
+{
+  "description": "Stub of the sharp package for the packaged app. @huggingface/transformers statically imports sharp in its Node entry (transformers.node.mjs), so the package must resolve at runtime even though Text Lantern only runs audio pipelines and never calls it. The real sharp (native @img/* binaries) is excluded from the build; see electron-builder.yml files mapping.",
+  "main": "index.js",
+  "name": "sharp",
+  "version": "0.0.0"
+}
