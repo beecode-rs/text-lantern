@@ -1,7 +1,12 @@
 import { create } from 'zustand'
 
 import { api } from '#src/renderer/src/api'
-import type { RemoteVoice, Voice, VoiceDownload } from '#src/shared/types'
+import {
+  CosyvoiceArtifactKind,
+  type CosyvoiceArtifactRef,
+  cosyvoiceArtifactUtil,
+} from '#src/renderer/src/lib/cosyvoice-artifact'
+import { type RemoteVoice, type Voice, type VoiceDownload } from '#src/shared/types'
 import { voiceIdParser } from '#src/shared/voice/voice-id'
 import { voiceUrlParser } from '#src/shared/voice/voice-url'
 
@@ -47,6 +52,40 @@ export const useModelsStore = create<ModelsStore>((set, get) => {
     return voiceIdParser.build(voiceIdParser.parse({ id }))
   }
 
+  const downloadVoiceArtifact = async (params: { id: string }): Promise<Voice[]> => {
+    const artifact = cosyvoiceArtifactUtil.parse({ id: params.id })
+    if (artifact !== null) {
+      await downloadCosyvoiceArtifact({ artifact })
+
+      return api.listVoices()
+    }
+
+    return api.downloadVoice(params.id)
+  }
+
+  const downloadCosyvoiceArtifact = async (params: { artifact: CosyvoiceArtifactRef }): Promise<void> => {
+    switch (params.artifact.kind) {
+      case CosyvoiceArtifactKind.ENGINE: {
+        await api.installCosyvoiceEngine()
+
+        return
+      }
+      case CosyvoiceArtifactKind.FRONTEND: {
+        await api.downloadCosyvoiceFrontend()
+
+        return
+      }
+      case CosyvoiceArtifactKind.MODEL: {
+        await api.downloadCosyvoiceModel(params.artifact.fileName)
+
+        return
+      }
+      default: {
+        throw new Error('This CosyVoice artifact cannot be downloaded.')
+      }
+    }
+  }
+
   const markDownloadDone = (id: string): void => {
     set({ downloads: { ...get().downloads, [id]: { progress: 1, state: 'done' } } })
     setTimeout(() => {
@@ -77,7 +116,7 @@ export const useModelsStore = create<ModelsStore>((set, get) => {
       const qualifiedId = toQualifiedId(id)
       set({ downloads: { ...get().downloads, [qualifiedId]: { progress: 0, state: 'downloading' } } })
       try {
-        const voices = await api.downloadVoice(qualifiedId)
+        const voices = await downloadVoiceArtifact({ id: qualifiedId })
         set({ hasCompletedDownload: true, voices })
         markDownloadDone(qualifiedId)
       } catch (err) {

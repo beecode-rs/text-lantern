@@ -28,10 +28,13 @@ export interface Settings {
   theme: ThemePreference
   maxChars: number
   historyLimit: number
+  isCosyvoiceEnabled: boolean
+  isExperimentalFeaturesEnabled: boolean
   schemaVersion: number
 }
 
 export enum TtsProvider {
+  COSYVOICE = 'COSYVOICE',
   KOKORO = 'KOKORO',
   PIPER = 'PIPER',
 }
@@ -43,6 +46,18 @@ export interface Voice {
   lang: string
   isInUse: boolean
   provider: TtsProvider
+}
+
+export interface CosyvoiceCreateVoiceParams {
+  lang: string
+  name: string
+  promptText: string
+}
+
+export interface CosyvoiceModelVariant {
+  fileName: string
+  isDownloaded: boolean
+  sizeBytes: number
 }
 
 export interface RemoteVoice {
@@ -114,6 +129,17 @@ export interface TtsApi {
   searchVoices(query: string): Promise<RemoteVoice[]>
   getKokoroCatalog(): Promise<KokoroVoice[]>
   openModelsFolder(): Promise<boolean>
+
+  isCosyvoiceSupported(): Promise<boolean>
+  isCosyvoiceEngineInstalled(): Promise<boolean>
+  installCosyvoiceEngine(): Promise<boolean>
+  uninstallCosyvoiceEngine(): Promise<boolean>
+  getCosyvoiceModelVariants(): Promise<CosyvoiceModelVariant[]>
+  downloadCosyvoiceModel(fileName: string): Promise<CosyvoiceModelVariant[]>
+  deleteCosyvoiceModel(fileName: string): Promise<CosyvoiceModelVariant[]>
+  isCosyvoiceFrontendInstalled(): Promise<boolean>
+  downloadCosyvoiceFrontend(): Promise<boolean>
+  createCosyvoiceVoice(params: CosyvoiceCreateVoiceParams): Promise<Voice[]>
 
   getTtsStatus(): Promise<TtsStatus>
   speak(lang: Lang, text?: string, options?: TtsSpeakOptions): Promise<boolean>

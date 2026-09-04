@@ -1,9 +1,10 @@
-import { Cpu, History, Info, Languages, Settings, Volume2 } from 'lucide-react'
+import { Cpu, FlaskConical, History, Info, Languages, Settings, Volume2 } from 'lucide-react'
 import type { ComponentType } from 'react'
 
 import iconUrl from '#src/renderer/src/asset/icon.png'
+import { useSettingsStore } from '#src/renderer/src/store/settings'
 
-export type Section = 'general' | 'models' | 'languages' | 'test' | 'history' | 'about'
+export type Section = 'general' | 'models' | 'languages' | 'test' | 'history' | 'experimental' | 'about'
 
 const ITEMS: { id: Section; label: string; icon: ComponentType<{ size?: number | string }> }[] = [
   { icon: Settings, id: 'general', label: 'Settings' },
@@ -11,10 +12,13 @@ const ITEMS: { id: Section; label: string; icon: ComponentType<{ size?: number |
   { icon: Languages, id: 'languages', label: 'Languages' },
   { icon: Volume2, id: 'test', label: 'Test' },
   { icon: History, id: 'history', label: 'History' },
+  { icon: FlaskConical, id: 'experimental', label: 'Experimental' },
   { icon: Info, id: 'about', label: 'About' },
 ]
 
 export function Sidebar({ active, onChange }: { active: Section; onChange: (s: Section) => void }): React.JSX.Element {
+  const settings = useSettingsStore((s) => s.settings)
+
   const getItemClassName = (params: { isActive: boolean }): string => {
     const base = 'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors'
     if (params.isActive) {
@@ -32,27 +36,39 @@ export function Sidebar({ active, onChange }: { active: Section; onChange: (s: S
       </div>
 
       <div className="flex flex-col gap-1">
-        {ITEMS.map(({ id, label, icon: Icon }) => {
-          const isActive = active === id
-          const itemClassName = getItemClassName({ isActive })
+        {getItems({ isExperimentalFeaturesEnabled: settings?.isExperimentalFeaturesEnabled ?? false }).map(
+          ({ id, label, icon: Icon }) => {
+            const isActive = active === id
+            const itemClassName = getItemClassName({ isActive })
 
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => {
-                onChange(id)
-              }}
-              className={itemClassName}
-            >
-              <Icon size={17} />
-              {label}
-            </button>
-          )
-        })}
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  onChange(id)
+                }}
+                className={itemClassName}
+              >
+                <Icon size={17} />
+                {label}
+              </button>
+            )
+          },
+        )}
       </div>
 
       <div className="mt-auto px-2 text-[11px] text-text/40">On-device TTS</div>
     </nav>
   )
+
+  function getItems(params: { isExperimentalFeaturesEnabled: boolean }): typeof ITEMS {
+    return ITEMS.filter((item) => {
+      if (item.id === 'experimental' && !params.isExperimentalFeaturesEnabled) {
+        return false
+      }
+
+      return true
+    })
+  }
 }

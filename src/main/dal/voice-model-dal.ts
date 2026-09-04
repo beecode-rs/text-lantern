@@ -3,16 +3,22 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { settingsDalSingleton } from '#src/main/dal/settings-dal'
+import { cosyvoiceEngineSingleton } from '#src/main/lib/cosyvoice/engine'
 import { kokoroEngineSingleton } from '#src/main/lib/kokoro/engine'
 import { constant } from '#src/main/util/constants'
 import { langUtil } from '#src/main/util/lang-util'
 import { pathUtil } from '#src/main/util/path-util'
+import { experimentalUtil } from '#src/shared/experimental/experimental-util'
 import { type Settings, TtsProvider, type Voice } from '#src/shared/types'
 import { KOKORO_VOICE_CATALOG } from '#src/shared/voice/kokoro-voice-catalog'
 import { voiceIdParser } from '#src/shared/voice/voice-id'
 
 export class VoiceModelDal {
   listVoices(): Voice[] {
+    if (experimentalUtil.isCosyvoiceActive({ settings: settingsDalSingleton().get() })) {
+      return [...this._listPiperVoices(), ...this._listKokoroVoices(), ...this._listCosyvoiceVoices()]
+    }
+
     return [...this._listPiperVoices(), ...this._listKokoroVoices()]
   }
 
@@ -123,6 +129,48 @@ export class VoiceModelDal {
     return constant().kokoroEngine.modelFiles.reduce((acc, file) => {
       return acc + this._fileSizeBytes({ file: path.join(pathUtil.kokoroModelDir(), file.path) })
     }, 0)
+  }
+
+  protected _listCosyvoiceVoices(): Voice[] {
+    const dir = pathUtil.cosyvoiceVoicesDir()
+    let entries: string[] = []
+    try {
+      entries = fs.readdirSync(dir)
+    } catch {
+      return []
+    }
+    const settings = settingsDalSingleton().get()
+    const suffix = constant().cosyvoiceEngine.voicePromptSuffix
+
+    return entries
+      .filter((entry) => {
+        return entry.endsWith(suffix)
+      })
+      .sort()
+      .map((entry) => {
+        const name = entry.slice(0, -suffix.length)
+
+        return this._cosyvoicePromptToVoice({ name, settings })
+      })
+  }
+
+  protected _cosyvoicePromptToVoice(params: { name: string; settings: Settings }): Voice {
+    const metadata = cosyvoiceEngineSingleton().readVoiceMetadata({ voiceName: params.name })
+
+    return {
+      hasJson: metadata !== null,
+      isInUse: params.settings.languageBindings.some((binding) => {
+        const parsed = voiceIdParser.parse({ id: binding.voice })
+
+        return parsed.provider === TtsProvider.COSYVOICE && parsed.name === params.name
+      }),
+      lang: metadata?.lang ?? 'en',
+      name: params.name,
+      provider: TtsProvider.COSYVOICE,
+      sizeBytes: this._fileSizeBytes({
+        file: path.join(pathUtil.cosyvoiceVoicesDir(), `${params.name}${constant().cosyvoiceEngine.voicePromptSuffix}`),
+      }),
+    }
   }
 
   protected _fileSizeBytes(params: { file: string }): number {

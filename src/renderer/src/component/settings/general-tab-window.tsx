@@ -53,6 +53,18 @@ export function GeneralTabWindow(): React.JSX.Element {
             ariaLabel="Close to tray"
           />
         </Row>
+        <Row
+          title="Experimental features"
+          description="Show the Experimental section with features still being tested."
+        >
+          <Toggle
+            checked={settings.isExperimentalFeaturesEnabled}
+            onChange={(v) => {
+              void update({ isExperimentalFeaturesEnabled: v })
+            }}
+            ariaLabel="Experimental features"
+          />
+        </Row>
       </SettingsGroup>
     </>
   )

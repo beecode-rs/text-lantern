@@ -1,3 +1,4 @@
+import { CosyvoicePage } from '#src/renderer/src/component/settings/cosyvoice-page'
 import { KokoroPage } from '#src/renderer/src/component/settings/kokoro-page'
 import { PiperPage } from '#src/renderer/src/component/settings/piper-page'
 import { TtsProvider } from '#src/shared/types'
@@ -14,4 +15,5 @@ export interface ProviderPage {
 export const PROVIDER_PAGES: Record<TtsProvider, ProviderPage> = {
   [TtsProvider.PIPER]: { component: PiperPage },
   [TtsProvider.KOKORO]: { component: KokoroPage },
+  [TtsProvider.COSYVOICE]: { component: CosyvoicePage },
 }

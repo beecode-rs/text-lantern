@@ -1,5 +1,6 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 
+import { cosyvoiceProviderSingleton } from '#src/main/lib/cosyvoice/cosyvoice-provider'
 import { kokoroProviderSingleton } from '#src/main/lib/kokoro/kokoro-provider'
 import { piperProviderSingleton } from '#src/main/lib/piper/piper-provider'
 import type { TtsProviderAdapter } from '#src/main/lib/tts/tts-provider'
@@ -7,6 +8,7 @@ import { TtsProvider } from '#src/shared/types'
 
 export class TtsProviderRegistry {
   protected readonly _providers = new Map<TtsProvider, TtsProviderAdapter>([
+    [TtsProvider.COSYVOICE, cosyvoiceProviderSingleton()],
     [TtsProvider.KOKORO, kokoroProviderSingleton()],
     [TtsProvider.PIPER, piperProviderSingleton()],
   ])

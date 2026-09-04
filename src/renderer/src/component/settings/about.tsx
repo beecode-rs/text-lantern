@@ -19,6 +19,11 @@ const credits = [
     label: 'onnx-community/Kokoro-82M (English voices)',
     url: 'https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX',
   },
+  { label: 'CosyVoice engine (cosyvoice.cpp, MIT)', url: 'https://github.com/Lourdle/cosyvoice.cpp' },
+  {
+    label: 'Fun-CosyVoice3-0.5B-2512 (CosyVoice models, Apache-2.0)',
+    url: 'https://huggingface.co/Lourdle/Fun-CosyVoice3-0.5B-2512-GGUF',
+  },
   { label: 'tinyld (language auto-detection)', url: 'https://github.com/komodojp/tinyld' },
   { label: 'Handy — the dictation app that inspired this app', url: 'https://handy.computer' },
 ]
@@ -47,9 +52,9 @@ export function AboutSettings(): React.JSX.Element {
           </div>
         </div>
         <p className="text-sm text-text/70 leading-relaxed">
-          Press a global shortcut to read the selected text aloud with neural Piper and Kokoro voices. Everything runs
-          on your device — nothing is sent anywhere. Language is auto-detected from the text or chosen via a
-          per-language shortcut.
+          Press a global shortcut to read the selected text aloud with neural Piper, Kokoro and CosyVoice voices.
+          Everything runs on your device — nothing is sent anywhere. Language is auto-detected from the text or chosen
+          via a per-language shortcut.
         </p>
         {bindingList}
       </section>

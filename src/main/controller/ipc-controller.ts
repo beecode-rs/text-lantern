@@ -6,13 +6,22 @@ import { ttsServiceSingleton } from '#src/main/business/service/tts-service'
 import { historyDalSingleton } from '#src/main/dal/history-dal'
 import { settingsDalSingleton } from '#src/main/dal/settings-dal'
 import { voiceModelDalSingleton } from '#src/main/dal/voice-model-dal'
+import { cosyvoiceEngineSingleton } from '#src/main/lib/cosyvoice/engine'
+import { cosyvoiceServerSingleton } from '#src/main/lib/cosyvoice/server'
 import { kokoroEngineSingleton } from '#src/main/lib/kokoro/engine'
 import { piperEngineSingleton } from '#src/main/lib/piper/engine'
 import { shortcutsSingleton } from '#src/main/lib/shortcuts'
 import { traySingleton } from '#src/main/lib/tray'
 import { constant } from '#src/main/util/constants'
 import { pathUtil } from '#src/main/util/path-util'
-import { type HistoryEntry, type Lang, type Settings, TtsProvider, type TtsSpeakOptions } from '#src/shared/types'
+import {
+  type CosyvoiceCreateVoiceParams,
+  type HistoryEntry,
+  type Lang,
+  type Settings,
+  TtsProvider,
+  type TtsSpeakOptions,
+} from '#src/shared/types'
 import { KOKORO_VOICE_CATALOG } from '#src/shared/voice/kokoro-voice-catalog'
 import { voiceIdParser } from '#src/shared/voice/voice-id'
 import { voiceUrlParser } from '#src/shared/voice/voice-url'
@@ -29,6 +38,16 @@ const handledChannels = [
   'models:search',
   'models:kokoroCatalog',
   'models:openModelsFolder',
+  'models:cosyvoiceSupported',
+  'models:cosyvoiceEngineInstalled',
+  'models:cosyvoiceInstallEngine',
+  'models:cosyvoiceUninstallEngine',
+  'models:cosyvoiceModelVariants',
+  'models:cosyvoiceDownloadModel',
+  'models:cosyvoiceDeleteModel',
+  'models:cosyvoiceFrontendInstalled',
+  'models:cosyvoiceDownloadFrontend',
+  'models:cosyvoiceCreateVoice',
   'tts:getStatus',
   'tts:speak',
   'tts:stop',
@@ -81,6 +100,8 @@ export const ipcController = {
       }
       if (parsed.provider === TtsProvider.KOKORO) {
         await kokoroEngineSingleton().downloadVoice({ onProgress, voiceId: parsed.name })
+      } else if (parsed.provider === TtsProvider.COSYVOICE) {
+        throw new Error('CosyVoice voices are created from reference audio — there is nothing to download.')
       } else {
         await piperEngineSingleton().downloadVoice({ name: parsed.name, onProgress })
       }
@@ -109,6 +130,9 @@ export const ipcController = {
       const parsed = voiceIdParser.parse({ id })
       if (parsed.provider === TtsProvider.KOKORO) {
         kokoroEngineSingleton().deleteVoice({ voiceId: parsed.name })
+      } else if (parsed.provider === TtsProvider.COSYVOICE) {
+        cosyvoiceServerSingleton().dispose()
+        cosyvoiceEngineSingleton().deleteVoice({ voiceName: parsed.name })
       } else {
         voiceModelDalSingleton().deleteVoice({ name: parsed.name })
       }
@@ -126,6 +150,110 @@ export const ipcController = {
       const errorMessage = await shell.openPath(pathUtil.modelsDir())
 
       return errorMessage === ''
+    })
+
+    ipcMain.handle('models:cosyvoiceSupported', () => {
+      return cosyvoiceEngineSingleton().isSupported()
+    })
+    ipcMain.handle('models:cosyvoiceEngineInstalled', () => {
+      return cosyvoiceEngineSingleton().isEngineInstalled()
+    })
+    ipcMain.handle('models:cosyvoiceInstallEngine', async (e) => {
+      return cosyvoiceEngineSingleton().installEngine({
+        onLog: (line) => {
+          e.sender.send('models:log', line)
+        },
+        onProgress: (p) => {
+          e.sender.send('models:progress', {
+            id: voiceIdParser.build({ name: 'engine', provider: TtsProvider.COSYVOICE }),
+            name: 'cosyvoice-server',
+            progress: p,
+          })
+        },
+      })
+    })
+    ipcMain.handle('models:cosyvoiceUninstallEngine', () => {
+      cosyvoiceServerSingleton().dispose()
+      cosyvoiceEngineSingleton().uninstallEngine()
+
+      return true
+    })
+    ipcMain.handle('models:cosyvoiceModelVariants', () => {
+      return cosyvoiceEngineSingleton().modelVariants()
+    })
+    ipcMain.handle('models:cosyvoiceDownloadModel', async (e, fileName: string) => {
+      await cosyvoiceEngineSingleton().downloadModel({
+        fileName,
+        onProgress: (p) => {
+          e.sender.send('models:progress', {
+            id: voiceIdParser.build({ name: `model-${fileName}`, provider: TtsProvider.COSYVOICE }),
+            name: fileName,
+            progress: p,
+          })
+        },
+      })
+
+      return cosyvoiceEngineSingleton().modelVariants()
+    })
+    ipcMain.handle('models:cosyvoiceDeleteModel', (_e, fileName: string) => {
+      cosyvoiceServerSingleton().dispose()
+      cosyvoiceEngineSingleton().deleteModel({ fileName })
+
+      return cosyvoiceEngineSingleton().modelVariants()
+    })
+    ipcMain.handle('models:cosyvoiceFrontendInstalled', () => {
+      return cosyvoiceEngineSingleton().isFrontendInstalled()
+    })
+    ipcMain.handle('models:cosyvoiceDownloadFrontend', async (e) => {
+      await cosyvoiceEngineSingleton().downloadFrontend({
+        onProgress: (p) => {
+          e.sender.send('models:progress', {
+            id: voiceIdParser.build({ name: 'frontend', provider: TtsProvider.COSYVOICE }),
+            name: 'frontend-onnx',
+            progress: p,
+          })
+        },
+      })
+
+      return true
+    })
+
+    const showPromptAudioOpenDialog = async (): Promise<string | null> => {
+      const win = params.getWindow()
+      const options: Electron.OpenDialogOptions = {
+        filters: [{ extensions: ['wav', 'mp3', 'flac', 'ogg', 'm4a', 'aac'], name: 'Audio' }],
+        properties: ['openFile'],
+        title: 'Choose reference audio for the new voice',
+      }
+      let res: Electron.OpenDialogReturnValue
+      if (win === null) {
+        res = await dialog.showOpenDialog(options)
+      } else {
+        res = await dialog.showOpenDialog(win, options)
+      }
+      if (res.canceled || res.filePaths.length === 0) {
+        return null
+      }
+
+      return res.filePaths[0]
+    }
+
+    ipcMain.handle('models:cosyvoiceCreateVoice', async (e, params: CosyvoiceCreateVoiceParams) => {
+      const promptAudioPath = await showPromptAudioOpenDialog()
+      if (promptAudioPath === null) {
+        return voiceModelDalSingleton().listVoices()
+      }
+      await cosyvoiceEngineSingleton().createVoice({
+        displayName: params.name,
+        lang: params.lang,
+        onLog: (line) => {
+          e.sender.send('models:log', line)
+        },
+        promptAudioPath,
+        promptText: params.promptText,
+      })
+
+      return voiceModelDalSingleton().listVoices()
     })
 
     ipcMain.handle('tts:getStatus', () => {

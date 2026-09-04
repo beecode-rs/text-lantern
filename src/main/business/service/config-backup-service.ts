@@ -47,9 +47,13 @@ export class ConfigBackupService {
       onProgress: params.onProgress,
       voiceIds: this._downloadVoiceIdsFromBackup({ backup }),
     })
-    const missingReferencedVoiceIds = this._referencedVoiceIds({ settings: backup.settings }).filter((voiceId) => {
-      return !this._isVoiceDownloaded({ voiceId })
-    })
+    const missingReferencedVoiceIds = this._referencedVoiceIds({ settings: backup.settings })
+      .filter((voiceId) => {
+        return voiceIdParser.parse({ id: voiceId }).provider !== TtsProvider.COSYVOICE
+      })
+      .filter((voiceId) => {
+        return !this._isVoiceDownloaded({ voiceId })
+      })
     if (missingReferencedVoiceIds.length > 0) {
       params.onLog(`Import aborted — voices still missing: ${missingReferencedVoiceIds.join(', ')}`)
 
@@ -170,6 +174,7 @@ export class ConfigBackupService {
       params.onLog(`Downloading ${voiceId}…`)
       try {
         await this._downloadVoice({
+          onLog: params.onLog,
           onProgress: (p) => {
             params.onProgress({ name: voiceId, progress: p })
           },
@@ -185,13 +190,25 @@ export class ConfigBackupService {
     return failedVoiceIds
   }
 
-  protected async _downloadVoice(params: { voiceId: string; onProgress: (p: number) => void }): Promise<void> {
+  protected async _downloadVoice(params: {
+    onLog: (line: string) => void
+    onProgress: (p: number) => void
+    voiceId: string
+  }): Promise<void> {
     const parsed = voiceIdParser.parse({ id: params.voiceId })
     if (parsed.provider === TtsProvider.KOKORO) {
       await kokoroEngineSingleton().downloadVoice({ onProgress: params.onProgress, voiceId: parsed.name })
-    } else {
-      await piperEngineSingleton().downloadVoice({ name: parsed.name, onProgress: params.onProgress })
+
+      return
     }
+    if (parsed.provider === TtsProvider.COSYVOICE) {
+      params.onLog(
+        `  skipped: ${params.voiceId} — CosyVoice voices are created on this device and cannot be re-downloaded.`,
+      )
+
+      return
+    }
+    await piperEngineSingleton().downloadVoice({ name: parsed.name, onProgress: params.onProgress })
   }
 
   protected _isVoiceDownloaded(params: { voiceId: string }): boolean {

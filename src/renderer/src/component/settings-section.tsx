@@ -1,4 +1,5 @@
 import { AboutSettings } from '#src/renderer/src/component/settings/about'
+import { ExperimentalSettings } from '#src/renderer/src/component/settings/experimental'
 import { GeneralSettings } from '#src/renderer/src/component/settings/general'
 import { HistorySettings } from '#src/renderer/src/component/settings/history'
 import { LanguagesSettings } from '#src/renderer/src/component/settings/languages'
@@ -18,6 +19,8 @@ export function SettingsSection({ active }: { active: Section }): React.JSX.Elem
       return <TestSettings />
     case 'history':
       return <HistorySettings />
+    case 'experimental':
+      return <ExperimentalSettings />
     case 'about':
       return <AboutSettings />
     default: {

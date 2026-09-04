@@ -7,10 +7,22 @@ const api: TtsApi = {
   clearHistory: () => {
     return ipcRenderer.invoke('history:clear')
   },
+  createCosyvoiceVoice: (params) => {
+    return ipcRenderer.invoke('models:cosyvoiceCreateVoice', params)
+  },
+  deleteCosyvoiceModel: (fileName) => {
+    return ipcRenderer.invoke('models:cosyvoiceDeleteModel', fileName)
+  },
   deleteVoice: (id) => {
     return ipcRenderer.invoke('models:delete', id)
   },
 
+  downloadCosyvoiceFrontend: () => {
+    return ipcRenderer.invoke('models:cosyvoiceDownloadFrontend')
+  },
+  downloadCosyvoiceModel: (fileName) => {
+    return ipcRenderer.invoke('models:cosyvoiceDownloadModel', fileName)
+  },
   downloadVoice: (id) => {
     return ipcRenderer.invoke('models:download', id)
   },
@@ -19,6 +31,9 @@ const api: TtsApi = {
   },
   exportConfig: () => {
     return ipcRenderer.invoke('config:export')
+  },
+  getCosyvoiceModelVariants: () => {
+    return ipcRenderer.invoke('models:cosyvoiceModelVariants')
   },
   getHistory: () => {
     return ipcRenderer.invoke('history:get')
@@ -35,10 +50,22 @@ const api: TtsApi = {
   importConfig: () => {
     return ipcRenderer.invoke('config:import')
   },
+  installCosyvoiceEngine: () => {
+    return ipcRenderer.invoke('models:cosyvoiceInstallEngine')
+  },
   installEngine: (voiceNames) => {
     return ipcRenderer.invoke('models:installEngine', voiceNames)
   },
 
+  isCosyvoiceEngineInstalled: () => {
+    return ipcRenderer.invoke('models:cosyvoiceEngineInstalled')
+  },
+  isCosyvoiceFrontendInstalled: () => {
+    return ipcRenderer.invoke('models:cosyvoiceFrontendInstalled')
+  },
+  isCosyvoiceSupported: () => {
+    return ipcRenderer.invoke('models:cosyvoiceSupported')
+  },
   isEngineInstalled: () => {
     return ipcRenderer.invoke('models:engineInstalled')
   },
@@ -84,6 +111,9 @@ const api: TtsApi = {
   },
   stop: () => {
     return ipcRenderer.invoke('tts:stop')
+  },
+  uninstallCosyvoiceEngine: () => {
+    return ipcRenderer.invoke('models:cosyvoiceUninstallEngine')
   },
   updateSettings: (patch) => {
     return ipcRenderer.invoke('settings:update', patch)

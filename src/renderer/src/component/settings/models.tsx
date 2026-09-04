@@ -6,6 +6,8 @@ import { DownloadRow } from '#src/renderer/src/component/ui/download-row'
 import { SettingsPage } from '#src/renderer/src/component/ui/settings-page'
 import { useModelsStore } from '#src/renderer/src/store/models'
 import { ModelsProvider, usePageTabsStore } from '#src/renderer/src/store/page-tabs'
+import { useSettingsStore } from '#src/renderer/src/store/settings'
+import { experimentalUtil } from '#src/shared/experimental/experimental-util'
 import { TtsProvider } from '#src/shared/types'
 import { TTS_PROVIDER_LABEL } from '#src/shared/voice/tts-provider-label'
 import { voiceIdParser } from '#src/shared/voice/voice-id'
@@ -15,22 +17,19 @@ interface RailItem {
   label: string
 }
 
-const RAIL_ITEMS: RailItem[] = [
-  { id: ModelsProvider.ALL, label: 'All voices' },
-  ...(Object.keys(PROVIDER_PAGES) as TtsProvider[]).map((provider) => {
-    return { id: provider, label: TTS_PROVIDER_LABEL[provider] }
-  }),
-]
-
 export function ModelsSettings(): React.JSX.Element {
   const { voices, downloads, load, download, dismissDownload } = useModelsStore()
+
+  const settings = useSettingsStore((s) => s.settings)
 
   const modelsProvider = usePageTabsStore((s) => s.modelsProvider)
   const setModelsProvider = usePageTabsStore((s) => s.setModelsProvider)
 
+  const isCosyvoiceActive = experimentalUtil.isCosyvoiceActive({ settings })
+
   useEffect(() => {
     void load()
-  }, [load])
+  }, [load, isCosyvoiceActive])
 
   useEffect(() => {
     const refreshOnFocus = (): void => {
@@ -101,7 +100,7 @@ export function ModelsSettings(): React.JSX.Element {
 
       <div className="flex items-start gap-4">
         <nav className="flex flex-col gap-1 w-36 shrink-0">
-          {RAIL_ITEMS.map((item) => {
+          {getRailItems({ isCosyvoiceActive }).map((item) => {
             const isActive = modelsProvider === item.id
 
             return (
@@ -130,10 +129,30 @@ export function ModelsSettings(): React.JSX.Element {
     if (params.modelsProvider === ModelsProvider.ALL) {
       return <ModelsTabInstalled />
     }
+    if (params.modelsProvider === TtsProvider.COSYVOICE && !isCosyvoiceActive) {
+      return <ModelsTabInstalled />
+    }
 
     const Page = PROVIDER_PAGES[params.modelsProvider].component
 
     return <Page downloadingIds={params.downloadingIds} installedIds={params.installedIds} />
+  }
+
+  function getRailItems(params: { isCosyvoiceActive: boolean }): RailItem[] {
+    const providerIds = (Object.keys(PROVIDER_PAGES) as TtsProvider[]).filter((provider) => {
+      if (provider === TtsProvider.COSYVOICE && !params.isCosyvoiceActive) {
+        return false
+      }
+
+      return true
+    })
+
+    return [
+      { id: ModelsProvider.ALL, label: 'All voices' },
+      ...providerIds.map((provider) => {
+        return { id: provider, label: TTS_PROVIDER_LABEL[provider] }
+      }),
+    ]
   }
 
   function getRailButtonClassName(params: { isActive: boolean }): string {

@@ -17,3 +17,4 @@ dist-electron/
 *.tsbuildinfo
 graphify-out
 .history
+.DS_Store

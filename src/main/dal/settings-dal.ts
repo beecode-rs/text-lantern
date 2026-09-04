@@ -190,6 +190,8 @@ export class SettingsDal {
       autoShortcut,
       fallbackLang,
       historyLimit: parsed.historyLimit ?? defaults.historyLimit,
+      isCosyvoiceEnabled: parsed.isCosyvoiceEnabled ?? defaults.isCosyvoiceEnabled,
+      isExperimentalFeaturesEnabled: parsed.isExperimentalFeaturesEnabled ?? defaults.isExperimentalFeaturesEnabled,
       languageBindings: bindings,
       maxChars: parsed.maxChars ?? defaults.maxChars,
       playbackStartDelayMs: parsed.playbackStartDelayMs ?? defaults.playbackStartDelayMs,

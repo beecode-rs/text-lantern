@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { ConfirmDialog } from '#src/renderer/src/component/ui/confirm-dialog'
 import { ModelCard } from '#src/renderer/src/component/ui/model-card'
 import { useModelsStore } from '#src/renderer/src/store/models'
+import { TtsProvider } from '#src/shared/types'
 import { voiceIdParser } from '#src/shared/voice/voice-id'
 
 export function ModelsTabInstalled(): React.JSX.Element {
@@ -102,7 +103,10 @@ export function ModelsTabInstalled(): React.JSX.Element {
   }
 
   function getDeleteMessage(params: { id: string }): string {
-    const name = voiceIdParser.parse({ id: params.id }).name
+    const { name, provider } = voiceIdParser.parse({ id: params.id })
+    if (provider === TtsProvider.COSYVOICE) {
+      return `Delete "${name}" from your device? This voice was cloned from your reference audio and cannot be re-downloaded. This cannot be undone.`
+    }
 
     return `Delete "${name}" from your device? The voice files will be removed. You can download it again later.`
   }

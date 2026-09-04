@@ -7,6 +7,7 @@ export interface VoiceId {
 
 export const voiceIdParser = {
   _providerByIdPrefix: {
+    [TtsProvider.COSYVOICE]: TtsProvider.COSYVOICE,
     [TtsProvider.KOKORO]: TtsProvider.KOKORO,
     [TtsProvider.PIPER]: TtsProvider.PIPER,
   } as Record<string, TtsProvider | undefined>,

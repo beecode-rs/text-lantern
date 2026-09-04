@@ -26,6 +26,30 @@ export const pathUtil = {
     return this.projectRoot()
   },
 
+  cosyvoiceBinDir(): string {
+    return path.join(this.dataRoot(), 'bin', 'cosyvoice')
+  },
+
+  cosyvoiceCliBin(): string {
+    return path.join(this.cosyvoiceBinDir(), 'cosyvoice-cli')
+  },
+
+  cosyvoiceFrontendDir(): string {
+    return path.join(this.modelsDir(), 'cosyvoice', 'frontend')
+  },
+
+  cosyvoiceModelDir(): string {
+    return path.join(this.modelsDir(), 'cosyvoice', 'model')
+  },
+
+  cosyvoiceServerBin(): string {
+    return path.join(this.cosyvoiceBinDir(), 'cosyvoice-server')
+  },
+
+  cosyvoiceVoicesDir(): string {
+    return path.join(this.modelsDir(), 'cosyvoice', 'voices')
+  },
+
   dataRoot(): string {
     if (app.isPackaged) {
       return app.getPath('userData')
