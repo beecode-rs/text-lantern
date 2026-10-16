@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 
-const packageJsonPath = new URL('../package.json', import.meta.url)
+const packageJsonPath = new URL('../../package.json', import.meta.url)
 
 const bumpLevels = ['major', 'minor', 'patch']
 
@@ -40,7 +40,7 @@ const assertCleanWorkTree = () => {
 const level = process.argv[2]
 
 if (!bumpLevels.includes(level)) {
-  console.error('Usage: node ./scripts/release.mjs <major|minor|patch>')
+  console.error('Usage: node ./resource/script/release.mjs <major|minor|patch>')
   process.exit(1)
 }
 
