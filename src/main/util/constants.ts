@@ -88,5 +88,9 @@ export const constant = singletonPattern(() => {
     tts: {
       audioFrameBytes: 4096,
     },
+    update: {
+      checkTimeoutMs: 10000,
+      latestReleaseApiUrl: 'https://api.github.com/repos/beecode-rs/text-lantern/releases/latest',
+    },
   })
 })

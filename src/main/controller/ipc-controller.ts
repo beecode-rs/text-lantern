@@ -3,6 +3,7 @@ import fs from 'node:fs'
 
 import { configBackupServiceSingleton } from '#src/main/business/service/config-backup-service'
 import { ttsServiceSingleton } from '#src/main/business/service/tts-service'
+import { updateServiceSingleton } from '#src/main/business/service/update-service'
 import { historyDalSingleton } from '#src/main/dal/history-dal'
 import { settingsDalSingleton } from '#src/main/dal/settings-dal'
 import { voiceModelDalSingleton } from '#src/main/dal/voice-model-dal'
@@ -12,7 +13,14 @@ import { shortcutsSingleton } from '#src/main/lib/shortcuts'
 import { traySingleton } from '#src/main/lib/tray'
 import { constant } from '#src/main/util/constants'
 import { pathUtil } from '#src/main/util/path-util'
-import { type HistoryEntry, type Lang, type Settings, TtsProvider, type TtsSpeakOptions } from '#src/shared/types'
+import {
+  type HistoryEntry,
+  type Lang,
+  type Settings,
+  TtsProvider,
+  type TtsSpeakOptions,
+  type UpdateStatus,
+} from '#src/shared/types'
 import { KOKORO_VOICE_CATALOG } from '#src/shared/voice/kokoro-voice-catalog'
 import { voiceIdParser } from '#src/shared/voice/voice-id'
 import { voiceUrlParser } from '#src/shared/voice/voice-url'
@@ -35,6 +43,9 @@ const handledChannels = [
   'tts:playbackEnded',
   'shortcuts:reregister',
   'app:showSettings',
+  'update:getStatus',
+  'update:check',
+  'update:download',
   'history:get',
   'history:clear',
   'history:remove',
@@ -165,6 +176,16 @@ export const ipcController = {
       }
     })
 
+    ipcMain.handle('update:getStatus', () => {
+      return updateServiceSingleton().getStatus()
+    })
+    ipcMain.handle('update:check', () => {
+      return updateServiceSingleton().checkNow()
+    })
+    ipcMain.handle('update:download', () => {
+      return updateServiceSingleton().downloadLatest()
+    })
+
     ipcMain.handle('history:get', () => {
       return historyDalSingleton().get()
     })
@@ -287,6 +308,11 @@ export const ipcController = {
       send('settings:changed', settingsDalSingleton().get())
     })
 
+    const onUpdateChanged = (status: UpdateStatus): void => {
+      send('update:changed', status)
+    }
+    const unsubscribeUpdateChanged = updateServiceSingleton().onChange(onUpdateChanged)
+
     teardownFns = [
       () => {
         ttsServiceSingleton().events.off('status', onTtsStatus)
@@ -307,6 +333,7 @@ export const ipcController = {
         historyDalSingleton().events.off('changed', onHistoryChanged)
       },
       unsubscribeSettingsChanged,
+      unsubscribeUpdateChanged,
     ]
   },
 

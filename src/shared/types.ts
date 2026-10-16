@@ -101,6 +101,44 @@ export interface ConfigImportResult {
   errorMessage: string | null
 }
 
+export type UpdateCheckState = 'idle' | 'checking' | 'upToDate' | 'updateAvailable' | 'error'
+
+export enum UpdateErrorKind {
+  HTTP_ERROR = 'HTTP_ERROR',
+  INVALID_RESPONSE = 'INVALID_RESPONSE',
+  NETWORK = 'NETWORK',
+  RATE_LIMITED = 'RATE_LIMITED',
+  TIMEOUT = 'TIMEOUT',
+  UNKNOWN = 'UNKNOWN',
+}
+
+export interface UpdateAsset {
+  name: string
+  sizeBytes: number
+  url: string
+}
+
+export interface UpdateCheckError {
+  kind: UpdateErrorKind
+  message: string | null
+  rateLimitResetAt: number | null
+  statusCode: number | null
+}
+
+export interface UpdateDownloadResult {
+  didDownloadInstaller: boolean
+  filePath: string | null
+}
+
+export interface UpdateStatus {
+  asset: UpdateAsset | null
+  currentVersion: string
+  error: UpdateCheckError | null
+  latestVersion: string | null
+  releaseUrl: string
+  state: UpdateCheckState
+}
+
 export interface TtsApi {
   getSettings(): Promise<Settings>
   updateSettings(patch: Partial<Settings>): Promise<Settings>
@@ -125,6 +163,11 @@ export interface TtsApi {
 
   exportConfig(): Promise<boolean>
   importConfig(): Promise<ConfigImportResult>
+
+  getUpdateStatus(): Promise<UpdateStatus>
+  checkForUpdate(): Promise<UpdateStatus>
+  downloadUpdate(): Promise<UpdateDownloadResult>
+  onUpdateChanged(cb: (status: UpdateStatus) => void): () => void
 
   onConfigLog(cb: (line: string) => void): () => void
   onConfigProgress(cb: (p: { name: string; progress: number }) => void): () => void

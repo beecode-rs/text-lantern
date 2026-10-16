@@ -4,6 +4,9 @@ import { channelSubscriber } from '#src/preload/_channel-subscriber'
 import type { TtsApi } from '#src/shared/types'
 
 const api: TtsApi = {
+  checkForUpdate: () => {
+    return ipcRenderer.invoke('update:check')
+  },
   clearHistory: () => {
     return ipcRenderer.invoke('history:clear')
   },
@@ -11,6 +14,9 @@ const api: TtsApi = {
     return ipcRenderer.invoke('models:delete', id)
   },
 
+  downloadUpdate: () => {
+    return ipcRenderer.invoke('update:download')
+  },
   downloadVoice: (id) => {
     return ipcRenderer.invoke('models:download', id)
   },
@@ -31,6 +37,9 @@ const api: TtsApi = {
   },
   getTtsStatus: () => {
     return ipcRenderer.invoke('tts:getStatus')
+  },
+  getUpdateStatus: () => {
+    return ipcRenderer.invoke('update:getStatus')
   },
   importConfig: () => {
     return ipcRenderer.invoke('config:import')
@@ -60,6 +69,8 @@ const api: TtsApi = {
   onSettingsChanged: channelSubscriber.createForChannel({ channel: 'settings:changed' }),
   onStopPlayback: channelSubscriber.createForChannel({ channel: 'tts:stopPlayback' }),
   onTtsStatus: channelSubscriber.createForChannel({ channel: 'tts:status' }),
+
+  onUpdateChanged: channelSubscriber.createForChannel({ channel: 'update:changed' }),
 
   openModelsFolder: () => {
     return ipcRenderer.invoke('models:openModelsFolder')

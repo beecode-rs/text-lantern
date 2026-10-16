@@ -1,6 +1,6 @@
 import { type IpcRendererEvent, ipcRenderer } from 'electron'
 
-import { type HistoryEntry, type Settings, type TtsStatus } from '#src/shared/types'
+import { type HistoryEntry, type Settings, type TtsStatus, type UpdateStatus } from '#src/shared/types'
 
 export type ChannelPayloads = {
   'config:log': string
@@ -14,6 +14,7 @@ export type ChannelPayloads = {
   'tts:audioStart': { sampleRate: number; voice: string }
   'tts:status': TtsStatus
   'tts:stopPlayback': undefined
+  'update:changed': UpdateStatus
 }
 
 export const channelSubscriber = {

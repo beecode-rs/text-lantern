@@ -1,10 +1,12 @@
+import { Download, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { api } from '#src/renderer/src/api'
 import iconUrl from '#src/renderer/src/asset/icon.png'
 import { SettingsPage } from '#src/renderer/src/component/ui/settings-page'
+import { useUpdateStore } from '#src/renderer/src/store/update'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
-import type { Settings } from '#src/shared/types'
+import { type Settings, type UpdateCheckError, UpdateErrorKind, type UpdateStatus } from '#src/shared/types'
 
 const credits = [
   { label: 'Piper TTS engine (piper-tts, GPL-3.0)', url: 'https://github.com/OHF-voice/piper1-gpl' },
@@ -23,13 +25,29 @@ const credits = [
   { label: 'Handy — the dictation app that inspired this app', url: 'https://handy.computer' },
 ]
 
+const rateLimitResetFormatter = new Intl.DateTimeFormat(undefined, {
+  hour: '2-digit',
+  hourCycle: 'h23',
+  minute: '2-digit',
+})
+
 export function AboutSettings(): React.JSX.Element {
   const [settings, setSettings] = useState<Settings | null>(null)
+  const downloadError = useUpdateStore((s) => s.downloadError)
+  const downloadResult = useUpdateStore((s) => s.downloadResult)
+  const isDownloading = useUpdateStore((s) => s.isDownloading)
+  const status = useUpdateStore((s) => s.status)
+  const check = useUpdateStore((s) => s.check)
+  const download = useUpdateStore((s) => s.download)
+  const init = useUpdateStore((s) => s.init)
+
   useEffect(() => {
     void api.getSettings().then(setSettings)
+    init()
   }, [])
 
   const bindingList = getBindingList({ settings })
+  const isChecking = status !== null && status.state === 'checking'
 
   return (
     <SettingsPage>
@@ -43,7 +61,7 @@ export function AboutSettings(): React.JSX.Element {
           <img src={iconUrl} alt="" className="h-10 w-10 rounded-xl" draggable={false} />
           <div>
             <div className="text-base font-semibold">Text Lantern</div>
-            <div className="text-xs text-text/55">Version 0.1.0 · MVP</div>
+            <div className="text-xs text-text/55">{getVersionLabel({ status })}</div>
           </div>
         </div>
         <p className="text-sm text-text/70 leading-relaxed">
@@ -52,6 +70,26 @@ export function AboutSettings(): React.JSX.Element {
           per-language shortcut.
         </p>
         {bindingList}
+      </section>
+
+      <section className="rounded-xl border border-mid-gray/25 bg-mid-gray/5 p-5 flex flex-col gap-3">
+        <h2 className="text-sm font-semibold">Updates</h2>
+        <p className="text-xs text-text/55 leading-relaxed">{getUpdateStatusLabel({ status })}</p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={isChecking || isDownloading}
+            onClick={() => {
+              void check()
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-mid-gray/40 bg-mid-gray/10 disabled:opacity-60"
+          >
+            <RefreshCw size={14} />
+            {getCheckButtonLabel({ isChecking })}
+          </button>
+          {getDownloadButton({ download, isDownloading, status })}
+        </div>
+        {getDownloadOutcome({ downloadError, downloadResult })}
       </section>
 
       <section className="rounded-xl border border-mid-gray/25 bg-mid-gray/5 p-5 flex flex-col gap-2 text-sm">
@@ -93,11 +131,152 @@ export function AboutSettings(): React.JSX.Element {
     )
   }
 
+  function getCheckButtonLabel(params: { isChecking: boolean }): string {
+    if (params.isChecking) {
+      return 'Checking…'
+    }
+
+    return 'Check for updates'
+  }
+
+  function getDownloadButton(params: {
+    download: () => Promise<void>
+    isDownloading: boolean
+    status: UpdateStatus | null
+  }): React.JSX.Element | null {
+    if (params.status?.state !== 'updateAvailable') {
+      return null
+    }
+
+    return (
+      <button
+        type="button"
+        disabled={params.isDownloading}
+        onClick={() => {
+          void params.download()
+        }}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-logo-primary text-logo-stroke disabled:opacity-60"
+      >
+        <Download size={14} />
+        {getDownloadButtonLabel({ isDownloading: params.isDownloading, status: params.status })}
+      </button>
+    )
+  }
+
+  function getDownloadButtonLabel(params: { isDownloading: boolean; status: UpdateStatus }): string {
+    if (params.isDownloading) {
+      return 'Downloading…'
+    }
+    if (params.status.asset === null) {
+      return 'View release page'
+    }
+
+    return `Download v${params.status.latestVersion ?? ''}`
+  }
+
+  function getDownloadOutcome(params: {
+    downloadError: string | null
+    downloadResult: { didDownloadInstaller: boolean; filePath: string | null } | null
+  }): React.JSX.Element | null {
+    if (params.downloadError !== null) {
+      return <p className="text-xs text-red-500 leading-relaxed">Download failed: {params.downloadError}</p>
+    }
+    if (params.downloadResult === null) {
+      return null
+    }
+    if (params.downloadResult.didDownloadInstaller) {
+      return (
+        <p className="text-xs text-text/55 leading-relaxed">Installer saved and opened from your Downloads folder.</p>
+      )
+    }
+
+    return <p className="text-xs text-text/55 leading-relaxed">Opened the release page in your browser.</p>
+  }
+
   function getSeparator(params: { index: number }): string {
     if (params.index > 0) {
       return ' · '
     }
 
     return ''
+  }
+
+  function getUpdateStatusLabel(params: { status: UpdateStatus | null }): string {
+    const status = params.status
+    if (status === null || status.state === 'idle') {
+      return 'Not checked yet.'
+    }
+    if (status.state === 'checking') {
+      return 'Checking for updates…'
+    }
+    if (status.state === 'upToDate') {
+      return `You're on the latest version (v${status.currentVersion}).`
+    }
+    if (status.state === 'error') {
+      return `Update check failed: ${getUpdateErrorMessage({ error: status.error })}`
+    }
+
+    return `Version ${status.latestVersion ?? ''} is available.`
+  }
+
+  function getUpdateErrorMessage(params: { error: UpdateCheckError | null }): string {
+    if (params.error === null) {
+      return 'The update check could not be completed.'
+    }
+    switch (params.error.kind) {
+      case UpdateErrorKind.HTTP_ERROR: {
+        return getHttpErrorMessage({ error: params.error })
+      }
+      case UpdateErrorKind.INVALID_RESPONSE: {
+        return 'GitHub returned a response we could not read'
+      }
+      case UpdateErrorKind.NETWORK: {
+        return 'Network error — check your connection'
+      }
+      case UpdateErrorKind.RATE_LIMITED: {
+        return getRateLimitMessage({ error: params.error })
+      }
+      case UpdateErrorKind.TIMEOUT: {
+        return 'Request timed out'
+      }
+      case UpdateErrorKind.UNKNOWN: {
+        return 'Something went wrong while checking for updates'
+      }
+      default: {
+        const exhaustive: never = params.error.kind
+        throw new Error(`Unknown update error kind: ${String(exhaustive)}`)
+      }
+    }
+  }
+
+  function getHttpErrorMessage(params: { error: UpdateCheckError }): string {
+    if (params.error.statusCode === 404) {
+      return 'No GitHub release published yet for this project'
+    }
+    if (params.error.statusCode === null) {
+      return 'GitHub responded with an error'
+    }
+
+    return `GitHub responded with an error (HTTP ${String(params.error.statusCode)})`
+  }
+
+  function getRateLimitMessage(params: { error: UpdateCheckError }): string {
+    if (params.error.rateLimitResetAt === null) {
+      return 'GitHub API rate limit exceeded — try again later'
+    }
+
+    return `GitHub API rate limit exceeded — resets at ${formatResetTime({ epochSeconds: params.error.rateLimitResetAt })}`
+  }
+
+  function formatResetTime(params: { epochSeconds: number }): string {
+    return rateLimitResetFormatter.format(new Date(params.epochSeconds * 1000))
+  }
+
+  function getVersionLabel(params: { status: UpdateStatus | null }): string {
+    if (params.status === null) {
+      return 'Version —'
+    }
+
+    return `Version ${params.status.currentVersion}`
   }
 }

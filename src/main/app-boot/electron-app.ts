@@ -8,6 +8,7 @@ import { PlatformLifeCycle } from '#src/main/app-boot/init/platform-life-cycle'
 import { ShortcutsLifeCycle } from '#src/main/app-boot/init/shortcuts-life-cycle'
 import { TrayLifeCycle } from '#src/main/app-boot/init/tray-life-cycle'
 import { TtsLifeCycle } from '#src/main/app-boot/init/tts-life-cycle'
+import { UpdateCheckLifeCycle } from '#src/main/app-boot/init/update-check-life-cycle'
 import { UserDataMigrationLifeCycle } from '#src/main/app-boot/init/user-data-migration-life-cycle'
 
 export class ElectronApp extends AppFlow {
@@ -21,7 +22,12 @@ export class ElectronApp extends AppFlow {
       new DalLifeCycle(),
       new PlatformLifeCycle(),
       mainWindow,
-      [new TrayLifeCycle({ windowGetter }), new ShortcutsLifeCycle(), new IpcLifeCycle({ windowGetter })],
+      [
+        new TrayLifeCycle({ windowGetter }),
+        new ShortcutsLifeCycle(),
+        new IpcLifeCycle({ windowGetter }),
+        new UpdateCheckLifeCycle(),
+      ],
       new TtsLifeCycle(),
     )
   }
