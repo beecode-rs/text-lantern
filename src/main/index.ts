@@ -8,6 +8,9 @@ import { logger } from '#src/main/util/logger'
 
 app.setName(APP_NAME)
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('enable-features', 'GlobalShortcutsPortalPreferredTrigger')
+}
 setAppBootLogger(logger())
 
 const gotLock = app.requestSingleInstanceLock()

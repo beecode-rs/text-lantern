@@ -1,5 +1,6 @@
 import { LogLevel } from '@beecode/msh-logger'
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
+import { app } from 'electron'
 
 import packageJson from '#packageJson' with { type: 'json' }
 import { objectUtil } from '#src/main/util/object-util'
@@ -7,6 +8,16 @@ import type { Settings } from '#src/shared/types'
 import { DEFAULT_ENGLISH_VOICE_NAME, DEFAULT_SERBIAN_VOICE_NAME } from '#src/shared/voice/default-voice'
 
 export const APP_NAME = 'Text Lantern'
+
+function appDisplayName(): string {
+  if (app.isPackaged) {
+    return APP_NAME
+  }
+
+  return `${APP_NAME} (dev)`
+}
+
+export const APP_DISPLAY_NAME = appDisplayName()
 
 export const constant = singletonPattern(() => {
   const serbianVoiceName = DEFAULT_SERBIAN_VOICE_NAME

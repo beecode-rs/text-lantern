@@ -88,7 +88,7 @@ Done:
 
 Planned:
 
-- [ ] Real selection grab on Linux and Windows (currently the clipboard is read as-is)
+- [ ] Real selection grab on Windows (currently the clipboard is read as-is)
 - [ ] Code signing (macOS/Windows installers are unsigned for now)
 
 ## Requirements
@@ -100,9 +100,11 @@ Planned:
   python.exe to PATH" checked; on Debian/Ubuntu, if the engine install fails,
   install the headers (`sudo apt install python3-venv espeak-ng-dev`) and retry
   from the Models section. Kokoro voices need no Python at all.
-- Reading the selection is fully supported on macOS; on Linux and Windows the
-  app reads the clipboard as-is when you press the shortcut (a real selection
-  grab is planned — see [Feature status](#feature-status)).
+- Reading the selection is fully supported on macOS and Linux (on Linux it
+  reads the X11 primary selection, so X11/XWayland sessions give the best
+  results); on Windows the app reads the clipboard as-is when you press the
+  shortcut (a real selection grab is planned — see
+  [Feature status](#feature-status)).
 
 **To build from source:** [Node.js](https://nodejs.org) (`^20.19 || >=22.12`,
 22 LTS recommended — pinned in `.nvmrc`) and [pnpm](https://pnpm.io) (pinned

@@ -2,6 +2,7 @@ import { Row } from '#src/renderer/src/component/ui/row'
 import { Select, type SelectOption } from '#src/renderer/src/component/ui/select'
 import { SettingsGroup } from '#src/renderer/src/component/ui/settings-group'
 import { Toggle } from '#src/renderer/src/component/ui/toggle'
+import { platformSingleton } from '#src/renderer/src/lib/platform'
 import { useSettingsStore } from '#src/renderer/src/store/settings'
 import type { ThemePreference } from '#src/shared/types'
 
@@ -21,7 +22,7 @@ export function GeneralTabWindow(): React.JSX.Element {
 
   return (
     <>
-      <SettingsGroup title="Appearance" description="System follows your macOS appearance.">
+      <SettingsGroup title="Appearance" description={getAppearanceDescription()}>
         <Row title="Theme" description="Choose how Text Lantern looks.">
           <Select
             value={settings.theme}
@@ -56,4 +57,12 @@ export function GeneralTabWindow(): React.JSX.Element {
       </SettingsGroup>
     </>
   )
+
+  function getAppearanceDescription(): string {
+    if (platformSingleton().isMac()) {
+      return 'System follows your macOS appearance.'
+    }
+
+    return 'System follows your operating system appearance.'
+  }
 }

@@ -1,5 +1,7 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 
+import { platformSingleton } from '#src/renderer/src/lib/platform'
+
 const ACCELERATOR_MAP_MAC = new Map<string, string>([
   ['Alt', '⌥'],
   ['Cmd', '⌘'],
@@ -70,11 +72,7 @@ export class Format {
   }
 
   protected _isMacPlatform(): boolean {
-    if (typeof navigator === 'undefined') {
-      return false
-    }
-
-    return /Mac|iPhone|iPad/.test(navigator.platform)
+    return platformSingleton().isMac()
   }
 
   protected _bytesToDecimals(params: { value: number; unitIndex: number }): number {

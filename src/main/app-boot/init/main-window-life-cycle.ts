@@ -4,7 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { settingsDalSingleton } from '#src/main/dal/settings-dal'
-import { constant } from '#src/main/util/constants'
+import { APP_DISPLAY_NAME, constant } from '#src/main/util/constants'
 import { logger } from '#src/main/util/logger'
 import type { ThemePreference } from '#src/shared/types'
 
@@ -83,6 +83,7 @@ export class MainWindowLifeCycle extends LifeCycle {
     })
 
     this._attachDevDiagnostics({ win })
+    this._showDevWindowTitle({ win })
 
     win.webContents.setWindowOpenHandler(({ url }) => {
       void shell.openExternal(url)
@@ -111,6 +112,16 @@ export class MainWindowLifeCycle extends LifeCycle {
     })
     win.webContents.on('preload-error', (_e, p, err) => {
       logger().error(`preload error in ${p}: ${String(err)}`)
+    })
+  }
+
+  protected _showDevWindowTitle(params: { win: BrowserWindow }): void {
+    if (app.isPackaged) {
+      return
+    }
+    const { win } = params
+    win.webContents.on('did-finish-load', () => {
+      win.setTitle(APP_DISPLAY_NAME)
     })
   }
 

@@ -1,9 +1,9 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-import { type BrowserWindow, Tray as ElectronTray, Menu } from 'electron'
+import { type BrowserWindow, Tray as ElectronTray, Menu, nativeTheme } from 'electron'
 
 import { ttsServiceSingleton } from '#src/main/business/service/tts-service'
 import { settingsDalSingleton } from '#src/main/dal/settings-dal'
-import { APP_NAME } from '#src/main/util/constants'
+import { APP_DISPLAY_NAME, APP_NAME } from '#src/main/util/constants'
 import { trayIconImageUtilSingleton } from '#src/main/util/tray-icon-image-util'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
 import type { Lang } from '#src/shared/types'
@@ -14,15 +14,23 @@ export class Tray {
 
   protected _trayWindow: BrowserWindow | null = null
 
+  protected _isReading = false
+
+  protected _onNativeThemeUpdated = (): void => {
+    this._refreshImage()
+  }
+
   create(params: { window: BrowserWindow }): Electron.Tray {
     this._trayWindow = params.window
+    this._isReading = false
     this._tray = new ElectronTray(trayIconImageUtilSingleton().outlineIcon())
-    this._tray.setToolTip(APP_NAME)
+    this._tray.setToolTip(APP_DISPLAY_NAME)
     this._tray.setContextMenu(Menu.buildFromTemplate(this._buildTrayMenuTemplate()))
     this._tray.on('click', () => {
       params.window.show()
       params.window.focus()
     })
+    nativeTheme.on('updated', this._onNativeThemeUpdated)
 
     return this._tray
   }
@@ -35,21 +43,34 @@ export class Tray {
   }
 
   setReading(reading: boolean): void {
+    this._isReading = reading
     if (!this._tray) {
       return
     }
+    this._refreshImage()
     if (reading) {
-      this._tray.setImage(trayIconImageUtilSingleton().filledIcon())
-      this._tray.setToolTip(`${APP_NAME} — reading…`)
+      this._tray.setToolTip(`${APP_DISPLAY_NAME} — reading…`)
     } else {
-      this._tray.setImage(trayIconImageUtilSingleton().outlineIcon())
-      this._tray.setToolTip(APP_NAME)
+      this._tray.setToolTip(APP_DISPLAY_NAME)
     }
   }
 
   destroy(): void {
+    nativeTheme.removeListener('updated', this._onNativeThemeUpdated)
     this._tray?.destroy()
     this._tray = null
+  }
+
+  protected _refreshImage(): void {
+    if (!this._tray) {
+      return
+    }
+    if (this._isReading) {
+      this._tray.setImage(trayIconImageUtilSingleton().filledIcon())
+
+      return
+    }
+    this._tray.setImage(trayIconImageUtilSingleton().outlineIcon())
   }
 
   protected _buildTrayMenuTemplate(): Electron.MenuItemConstructorOptions[] {

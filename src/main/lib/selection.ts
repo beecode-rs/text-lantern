@@ -27,33 +27,51 @@ tell application "System Events" to get name of first application process`
 
 export class Selection {
   async grab(): Promise<string> {
-    const saved = clipboard.readText()
-
     if (process.platform === 'darwin') {
-      try {
-        const copied = await this._copySelectionAndWait()
-        if (!copied) {
-          this._restoreClipboard({ saved })
-
-          return ''
-        }
-      } catch (error) {
-        const stderr = this._stderrFrom(error)
-        if (this._isPermissionDenied({ stderr })) {
-          throw new Error(this._permissionDeniedMessage())
-        }
-        throw new Error(this._grabFailureMessage({ stderr }))
-      }
+      return this._grabSelectionMac()
+    }
+    if (process.platform === 'linux') {
+      return this._grabSelectionLinux()
     }
 
-    const selection = clipboard.readText()
+    return (await clipboard.readText()).trim()
+  }
+
+  async warmUp(): Promise<void> {
+    await this._runAppleScript({ source: WARMUP_SCRIPT })
+  }
+
+  protected async _grabSelectionMac(): Promise<string> {
+    const saved = await clipboard.readText()
+
+    try {
+      const isCopied = await this._copySelectionAndWait()
+      if (!isCopied) {
+        this._restoreClipboard({ saved })
+
+        return ''
+      }
+    } catch (error) {
+      const stderr = this._stderrFrom(error)
+      if (this._isPermissionDenied({ stderr })) {
+        throw new Error(this._permissionDeniedMessage())
+      }
+      throw new Error(this._grabFailureMessage({ stderr }))
+    }
+
+    const selection = await clipboard.readText()
     this._restoreClipboard({ saved })
 
     return selection.trim()
   }
 
-  async warmUp(): Promise<void> {
-    await this._runAppleScript({ source: WARMUP_SCRIPT })
+  protected async _grabSelectionLinux(): Promise<string> {
+    const primarySelection = await clipboard.selection.readText()
+    if (primarySelection !== '') {
+      return primarySelection.trim()
+    }
+
+    return (await clipboard.readText()).trim()
   }
 
   protected _runAppleScript(params: { source: string }): Promise<string> {
@@ -72,7 +90,7 @@ export class Selection {
 
   protected _restoreClipboard(params: { saved: string }): void {
     if (params.saved) {
-      clipboard.writeText(params.saved)
+      void clipboard.writeText(params.saved)
     }
   }
 

@@ -9,6 +9,7 @@ import { ShortcutInput } from '#src/renderer/src/component/ui/shortcut-input'
 import { Slider } from '#src/renderer/src/component/ui/slider'
 import { StarBadge } from '#src/renderer/src/component/ui/star-badge'
 import { Toggle } from '#src/renderer/src/component/ui/toggle'
+import { platformSingleton } from '#src/renderer/src/lib/platform'
 import { useModelsStore } from '#src/renderer/src/store/models'
 import { useSettingsStore } from '#src/renderer/src/store/settings'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
@@ -323,11 +324,14 @@ export function LanguagesSettings(): React.JSX.Element {
         </Row>
       </SettingsGroup>
 
-      <p className="text-xs text-text/50 leading-relaxed px-1">
-        On macOS, reading the selection needs <strong>Automation</strong> permission (control of System Events) and may
-        need <strong>Accessibility</strong> permission for Text Lantern (System Settings → Privacy &amp; Security),
-        because it sends a Cmd+C to copy the selected text. Your clipboard is saved and restored around the grab.
-      </p>
+      {platformSingleton().isMac() && (
+        <p className="text-xs text-text/50 leading-relaxed px-1">
+          On macOS, reading the selection needs <strong>Automation</strong> permission (control of System Events) and
+          may need <strong>Accessibility</strong> permission for Text Lantern (System Settings → Privacy &amp;
+          Security), because it sends a Cmd+C to copy the selected text. Your clipboard is saved and restored around the
+          grab.
+        </p>
+      )}
 
       {pendingRemoveBinding !== undefined && (
         <ConfirmDialog

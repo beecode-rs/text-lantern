@@ -20,7 +20,12 @@ interface HfTreeEntry {
 export class PiperEngine {
   isEngineInstalled(): boolean {
     try {
-      return fs.existsSync(pathUtil.piperBin())
+      if (!fs.existsSync(pathUtil.piperBin())) {
+        return false
+      }
+      fs.realpathSync(pathUtil.venvPython())
+
+      return true
     } catch {
       return false
     }

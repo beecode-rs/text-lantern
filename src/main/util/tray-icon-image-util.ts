@@ -1,5 +1,5 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
-import { type NativeImage, nativeImage } from 'electron'
+import { type NativeImage, nativeImage, nativeTheme } from 'electron'
 
 const ICON_WIDTH = 28
 const ICON_HEIGHT = 20
@@ -11,14 +11,14 @@ const TAIL = { x0: 8.1, xb: 8.3, xt: 11.2, y0: 14.9, y1: 18.1 }
 const ARCS = { angleMaxDeg: 44, cx: 12, cy: 9.65, halfThickness: 0.68, radii: [6.15, 8.45, 10.75] }
 
 export class TrayIconImageUtil {
-  protected _cachedIcons: { outline: NativeImage; filled: NativeImage } | undefined
+  protected _cachedIcons: { filled: NativeImage; isDarkColorScheme: boolean; outline: NativeImage } | undefined
 
   outlineIcon(): NativeImage {
-    return this._buildIconsOnce().outline
+    return this._resolveIcons().outline
   }
 
   filledIcon(): NativeImage {
-    return this._buildIconsOnce().filled
+    return this._resolveIcons().filled
   }
 
   protected _isPointInsideOrb(x: number, y: number): boolean {
@@ -120,8 +120,21 @@ export class TrayIconImageUtil {
     )
   }
 
-  protected _renderPixelGridToImage(params: { grid: Uint8Array; filled: boolean }): NativeImage {
-    const { grid, filled } = params
+  protected _markColor(params: { isDarkColorScheme: boolean }): { b: number; g: number; r: number } {
+    const { isDarkColorScheme } = params
+    if (isDarkColorScheme) {
+      return { b: 255, g: 255, r: 255 }
+    }
+
+    return { b: 0, g: 0, r: 0 }
+  }
+
+  protected _renderPixelGridToImage(params: {
+    color: { b: number; g: number; r: number }
+    filled: boolean
+    grid: Uint8Array
+  }): NativeImage {
+    const { color, filled, grid } = params
     const buf = Buffer.alloc(ICON_WIDTH * ICON_HEIGHT * 4)
     Array.from({ length: ICON_WIDTH * ICON_HEIGHT }, (_unused, i) => {
       const x = i % ICON_WIDTH
@@ -134,9 +147,9 @@ export class TrayIconImageUtil {
       } else {
         lit = pixelIsOn && this._isPixelOnShapeEdge(grid, x, y)
       }
-      buf[o] = 0
-      buf[o + 1] = 0
-      buf[o + 2] = 0
+      buf[o] = color.r
+      buf[o + 1] = color.g
+      buf[o + 2] = color.b
       if (lit) {
         buf[o + 3] = 255
       } else {
@@ -154,14 +167,17 @@ export class TrayIconImageUtil {
     return img
   }
 
-  protected _buildIconsOnce(): { outline: NativeImage; filled: NativeImage } {
-    if (this._cachedIcons) {
+  protected _resolveIcons(): { filled: NativeImage; isDarkColorScheme: boolean; outline: NativeImage } {
+    const isDarkColorScheme = nativeTheme.shouldUseDarkColors
+    if (this._cachedIcons?.isDarkColorScheme === isDarkColorScheme) {
       return this._cachedIcons
     }
+    const color = this._markColor({ isDarkColorScheme })
     const grid = this._buildMarkPixelGrid()
     this._cachedIcons = {
-      filled: this._renderPixelGridToImage({ filled: true, grid }),
-      outline: this._renderPixelGridToImage({ filled: false, grid }),
+      filled: this._renderPixelGridToImage({ color, filled: true, grid }),
+      isDarkColorScheme,
+      outline: this._renderPixelGridToImage({ color, filled: false, grid }),
     }
 
     return this._cachedIcons
