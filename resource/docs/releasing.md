@@ -6,7 +6,7 @@ Text Lantern releases are tag-driven. The workflow lives at
 From `main` (after merging what you want to ship):
 
 ```bash
-pnpm release:patch   # or release:minor / release:major
+pnpm release-patch   # or release-minor / release-major
 ```
 
 That bumps `package.json`, commits, tags `v<version>`, and pushes. GitHub
@@ -21,9 +21,9 @@ as a dry run that builds everything without creating a release.
 
 | Platform | Artifact | Built by |
 |---|---|---|
-| macOS | `Text-Lantern-<version>-universal.dmg` | `pnpm dist:mac` |
-| Linux | `Text-Lantern-<version>.AppImage`, `text-lantern_<version>_amd64.deb` | `pnpm dist:linux` |
-| Windows | `Text-Lantern-Setup-<version>.exe` (NSIS) | `pnpm dist:win` |
+| macOS | `Text-Lantern-<version>-universal.dmg` | `pnpm dist-mac` |
+| Linux | `Text-Lantern-<version>.AppImage`, `text-lantern_<version>_amd64.deb` | `pnpm dist-linux` |
+| Windows | `Text-Lantern-Setup-<version>.exe` (NSIS) | `pnpm dist-win` |
 
 Installers are unsigned (no code signing yet — see the
 [README feature status](../../README.md#feature-status)); macOS users need the

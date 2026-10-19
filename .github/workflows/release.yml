@@ -50,7 +50,7 @@ jobs:
             echo "::error::Tag ${GITHUB_REF_NAME} does not match package.json version ${PKG_VERSION}"
             exit 1
           fi
-      - run: pnpm dist:mac
+      - run: pnpm dist-mac
       - uses: actions/upload-artifact@v4
         with:
           name: dist-mac
@@ -77,7 +77,7 @@ jobs:
             echo "::error::Tag ${GITHUB_REF_NAME} does not match package.json version ${PKG_VERSION}"
             exit 1
           fi
-      - run: pnpm dist:linux
+      - run: pnpm dist-linux
       - uses: actions/upload-artifact@v4
         with:
           name: dist-linux
@@ -109,7 +109,7 @@ jobs:
             echo "::error::Tag ${GITHUB_REF_NAME} does not match package.json version ${PKG_VERSION}"
             exit 1
           fi
-      - run: pnpm dist:win
+      - run: pnpm dist-win
       - uses: actions/upload-artifact@v4
         with:
           name: dist-win

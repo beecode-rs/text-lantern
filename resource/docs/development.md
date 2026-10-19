@@ -55,11 +55,11 @@ pnpm dev                                 # launch with hot reload
 | `pnpm start` / `pnpm preview` | Run the built app |
 | `pnpm typecheck` | Typecheck the node and web projects |
 | `pnpm lint` / `pnpm lint-fix` | ESLint + Prettier + json-sort-cli (check / fix) |
-| `pnpm dist:mac` | Build the universal macOS dmg into `dist/` |
-| `pnpm dist:linux` | Build the Linux AppImage + deb into `dist/` |
-| `pnpm dist:win` | Build the Windows NSIS exe into `dist/` |
+| `pnpm dist-mac` | Build the universal macOS dmg into `dist/` |
+| `pnpm dist-linux` | Build the Linux AppImage + deb into `dist/` |
+| `pnpm dist-win` | Build the Windows NSIS exe into `dist/` |
 | `pnpm pack:dir` | Unpacked build into `dist/` for a quick local smoke test |
-| `pnpm release:patch` / `release:minor` / `release:major` | Bump version, tag, push — see [releasing.md](releasing.md) |
+| `pnpm release-patch` / `release-minor` / `release-major` | Bump version, tag, push — see [releasing.md](releasing.md) |
 | `pnpm clean-app-cache` | Run `resource/script/clean-app-cache.cjs` to clear the app's userData cache |
 
 ## Project layout
