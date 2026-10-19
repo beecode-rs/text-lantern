@@ -5,7 +5,7 @@ import { api } from '#src/renderer/src/api'
 import { StreamPlayer } from '#src/renderer/src/lib/stream-player'
 import { WaitingBeeper } from '#src/renderer/src/lib/waiting-beeper'
 import { useSettingsStore } from '#src/renderer/src/store/settings'
-import { TtsState, type TtsStatus } from '#src/shared/types'
+import { MacPermission, TtsState, type TtsStatus } from '#src/shared/types'
 import { voiceLabelUtil } from '#src/shared/voice/voice-label'
 
 export function NowPlaying(): React.JSX.Element {
@@ -74,6 +74,28 @@ export function NowPlaying(): React.JSX.Element {
   // Stop stays hidden during the sub-second LISTENING window to avoid button flicker; the stop shortcut and tray Stop still work.
   const busy = status.state === TtsState.SYNTHESIZING || status.state === TtsState.READING
 
+  const resolveMissingMacPermissions = (): MacPermission[] => {
+    if (status.state === TtsState.ERROR && status.missingMacPermissions !== undefined) {
+      return status.missingMacPermissions
+    }
+
+    return []
+  }
+  const missingMacPermissions = resolveMissingMacPermissions()
+
+  const macPermissionButtonLabels: Record<MacPermission, string> = {
+    [MacPermission.ACCESSIBILITY]: 'Open Accessibility Settings',
+    [MacPermission.AUTOMATION]: 'Open Automation Settings',
+  }
+
+  const resolveErrorTextClassName = (): string => {
+    if (missingMacPermissions.length > 0) {
+      return 'selectable'
+    }
+
+    return 'truncate selectable'
+  }
+
   return (
     <>
       {status.state !== TtsState.IDLE && (
@@ -92,8 +114,27 @@ export function NowPlaying(): React.JSX.Element {
                 <span className="opacity-70 selectable">· {voiceLabelUtil.displayName({ id: status.voice })}</span>
               </span>
             )}
-            {status.state === TtsState.ERROR && <span className="truncate selectable">{status.error}</span>}
+            {status.state === TtsState.ERROR && <span className={resolveErrorTextClassName()}>{status.error}</span>}
           </div>
+
+          {status.state === TtsState.ERROR && missingMacPermissions.length > 0 && (
+            <div className="flex shrink-0 items-center gap-2">
+              {missingMacPermissions.map((pane) => {
+                return (
+                  <button
+                    type="button"
+                    key={pane}
+                    onClick={() => {
+                      void api.openMacSettingsPane(pane)
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md bg-white/20 hover:bg-white/30 transition-colors"
+                  >
+                    {macPermissionButtonLabels[pane]}
+                  </button>
+                )
+              })}
+            </div>
+          )}
 
           {busy && (
             <button

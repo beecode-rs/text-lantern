@@ -60,6 +60,11 @@ export interface VoiceDownload {
   state: VoiceDownloadState
 }
 
+export enum MacPermission {
+  ACCESSIBILITY = 'ACCESSIBILITY',
+  AUTOMATION = 'AUTOMATION',
+}
+
 export enum TtsState {
   IDLE = 'IDLE',
   LISTENING = 'LISTENING',
@@ -73,7 +78,7 @@ export type TtsStatus =
   | { state: TtsState.LISTENING }
   | { state: TtsState.SYNTHESIZING; voice: string }
   | { state: TtsState.READING; voice: string }
-  | { state: TtsState.ERROR; error: string }
+  | { state: TtsState.ERROR; error: string; missingMacPermissions?: MacPermission[] }
 
 export interface HistoryEntry {
   id: string
@@ -160,6 +165,7 @@ export interface TtsApi {
 
   reregisterShortcuts(): Promise<boolean>
   showSettings(): Promise<void>
+  openMacSettingsPane(pane: MacPermission): Promise<boolean>
 
   exportConfig(): Promise<boolean>
   importConfig(): Promise<ConfigImportResult>

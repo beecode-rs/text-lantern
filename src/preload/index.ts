@@ -72,6 +72,9 @@ const api: TtsApi = {
 
   onUpdateChanged: channelSubscriber.createForChannel({ channel: 'update:changed' }),
 
+  openMacSettingsPane: (pane) => {
+    return ipcRenderer.invoke('permissions:openMacSettingsPane', pane)
+  },
   openModelsFolder: () => {
     return ipcRenderer.invoke('models:openModelsFolder')
   },

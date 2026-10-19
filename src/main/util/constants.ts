@@ -65,6 +65,12 @@ export const constant = singletonPattern(() => {
     logger: {
       defaultLogLevel: LogLevel.INFO,
     },
+    macPermissions: {
+      accessibilitySettingsUrl:
+        'x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Accessibility',
+      automationSettingsUrl:
+        'x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Automation',
+    },
     mainWindow: {
       darkBackground: '#12131C',
       lightBackground: '#F5F6FA',

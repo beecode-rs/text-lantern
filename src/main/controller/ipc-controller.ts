@@ -16,6 +16,7 @@ import { pathUtil } from '#src/main/util/path-util'
 import {
   type HistoryEntry,
   type Lang,
+  MacPermission,
   type Settings,
   TtsProvider,
   type TtsSpeakOptions,
@@ -43,6 +44,7 @@ const handledChannels = [
   'tts:playbackEnded',
   'shortcuts:reregister',
   'app:showSettings',
+  'permissions:openMacSettingsPane',
   'update:getStatus',
   'update:check',
   'update:download',
@@ -137,6 +139,19 @@ export const ipcController = {
       const errorMessage = await shell.openPath(pathUtil.modelsDir())
 
       return errorMessage === ''
+    })
+
+    ipcMain.handle('permissions:openMacSettingsPane', async (_e, pane: MacPermission) => {
+      if (process.platform !== 'darwin') {
+        return false
+      }
+      const paneUrls: Record<MacPermission, string> = {
+        [MacPermission.ACCESSIBILITY]: constant().macPermissions.accessibilitySettingsUrl,
+        [MacPermission.AUTOMATION]: constant().macPermissions.automationSettingsUrl,
+      }
+      await shell.openExternal(paneUrls[pane])
+
+      return true
     })
 
     ipcMain.handle('tts:getStatus', () => {

@@ -3,7 +3,7 @@ import { EventEmitter } from 'node:events'
 
 import { TextService } from '#src/main/business/service/text-service'
 import { historyDalSingleton } from '#src/main/dal/history-dal'
-import { Selection } from '#src/main/lib/selection'
+import { Selection, SelectionPermissionError } from '#src/main/lib/selection'
 import { ttsProviderRegistrySingleton } from '#src/main/lib/tts/provider-registry'
 import type { TtsProviderAdapter } from '#src/main/lib/tts/tts-provider'
 import { constant } from '#src/main/util/constants'
@@ -54,7 +54,7 @@ export class TtsService {
       if (this._runGeneration !== runGeneration) {
         return
       }
-      this._emitTtsStatus({ error: this._selectionErrorMessage(error), state: TtsState.ERROR })
+      this._emitTtsStatus(this._selectionErrorStatus(error))
 
       return
     }
@@ -202,6 +202,14 @@ export class TtsService {
     }
 
     return 'Could not read the selected text.'
+  }
+
+  protected _selectionErrorStatus(error: unknown): TtsStatus {
+    if (error instanceof SelectionPermissionError && error.missingMacPermissions.length > 0) {
+      return { error: error.message, missingMacPermissions: error.missingMacPermissions, state: TtsState.ERROR }
+    }
+
+    return { error: this._selectionErrorMessage(error), state: TtsState.ERROR }
   }
 
   protected _cleanTextIfEnabled(params: { text: string; settings: Settings }): string {
