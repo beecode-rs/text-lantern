@@ -47,7 +47,7 @@ export class Selection {
       return this._grabSelectionLinux()
     }
 
-    return clipboard.readText().trim()
+    return (await clipboard.readText()).trim()
   }
 
   async warmUp(): Promise<void> {
@@ -55,12 +55,12 @@ export class Selection {
   }
 
   protected async _grabSelectionMac(): Promise<string> {
-    const saved = clipboard.readText()
+    const saved = await clipboard.readText()
 
     try {
       const isCopied = await this._copySelectionAndWait()
       if (!isCopied) {
-        this._restoreClipboard({ saved })
+        await this._restoreClipboard({ saved })
 
         return ''
       }
@@ -73,19 +73,19 @@ export class Selection {
       throw new Error(this._grabFailureMessage({ stderr }))
     }
 
-    const selection = clipboard.readText()
-    this._restoreClipboard({ saved })
+    const selection = await clipboard.readText()
+    await this._restoreClipboard({ saved })
 
     return selection.trim()
   }
 
-  protected _grabSelectionLinux(): string {
-    const primarySelection = clipboard.readText('selection')
+  protected async _grabSelectionLinux(): Promise<string> {
+    const primarySelection = await clipboard.selection.readText()
     if (primarySelection !== '') {
       return primarySelection.trim()
     }
 
-    return clipboard.readText().trim()
+    return (await clipboard.readText()).trim()
   }
 
   async checkMissingPermissions(): Promise<MacPermission[]> {
@@ -114,9 +114,9 @@ export class Selection {
     })
   }
 
-  protected _restoreClipboard(params: { saved: string }): void {
+  protected async _restoreClipboard(params: { saved: string }): Promise<void> {
     if (params.saved) {
-      clipboard.writeText(params.saved)
+      await clipboard.writeText(params.saved)
     }
   }
 
