@@ -69,6 +69,14 @@ export function AboutSettings(): React.JSX.Element {
           on your device — nothing is sent anywhere. Language is auto-detected from the text or chosen via a
           per-language shortcut.
         </p>
+        <a
+          className="text-sm text-logo-primary hover:underline"
+          href="https://github.com/beecode-rs/text-lantern"
+          rel="noreferrer"
+          target="_blank"
+        >
+          GitHub
+        </a>
         {bindingList}
       </section>
 
