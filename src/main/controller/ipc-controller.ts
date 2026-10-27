@@ -20,6 +20,7 @@ import {
   type Settings,
   TtsProvider,
   type TtsSpeakOptions,
+  type UpdateDownloadProgress,
   type UpdateStatus,
 } from '#src/shared/types'
 import { KOKORO_VOICE_CATALOG } from '#src/shared/voice/kokoro-voice-catalog'
@@ -48,6 +49,7 @@ const handledChannels = [
   'update:getStatus',
   'update:check',
   'update:download',
+  'update:restart',
   'history:get',
   'history:clear',
   'history:remove',
@@ -200,6 +202,11 @@ export const ipcController = {
     ipcMain.handle('update:download', () => {
       return updateServiceSingleton().downloadLatest()
     })
+    ipcMain.handle('update:restart', () => {
+      updateServiceSingleton().relaunchForUpdate()
+
+      return true
+    })
 
     ipcMain.handle('history:get', () => {
       return historyDalSingleton().get()
@@ -328,6 +335,11 @@ export const ipcController = {
     }
     const unsubscribeUpdateChanged = updateServiceSingleton().onChange(onUpdateChanged)
 
+    const onUpdateDownloadChanged = (progress: UpdateDownloadProgress): void => {
+      send('update:downloadChanged', progress)
+    }
+    const unsubscribeUpdateDownloadChanged = updateServiceSingleton().onDownloadChange(onUpdateDownloadChanged)
+
     teardownFns = [
       () => {
         ttsServiceSingleton().events.off('status', onTtsStatus)
@@ -349,6 +361,7 @@ export const ipcController = {
       },
       unsubscribeSettingsChanged,
       unsubscribeUpdateChanged,
+      unsubscribeUpdateDownloadChanged,
     ]
   },
 

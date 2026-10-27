@@ -62,6 +62,8 @@ const api: TtsApi = {
   onConfigLog: channelSubscriber.createForChannel({ channel: 'config:log' }),
   onConfigProgress: channelSubscriber.createForChannel({ channel: 'config:progress' }),
 
+  onDownloadChanged: channelSubscriber.createForChannel({ channel: 'update:downloadChanged' }),
+
   onHistoryChanged: channelSubscriber.createForChannel({ channel: 'history:changed' }),
   onModelsLog: channelSubscriber.createForChannel({ channel: 'models:log' }),
 
@@ -86,6 +88,9 @@ const api: TtsApi = {
   },
   reregisterShortcuts: () => {
     return ipcRenderer.invoke('shortcuts:reregister')
+  },
+  restartUpdate: () => {
+    return ipcRenderer.invoke('update:restart')
   },
   searchVoices: (query) => {
     return ipcRenderer.invoke('models:search', query)

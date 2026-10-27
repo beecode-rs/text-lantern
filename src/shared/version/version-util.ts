@@ -1,9 +1,16 @@
-import { type UpdateAsset } from '#src/shared/types'
+import { type UpdateAsset, type UpdateInstallType } from '#src/shared/types'
 
-const PLATFORM_ASSET_SUFFIXES: Record<string, string[]> = {
-  darwin: ['.dmg'],
-  linux: ['.AppImage', '.deb'],
-  win32: ['.exe'],
+const DEB_INSTALL_CANCELLED_EXIT_CODE = 126
+
+const DEB_INSTALL_UNAUTHORIZED_EXIT_CODE = 127
+
+const INSTALL_TYPE_ASSET_SUFFIXES: Record<UpdateInstallType, string[]> = {
+  appImage: ['.AppImage'],
+  deb: ['.deb'],
+  dev: ['.AppImage', '.deb'],
+  dmg: ['.dmg'],
+  exe: ['.exe'],
+  unsupported: [],
 }
 
 const VERSION_PREFIX_PATTERN = /^v/
@@ -40,9 +47,9 @@ export const versionUtil = {
     return version.replace(VERSION_PREFIX_PATTERN, '')
   },
 
-  selectPlatformAsset(params: { assets: UpdateAsset[]; platform: string }): UpdateAsset | null {
-    const { assets, platform } = params
-    const preferredSuffixes = PLATFORM_ASSET_SUFFIXES[platform] ?? []
+  selectUpdateAsset(params: { assets: UpdateAsset[]; installType: UpdateInstallType }): UpdateAsset | null {
+    const { assets, installType } = params
+    const preferredSuffixes = INSTALL_TYPE_ASSET_SUFFIXES[installType]
     const matchedAsset = preferredSuffixes
       .map((suffix) => {
         return assets.find((asset) => {
@@ -54,5 +61,52 @@ export const versionUtil = {
       })
 
     return matchedAsset ?? null
+  },
+
+  toDebInstallOutcome(params: {
+    exitCode: number | null
+    isSpawnFailed: boolean
+  }): 'fallback' | 'failed' | 'installed' {
+    const { exitCode, isSpawnFailed } = params
+
+    if (isSpawnFailed) {
+      return 'fallback'
+    }
+
+    if (exitCode === 0) {
+      return 'installed'
+    }
+
+    if (exitCode === DEB_INSTALL_CANCELLED_EXIT_CODE || exitCode === DEB_INSTALL_UNAUTHORIZED_EXIT_CODE) {
+      return 'fallback'
+    }
+
+    return 'failed'
+  },
+
+  toInstallType(params: { appImagePath: string | null; isPackaged: boolean; platform: string }): UpdateInstallType {
+    const { appImagePath, isPackaged, platform } = params
+
+    if (platform === 'darwin') {
+      return 'dmg'
+    }
+
+    if (platform === 'win32') {
+      return 'exe'
+    }
+
+    if (platform !== 'linux') {
+      return 'unsupported'
+    }
+
+    if (!isPackaged) {
+      return 'dev'
+    }
+
+    if (appImagePath !== null) {
+      return 'appImage'
+    }
+
+    return 'deb'
   },
 }

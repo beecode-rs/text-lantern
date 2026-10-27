@@ -130,10 +130,22 @@ export interface UpdateCheckError {
   statusCode: number | null
 }
 
-export interface UpdateDownloadResult {
-  didDownloadInstaller: boolean
-  filePath: string | null
+export type UpdateDownloadStatus = 'idle' | 'downloading' | 'installing' | 'restart-required' | 'completed' | 'error'
+
+export interface UpdateDownloadProgress {
+  errorMessage?: string
+  filePath?: string
+  receivedBytes: number
+  state: UpdateDownloadStatus
+  totalBytes: number
 }
+
+export interface UpdateDownloadResult {
+  filePath: string | null
+  outcome: 'installer-opened' | 'release-page' | 'restart-required'
+}
+
+export type UpdateInstallType = 'appImage' | 'deb' | 'dev' | 'dmg' | 'exe' | 'unsupported'
 
 export interface UpdateStatus {
   asset: UpdateAsset | null
@@ -173,7 +185,9 @@ export interface TtsApi {
   getUpdateStatus(): Promise<UpdateStatus>
   checkForUpdate(): Promise<UpdateStatus>
   downloadUpdate(): Promise<UpdateDownloadResult>
+  restartUpdate(): Promise<boolean>
   onUpdateChanged(cb: (status: UpdateStatus) => void): () => void
+  onDownloadChanged(cb: (progress: UpdateDownloadProgress) => void): () => void
 
   onConfigLog(cb: (line: string) => void): () => void
   onConfigProgress(cb: (p: { name: string; progress: number }) => void): () => void

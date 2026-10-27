@@ -1,12 +1,18 @@
-import { Download, RefreshCw } from 'lucide-react'
+import { Download, RefreshCw, RotateCcw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { api } from '#src/renderer/src/api'
 import iconUrl from '#src/renderer/src/asset/icon.png'
 import { SettingsPage } from '#src/renderer/src/component/ui/settings-page'
-import { useUpdateStore } from '#src/renderer/src/store/update'
+import { type UpdateFlowState, useUpdateStore } from '#src/renderer/src/store/update'
 import { languageCatalogSingleton } from '#src/shared/language/language-catalog'
-import { type Settings, type UpdateCheckError, UpdateErrorKind, type UpdateStatus } from '#src/shared/types'
+import {
+  type Settings,
+  type UpdateCheckError,
+  type UpdateDownloadResult,
+  UpdateErrorKind,
+  type UpdateStatus,
+} from '#src/shared/types'
 
 const credits = [
   { label: 'Piper TTS engine (piper-tts, GPL-3.0)', url: 'https://github.com/OHF-voice/piper1-gpl' },
@@ -34,12 +40,14 @@ const rateLimitResetFormatter = new Intl.DateTimeFormat(undefined, {
 export function AboutSettings(): React.JSX.Element {
   const [settings, setSettings] = useState<Settings | null>(null)
   const downloadError = useUpdateStore((s) => s.downloadError)
+  const downloadPercent = useUpdateStore((s) => s.downloadPercent)
   const downloadResult = useUpdateStore((s) => s.downloadResult)
-  const isDownloading = useUpdateStore((s) => s.isDownloading)
+  const downloadState = useUpdateStore((s) => s.downloadState)
   const status = useUpdateStore((s) => s.status)
   const check = useUpdateStore((s) => s.check)
   const download = useUpdateStore((s) => s.download)
   const init = useUpdateStore((s) => s.init)
+  const restart = useUpdateStore((s) => s.restart)
 
   useEffect(() => {
     void api.getSettings().then(setSettings)
@@ -48,6 +56,7 @@ export function AboutSettings(): React.JSX.Element {
 
   const bindingList = getBindingList({ settings })
   const isChecking = status !== null && status.state === 'checking'
+  const isUpdateBusy = downloadState === 'downloading' || downloadState === 'installing'
 
   return (
     <SettingsPage>
@@ -86,7 +95,7 @@ export function AboutSettings(): React.JSX.Element {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            disabled={isChecking || isDownloading}
+            disabled={isChecking || isUpdateBusy}
             onClick={() => {
               void check()
             }}
@@ -95,7 +104,7 @@ export function AboutSettings(): React.JSX.Element {
             <RefreshCw size={14} />
             {getCheckButtonLabel({ isChecking })}
           </button>
-          {getDownloadButton({ download, isDownloading, status })}
+          {getDownloadButton({ download, downloadPercent, downloadResult, downloadState, restart, status })}
         </div>
         {getDownloadOutcome({ downloadError, downloadResult })}
       </section>
@@ -149,31 +158,79 @@ export function AboutSettings(): React.JSX.Element {
 
   function getDownloadButton(params: {
     download: () => Promise<void>
-    isDownloading: boolean
+    downloadPercent: number | null
+    downloadResult: UpdateDownloadResult | null
+    downloadState: UpdateFlowState
+    restart: () => void
     status: UpdateStatus | null
   }): React.JSX.Element | null {
     if (params.status?.state !== 'updateAvailable') {
       return null
     }
 
+    const isRestartRequired = params.downloadState === 'restart-required'
+    const isUpdateBusy = params.downloadState === 'downloading' || params.downloadState === 'installing'
+    const handleDownloadClick = (): void => {
+      if (isRestartRequired) {
+        params.restart()
+
+        return
+      }
+
+      void params.download()
+    }
+
     return (
       <button
         type="button"
-        disabled={params.isDownloading}
-        onClick={() => {
-          void params.download()
-        }}
+        disabled={isUpdateBusy}
+        onClick={handleDownloadClick}
+        title={getDownloadButtonTitle({
+          currentVersion: params.status.currentVersion,
+          downloadedFilePath: params.downloadResult?.filePath ?? null,
+          downloadState: params.downloadState,
+          latestVersion: params.status.latestVersion ?? '',
+        })}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-logo-primary text-logo-stroke disabled:opacity-60"
       >
-        <Download size={14} />
-        {getDownloadButtonLabel({ isDownloading: params.isDownloading, status: params.status })}
+        {getDownloadButtonIcon({ isRestartRequired })}
+        {getDownloadButtonLabel({
+          downloadPercent: params.downloadPercent,
+          downloadState: params.downloadState,
+          status: params.status,
+        })}
       </button>
     )
   }
 
-  function getDownloadButtonLabel(params: { isDownloading: boolean; status: UpdateStatus }): string {
-    if (params.isDownloading) {
-      return 'Downloading…'
+  function getDownloadButtonIcon(params: { isRestartRequired: boolean }): React.JSX.Element {
+    if (params.isRestartRequired) {
+      return <RotateCcw size={14} />
+    }
+
+    return <Download size={14} />
+  }
+
+  function getDownloadButtonLabel(params: {
+    downloadPercent: number | null
+    downloadState: UpdateFlowState
+    status: UpdateStatus
+  }): string {
+    if (params.downloadState === 'downloading') {
+      if (params.downloadPercent === null) {
+        return 'Downloading…'
+      }
+
+      return `Downloading… ${String(params.downloadPercent)}%`
+    }
+    if (params.downloadState === 'installing') {
+      return 'Installing…'
+    }
+    if (params.downloadState === 'restart-required') {
+      return 'Restart to finish update'
+    }
+    if (params.downloadState === 'downloaded') {
+      return 'Opened installer'
     }
     if (params.status.asset === null) {
       return 'View release page'
@@ -182,9 +239,28 @@ export function AboutSettings(): React.JSX.Element {
     return `Download v${params.status.latestVersion ?? ''}`
   }
 
+  function getDownloadButtonTitle(params: {
+    currentVersion: string
+    downloadedFilePath: string | null
+    downloadState: UpdateFlowState
+    latestVersion: string
+  }): string {
+    if (params.downloadState === 'restart-required') {
+      return 'Update installed — restart to finish'
+    }
+    if (params.downloadState === 'installing') {
+      return 'Installing the downloaded update…'
+    }
+    if (params.downloadedFilePath !== null) {
+      return `Installer saved to ${params.downloadedFilePath}`
+    }
+
+    return `Version ${params.latestVersion} available (current ${params.currentVersion})`
+  }
+
   function getDownloadOutcome(params: {
     downloadError: string | null
-    downloadResult: { didDownloadInstaller: boolean; filePath: string | null } | null
+    downloadResult: UpdateDownloadResult | null
   }): React.JSX.Element | null {
     if (params.downloadError !== null) {
       return <p className="text-xs text-red-500 leading-relaxed">Download failed: {params.downloadError}</p>
@@ -192,7 +268,12 @@ export function AboutSettings(): React.JSX.Element {
     if (params.downloadResult === null) {
       return null
     }
-    if (params.downloadResult.didDownloadInstaller) {
+    if (params.downloadResult.outcome === 'restart-required') {
+      return (
+        <p className="text-xs text-text/55 leading-relaxed">Update installed — restart the app to finish updating.</p>
+      )
+    }
+    if (params.downloadResult.outcome === 'installer-opened') {
       return (
         <p className="text-xs text-text/55 leading-relaxed">Installer saved and opened from your Downloads folder.</p>
       )
