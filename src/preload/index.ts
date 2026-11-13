@@ -26,6 +26,12 @@ const api: TtsApi = {
   exportConfig: () => {
     return ipcRenderer.invoke('config:export')
   },
+  getGrammarLastResult: () => {
+    return ipcRenderer.invoke('grammar:getLastResult')
+  },
+  getGrammarStatus: () => {
+    return ipcRenderer.invoke('grammar:getStatus')
+  },
   getHistory: () => {
     return ipcRenderer.invoke('history:get')
   },
@@ -41,6 +47,9 @@ const api: TtsApi = {
   getUpdateStatus: () => {
     return ipcRenderer.invoke('update:getStatus')
   },
+  grammarCheck: () => {
+    return ipcRenderer.invoke('grammar:check')
+  },
   importConfig: () => {
     return ipcRenderer.invoke('config:import')
   },
@@ -50,6 +59,9 @@ const api: TtsApi = {
 
   isEngineInstalled: () => {
     return ipcRenderer.invoke('models:engineInstalled')
+  },
+  listGrammarModels: () => {
+    return ipcRenderer.invoke('grammar:listModels')
   },
   listVoices: () => {
     return ipcRenderer.invoke('models:list')
@@ -63,6 +75,8 @@ const api: TtsApi = {
   onConfigProgress: channelSubscriber.createForChannel({ channel: 'config:progress' }),
 
   onDownloadChanged: channelSubscriber.createForChannel({ channel: 'update:downloadChanged' }),
+
+  onGrammarStatus: channelSubscriber.createForChannel({ channel: 'grammar:status' }),
 
   onHistoryChanged: channelSubscriber.createForChannel({ channel: 'history:changed' }),
   onModelsLog: channelSubscriber.createForChannel({ channel: 'models:log' }),
@@ -83,6 +97,9 @@ const api: TtsApi = {
   playbackEnded: () => {
     return ipcRenderer.invoke('tts:playbackEnded')
   },
+  recheckGrammar: (params?: { text?: string }) => {
+    return ipcRenderer.invoke('grammar:recheck', params)
+  },
   removeHistoryEntry: (id) => {
     return ipcRenderer.invoke('history:remove', id)
   },
@@ -94,6 +111,9 @@ const api: TtsApi = {
   },
   searchVoices: (query) => {
     return ipcRenderer.invoke('models:search', query)
+  },
+  setGrammarIssueIgnored: (params) => {
+    return ipcRenderer.invoke('grammar:setIssueIgnored', params)
   },
   showSettings: () => {
     return ipcRenderer.invoke('app:showSettings')

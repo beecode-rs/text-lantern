@@ -2,6 +2,7 @@ import { AppFlow } from '@beecode/msh-app-boot'
 import type { BrowserWindow } from 'electron'
 
 import { DalLifeCycle } from '#src/main/app-boot/init/dal-life-cycle'
+import { grammarWindowLifeCycleSingleton } from '#src/main/app-boot/init/grammar-window-life-cycle'
 import { IpcLifeCycle } from '#src/main/app-boot/init/ipc-life-cycle'
 import { type MainWindowLifeCycle } from '#src/main/app-boot/init/main-window-life-cycle'
 import { PlatformLifeCycle } from '#src/main/app-boot/init/platform-life-cycle'
@@ -14,6 +15,9 @@ import { UserDataMigrationLifeCycle } from '#src/main/app-boot/init/user-data-mi
 export class ElectronApp extends AppFlow {
   constructor(params: { mainWindow: MainWindowLifeCycle }) {
     const { mainWindow } = params
+    const grammarWindowGetter = (): BrowserWindow | null => {
+      return grammarWindowLifeCycleSingleton().getWindow()
+    }
     const windowGetter = (): BrowserWindow | null => {
       return mainWindow.getWindow()
     }
@@ -22,10 +26,11 @@ export class ElectronApp extends AppFlow {
       new DalLifeCycle(),
       new PlatformLifeCycle(),
       mainWindow,
+      grammarWindowLifeCycleSingleton(),
       [
         new TrayLifeCycle({ windowGetter }),
         new ShortcutsLifeCycle(),
-        new IpcLifeCycle({ windowGetter }),
+        new IpcLifeCycle({ grammarWindowGetter, windowGetter }),
         new UpdateCheckLifeCycle(),
       ],
       new TtsLifeCycle(),

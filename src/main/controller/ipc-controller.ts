@@ -2,18 +2,21 @@ import { type BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import fs from 'node:fs'
 
 import { configBackupServiceSingleton } from '#src/main/business/service/config-backup-service'
+import { grammarServiceSingleton } from '#src/main/business/service/grammar-service'
 import { ttsServiceSingleton } from '#src/main/business/service/tts-service'
 import { updateServiceSingleton } from '#src/main/business/service/update-service'
 import { historyDalSingleton } from '#src/main/dal/history-dal'
 import { settingsDalSingleton } from '#src/main/dal/settings-dal'
 import { voiceModelDalSingleton } from '#src/main/dal/voice-model-dal'
 import { kokoroEngineSingleton } from '#src/main/lib/kokoro/engine'
+import { llmProviderRegistrySingleton } from '#src/main/lib/llm/llm-provider-registry'
 import { piperEngineSingleton } from '#src/main/lib/piper/engine'
 import { shortcutsSingleton } from '#src/main/lib/shortcuts'
 import { traySingleton } from '#src/main/lib/tray'
 import { constant } from '#src/main/util/constants'
 import { pathUtil } from '#src/main/util/path-util'
 import {
+  type GrammarCheckStatus,
   type HistoryEntry,
   type Lang,
   MacPermission,
@@ -43,6 +46,12 @@ const handledChannels = [
   'tts:speak',
   'tts:stop',
   'tts:playbackEnded',
+  'grammar:check',
+  'grammar:recheck',
+  'grammar:getStatus',
+  'grammar:getLastResult',
+  'grammar:setIssueIgnored',
+  'grammar:listModels',
   'shortcuts:reregister',
   'app:showSettings',
   'permissions:openMacSettingsPane',
@@ -60,9 +69,15 @@ const handledChannels = [
 let teardownFns: (() => void)[] = []
 
 export const ipcController = {
-  register(params: { getWindow: () => BrowserWindow | null }): void {
+  register(params: { getGrammarWindow: () => BrowserWindow | null; getWindow: () => BrowserWindow | null }): void {
     const send = (channel: string, ...args: unknown[]): void => {
       params.getWindow()?.webContents.send(channel, ...args)
+    }
+    const sendToEachWindow = (channel: string, payload: unknown): void => {
+      const windows = [params.getWindow(), params.getGrammarWindow()]
+      windows.forEach((win) => {
+        win?.webContents.send(channel, payload)
+      })
     }
 
     ipcMain.handle('settings:get', () => {
@@ -178,6 +193,32 @@ export const ipcController = {
       ttsServiceSingleton().playbackEnded()
 
       return true
+    })
+
+    ipcMain.handle('grammar:check', () => {
+      void grammarServiceSingleton().checkSelection()
+
+      return true
+    })
+    ipcMain.handle('grammar:recheck', (_e, params?: { text?: string }) => {
+      grammarServiceSingleton().recheck(params ?? {})
+
+      return true
+    })
+    ipcMain.handle('grammar:getStatus', () => {
+      return grammarServiceSingleton().getStatus()
+    })
+    ipcMain.handle('grammar:getLastResult', () => {
+      return grammarServiceSingleton().getLastResult()
+    })
+    ipcMain.handle('grammar:setIssueIgnored', (_e, params: { isIgnored: boolean; issueIndex: number }) => {
+      return grammarServiceSingleton().setIssueIgnored(params)
+    })
+    ipcMain.handle('grammar:listModels', async () => {
+      const settings = settingsDalSingleton().get()
+      const provider = llmProviderRegistrySingleton().providerFor({ provider: settings.grammarLlmProvider })
+
+      return await provider.listModels()
     })
 
     ipcMain.handle('shortcuts:reregister', () => {
@@ -298,7 +339,7 @@ export const ipcController = {
     })
 
     const onTtsStatus = (s: unknown): void => {
-      send('tts:status', s)
+      sendToEachWindow('tts:status', s)
     }
     const onTtsAudioStart = (p: { sampleRate: number; voice: string }): void => {
       send('tts:audioStart', p)
@@ -318,6 +359,11 @@ export const ipcController = {
     ttsServiceSingleton().events.on('audioEnd', onTtsAudioEnd)
     ttsServiceSingleton().events.on('stopPlayback', onTtsStopPlayback)
 
+    const onGrammarStatus = (s: GrammarCheckStatus): void => {
+      sendToEachWindow('grammar:status', s)
+    }
+    grammarServiceSingleton().events.on('status', onGrammarStatus)
+
     const onHistoryChanged = (entries: HistoryEntry[]): void => {
       send('history:changed', entries)
     }
@@ -327,7 +373,7 @@ export const ipcController = {
       shortcutsSingleton().registerAll()
       traySingleton().refreshMenu()
       historyDalSingleton().prune()
-      send('settings:changed', settingsDalSingleton().get())
+      sendToEachWindow('settings:changed', settingsDalSingleton().get())
     })
 
     const onUpdateChanged = (status: UpdateStatus): void => {
@@ -355,6 +401,9 @@ export const ipcController = {
       },
       () => {
         ttsServiceSingleton().events.off('stopPlayback', onTtsStopPlayback)
+      },
+      () => {
+        grammarServiceSingleton().events.off('status', onGrammarStatus)
       },
       () => {
         historyDalSingleton().events.off('changed', onHistoryChanged)

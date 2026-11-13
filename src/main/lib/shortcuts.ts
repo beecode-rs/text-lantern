@@ -1,6 +1,7 @@
 import { singletonPattern } from '@beecode/msh-util/singleton/pattern'
 import { app, globalShortcut } from 'electron'
 
+import { grammarServiceSingleton } from '#src/main/business/service/grammar-service'
 import { ttsServiceSingleton } from '#src/main/business/service/tts-service'
 import { settingsDalSingleton } from '#src/main/dal/settings-dal'
 import { logger } from '#src/main/util/logger'
@@ -37,6 +38,15 @@ export class Shortcuts {
           void ttsServiceSingleton().stop()
         },
         label: 'stop',
+      })
+    }
+    if (settings.grammarShortcut) {
+      this._registerShortcut({
+        accel: settings.grammarShortcut,
+        action: () => {
+          void grammarServiceSingleton().checkSelection()
+        },
+        label: 'grammar',
       })
     }
   }

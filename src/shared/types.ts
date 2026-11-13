@@ -18,6 +18,14 @@ export interface Settings {
   fallbackLang: string
   autoShortcut: string
   stopShortcut: string
+  grammarShortcut: string
+  grammarLlmProvider: LlmProviderId
+  grammarLlmBaseUrl: string
+  grammarLlmApiKey: string
+  grammarLlmModel: string
+  shouldFixSerbianDiacritics: boolean
+  grammarPromptEn: string
+  grammarPromptSr: string
   rate: number
   playbackStartDelayMs: number
   shouldBleepWhileLoadingModel: boolean
@@ -34,6 +42,18 @@ export interface Settings {
 export enum TtsProvider {
   KOKORO = 'KOKORO',
   PIPER = 'PIPER',
+}
+
+export enum LlmProvider {
+  ANTHROPIC = 'ANTHROPIC',
+  OLLAMA = 'OLLAMA',
+}
+
+export type LlmProviderId = LlmProvider
+
+export interface LlmModel {
+  id: string
+  name: string
 }
 
 export interface Voice {
@@ -80,6 +100,42 @@ export type TtsStatus =
   | { state: TtsState.READING; voice: string }
   | { state: TtsState.ERROR; error: string; missingMacPermissions?: MacPermission[] }
 
+export interface GrammarIssue {
+  explanation: string
+  isIgnored: boolean
+  /**
+   * Start offset of this issue's span in `correctedText`: the `suggestion` text while applied,
+   * the `original` text while ignored. Null when the span cannot be located, which makes the
+   * issue non-reversible in the UI.
+   */
+  location: number | null
+  original: string
+  suggestion: string
+}
+
+export interface GrammarCheckResult {
+  langCode: string
+  correctedText: string
+  issues: GrammarIssue[]
+  model: string
+  provider: LlmProvider
+}
+
+export enum GrammarCheckState {
+  IDLE = 'IDLE',
+  GRABBING = 'GRABBING',
+  CHECKING = 'CHECKING',
+  DONE = 'DONE',
+  ERROR = 'ERROR',
+}
+
+export type GrammarCheckStatus =
+  | { state: GrammarCheckState.IDLE }
+  | { state: GrammarCheckState.GRABBING }
+  | { state: GrammarCheckState.CHECKING; model: string }
+  | { state: GrammarCheckState.DONE; result: GrammarCheckResult }
+  | { state: GrammarCheckState.ERROR; error: string }
+
 export interface HistoryEntry {
   id: string
   text: string
@@ -95,7 +151,7 @@ export interface ConfigBackup {
   app: string
   schemaVersion: number
   exportedAt: number
-  settings: Settings
+  settings: Omit<Settings, 'grammarLlmApiKey'>
   voices: string[]
 }
 
@@ -175,6 +231,13 @@ export interface TtsApi {
   stop(): Promise<boolean>
   playbackEnded(): Promise<boolean>
 
+  grammarCheck(): Promise<boolean>
+  recheckGrammar(params?: { text?: string }): Promise<boolean>
+  getGrammarStatus(): Promise<GrammarCheckStatus>
+  getGrammarLastResult(): Promise<GrammarCheckResult | null>
+  setGrammarIssueIgnored(params: { isIgnored: boolean; issueIndex: number }): Promise<GrammarCheckResult | null>
+  listGrammarModels(): Promise<LlmModel[]>
+
   reregisterShortcuts(): Promise<boolean>
   showSettings(): Promise<void>
   openMacSettingsPane(pane: MacPermission): Promise<boolean>
@@ -198,6 +261,7 @@ export interface TtsApi {
 
   onSettingsChanged(cb: (s: Settings) => void): () => void
   onTtsStatus(cb: (s: TtsStatus) => void): () => void
+  onGrammarStatus(cb: (s: GrammarCheckStatus) => void): () => void
   onAudioStart(cb: (p: { sampleRate: number; voice: string }) => void): () => void
   onAudioChunk(cb: (samples: Uint8Array) => void): () => void
   onAudioEnd(cb: () => void): () => void

@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import { constant } from '#src/main/util/constants'
 import { logger } from '#src/main/util/logger'
 import { pathUtil } from '#src/main/util/path-util'
-import { type LanguageBinding, type Settings, TtsProvider } from '#src/shared/types'
+import { type LanguageBinding, LlmProvider, type Settings, TtsProvider } from '#src/shared/types'
 import { DEFAULT_ENGLISH_VOICE_NAME, DEFAULT_SERBIAN_VOICE_NAME } from '#src/shared/voice/default-voice'
 import { voiceIdParser } from '#src/shared/voice/voice-id'
 
@@ -185,10 +185,18 @@ export class SettingsDal {
     const stopShortcut = parsed.stopShortcut ?? parsed.shortcuts?.stop ?? defaults.stopShortcut
     const rate = this._migrateLegacyRate({ rate: parsed.rate, schemaVersion: parsed.schemaVersion }) ?? defaults.rate
     const fallbackLang = this._resolveFallbackLang({ defaults, legacyBindings, parsed })
+    const grammarLlmProvider = this._resolveLlmProvider({ defaults, parsed })
 
     return {
       autoShortcut,
       fallbackLang,
+      grammarLlmApiKey: parsed.grammarLlmApiKey ?? defaults.grammarLlmApiKey,
+      grammarLlmBaseUrl: parsed.grammarLlmBaseUrl ?? defaults.grammarLlmBaseUrl,
+      grammarLlmModel: parsed.grammarLlmModel ?? defaults.grammarLlmModel,
+      grammarLlmProvider,
+      grammarPromptEn: parsed.grammarPromptEn ?? defaults.grammarPromptEn,
+      grammarPromptSr: parsed.grammarPromptSr ?? defaults.grammarPromptSr,
+      grammarShortcut: parsed.grammarShortcut ?? defaults.grammarShortcut,
       historyLimit: parsed.historyLimit ?? defaults.historyLimit,
       languageBindings: bindings,
       maxChars: parsed.maxChars ?? defaults.maxChars,
@@ -198,6 +206,7 @@ export class SettingsDal {
       shouldBleepWhileLoadingModel: parsed.shouldBleepWhileLoadingModel ?? defaults.shouldBleepWhileLoadingModel,
       shouldCleanText: parsed.shouldCleanText ?? parsed.cleanText ?? defaults.shouldCleanText,
       shouldCloseToTray: parsed.shouldCloseToTray ?? defaults.shouldCloseToTray,
+      shouldFixSerbianDiacritics: parsed.shouldFixSerbianDiacritics ?? defaults.shouldFixSerbianDiacritics,
       shouldStartHidden: parsed.shouldStartHidden ?? parsed.startHidden ?? defaults.shouldStartHidden,
       shouldStripBrackets: parsed.shouldStripBrackets ?? parsed.stripBrackets ?? defaults.shouldStripBrackets,
       stopShortcut,
@@ -218,6 +227,21 @@ export class SettingsDal {
     }
 
     return params.defaults.fallbackLang
+  }
+
+  protected _resolveLlmProvider(params: {
+    defaults: Settings
+    parsed: Partial<Settings> & LegacySettings
+  }): LlmProvider {
+    if (this._isLlmProvider(params.parsed.grammarLlmProvider)) {
+      return params.parsed.grammarLlmProvider
+    }
+
+    return params.defaults.grammarLlmProvider
+  }
+
+  protected _isLlmProvider(value: unknown): value is LlmProvider {
+    return value === LlmProvider.ANTHROPIC || value === LlmProvider.OLLAMA
   }
 
   protected _persistSettingsToDisk(): void {

@@ -1,6 +1,7 @@
 import { type IpcRendererEvent, ipcRenderer } from 'electron'
 
 import {
+  type GrammarCheckStatus,
   type HistoryEntry,
   type Settings,
   type TtsStatus,
@@ -11,6 +12,7 @@ import {
 export type ChannelPayloads = {
   'config:log': string
   'config:progress': { name: string; progress: number }
+  'grammar:status': GrammarCheckStatus
   'history:changed': HistoryEntry[]
   'models:log': string
   'models:progress': { id: string; name: string; progress: number }

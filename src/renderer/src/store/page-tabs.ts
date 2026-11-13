@@ -4,6 +4,7 @@ import { TtsProvider } from '#src/shared/types'
 
 export enum GeneralTab {
   BACKUP = 'BACKUP',
+  GRAMMAR = 'GRAMMAR',
   SPEECH = 'SPEECH',
   WINDOW = 'WINDOW',
 }

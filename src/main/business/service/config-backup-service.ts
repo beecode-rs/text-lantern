@@ -11,6 +11,7 @@ import { logger } from '#src/main/util/logger'
 import {
   type ConfigBackup,
   type LanguageBinding,
+  LlmProvider,
   type Settings,
   type ThemePreference,
   TtsProvider,
@@ -66,13 +67,19 @@ export class ConfigBackupService {
       app: constant().configBackup.appIdentifier,
       exportedAt: Date.now(),
       schemaVersion: constant().configBackup.currentSchemaVersion,
-      settings: settingsDalSingleton().get(),
+      settings: this._settingsForBackup({ settings: settingsDalSingleton().get() }),
       voices: voiceModelDalSingleton()
         .listVoices()
         .map((voice) => {
           return voiceIdParser.build({ name: voice.name, provider: voice.provider })
         }),
     }
+  }
+
+  protected _settingsForBackup(params: { settings: Settings }): Omit<Settings, 'grammarLlmApiKey'> {
+    const { grammarLlmApiKey: _omittedApiKey, ...settings } = params.settings
+
+    return settings
   }
 
   protected _readBackupFile(params: { filePath: string }): ParsedBackup {
@@ -217,6 +224,27 @@ export class ConfigBackupService {
     if (this._isString(params.settings.stopShortcut)) {
       patch.stopShortcut = params.settings.stopShortcut
     }
+    if (this._isString(params.settings.grammarShortcut)) {
+      patch.grammarShortcut = params.settings.grammarShortcut
+    }
+    if (this._isLlmProvider(params.settings.grammarLlmProvider)) {
+      patch.grammarLlmProvider = params.settings.grammarLlmProvider
+    }
+    if (this._isString(params.settings.grammarLlmBaseUrl)) {
+      patch.grammarLlmBaseUrl = params.settings.grammarLlmBaseUrl
+    }
+    if (this._isString(params.settings.grammarLlmModel)) {
+      patch.grammarLlmModel = params.settings.grammarLlmModel
+    }
+    if (this._isBoolean(params.settings.shouldFixSerbianDiacritics)) {
+      patch.shouldFixSerbianDiacritics = params.settings.shouldFixSerbianDiacritics
+    }
+    if (this._isString(params.settings.grammarPromptEn)) {
+      patch.grammarPromptEn = params.settings.grammarPromptEn
+    }
+    if (this._isString(params.settings.grammarPromptSr)) {
+      patch.grammarPromptSr = params.settings.grammarPromptSr
+    }
     if (this._isNumber(params.settings.rate)) {
       patch.rate = this._clampedRate({ rate: params.settings.rate })
     }
@@ -330,6 +358,10 @@ export class ConfigBackupService {
 
   protected _isBoolean(value: unknown): value is boolean {
     return typeof value === 'boolean'
+  }
+
+  protected _isLlmProvider(value: unknown): value is LlmProvider {
+    return value === LlmProvider.ANTHROPIC || value === LlmProvider.OLLAMA
   }
 }
 

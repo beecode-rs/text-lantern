@@ -49,6 +49,7 @@ export function LanguagesSettings(): React.JSX.Element {
     }),
     settings.autoShortcut,
     settings.stopShortcut,
+    settings.grammarShortcut,
   ]
     .filter((accel) => {
       return accel !== ''

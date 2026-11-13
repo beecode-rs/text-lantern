@@ -4,7 +4,7 @@ import { app } from 'electron'
 
 import packageJson from '#packageJson' with { type: 'json' }
 import { objectUtil } from '#src/main/util/object-util'
-import type { Settings } from '#src/shared/types'
+import { LlmProvider, type Settings } from '#src/shared/types'
 import { DEFAULT_ENGLISH_VOICE_NAME, DEFAULT_SERBIAN_VOICE_NAME } from '#src/shared/voice/default-voice'
 
 export const APP_NAME = 'Text Lantern'
@@ -27,6 +27,13 @@ export const constant = singletonPattern(() => {
   const defaultSettings: Settings = {
     autoShortcut: 'CommandOrControl+Shift+R',
     fallbackLang: '',
+    grammarLlmApiKey: '',
+    grammarLlmBaseUrl: '',
+    grammarLlmModel: '',
+    grammarLlmProvider: LlmProvider.ANTHROPIC,
+    grammarPromptEn: '',
+    grammarPromptSr: '',
+    grammarShortcut: 'CommandOrControl+Shift+G',
     historyLimit: defaultHistoryEntryLimit,
     languageBindings: [],
     maxChars: 6000,
@@ -36,6 +43,7 @@ export const constant = singletonPattern(() => {
     shouldBleepWhileLoadingModel: true,
     shouldCleanText: true,
     shouldCloseToTray: false,
+    shouldFixSerbianDiacritics: true,
     shouldStartHidden: true,
     shouldStripBrackets: false,
     stopShortcut: 'CommandOrControl+Shift+Q',
@@ -47,6 +55,9 @@ export const constant = singletonPattern(() => {
       appIdentifier: packageJson.name,
       currentSchemaVersion: 1,
       defaultFileName: 'text-lantern-config.json',
+    },
+    grammar: {
+      maxTextChars: 12000,
     },
     history: {
       defaultEntryLimit: defaultHistoryEntryLimit,
@@ -61,6 +72,11 @@ export const constant = singletonPattern(() => {
         { path: 'tokenizer_config.json', sizeBytes: 113 },
         { path: 'onnx/model_quantized.onnx', sizeBytes: 92361116 },
       ],
+    },
+    llm: {
+      bodyExcerptChars: 200,
+      completeTimeoutMs: 30000,
+      listTimeoutMs: 10000,
     },
     logger: {
       defaultLogLevel: LogLevel.INFO,

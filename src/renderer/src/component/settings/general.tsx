@@ -1,6 +1,7 @@
-import { AppWindow, DatabaseBackup, Volume2 } from 'lucide-react'
+import { AppWindow, DatabaseBackup, SpellCheck, Volume2 } from 'lucide-react'
 
 import { GeneralTabBackup } from '#src/renderer/src/component/settings/general-tab-backup'
+import { GeneralTabGrammar } from '#src/renderer/src/component/settings/general-tab-grammar'
 import { GeneralTabSpeech } from '#src/renderer/src/component/settings/general-tab-speech'
 import { GeneralTabWindow } from '#src/renderer/src/component/settings/general-tab-window'
 import { SettingsPage } from '#src/renderer/src/component/ui/settings-page'
@@ -10,6 +11,7 @@ import { GeneralTab, usePageTabsStore } from '#src/renderer/src/store/page-tabs'
 const TABS: TabItem<GeneralTab>[] = [
   { icon: AppWindow, id: GeneralTab.WINDOW, label: 'Window' },
   { icon: Volume2, id: GeneralTab.SPEECH, label: 'Speech' },
+  { icon: SpellCheck, id: GeneralTab.GRAMMAR, label: 'Grammar' },
   { icon: DatabaseBackup, id: GeneralTab.BACKUP, label: 'Backup' },
 ]
 
@@ -21,7 +23,7 @@ export function GeneralSettings(): React.JSX.Element {
     <SettingsPage>
       <header>
         <h1 className="text-xl font-semibold">Settings</h1>
-        <p className="text-sm text-text/55 mt-1">Appearance, window behavior, speech and backups.</p>
+        <p className="text-sm text-text/55 mt-1">Appearance, window behavior, speech, grammar and backups.</p>
       </header>
 
       <TabBar tabs={TABS} activeId={activeTab} onChange={setActiveTab} />
@@ -37,6 +39,9 @@ export function GeneralSettings(): React.JSX.Element {
       }
       case GeneralTab.SPEECH: {
         return <GeneralTabSpeech />
+      }
+      case GeneralTab.GRAMMAR: {
+        return <GeneralTabGrammar />
       }
       case GeneralTab.BACKUP: {
         return <GeneralTabBackup />
