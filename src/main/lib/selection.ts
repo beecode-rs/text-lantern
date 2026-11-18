@@ -1,8 +1,9 @@
 import { typeUtil } from '@beecode/msh-util/type-util'
-import { clipboard, systemPreferences } from 'electron'
+import { app, clipboard, systemPreferences } from 'electron'
 import { execFile } from 'node:child_process'
 
 import { APP_NAME, constant } from '#src/main/util/constants'
+import { logger } from '#src/main/util/logger'
 import { MacPermission } from '#src/shared/types'
 
 const COPY_MAX_POLLS = Math.round(constant().textSelection.copyTimeoutMs / constant().textSelection.copyPollStepMs)
@@ -161,17 +162,26 @@ export class Selection {
 
   protected _permissionInstruction(params: { pane: MacPermission }): string {
     const { pane } = params
+    const grantee = this._permissionGrantee()
     switch (pane) {
       case MacPermission.ACCESSIBILITY: {
-        return `Enable ${APP_NAME} in System Settings → Privacy & Security → Accessibility.`
+        return `Enable ${grantee} in System Settings → Privacy & Security → Accessibility.`
       }
       case MacPermission.AUTOMATION: {
-        return `In System Settings → Privacy & Security → Automation → ${APP_NAME}, enable System Events.`
+        return `In System Settings → Privacy & Security → Automation → ${grantee}, enable System Events.`
       }
       default: {
         throw typeUtil.exhaustiveError('unknown mac permission', pane)
       }
     }
+  }
+
+  protected _permissionGrantee(): string {
+    if (app.isPackaged) {
+      return APP_NAME
+    }
+
+    return 'the terminal app that started pnpm dev'
   }
 
   protected _probeAccessibility(): MacPermission | undefined {
@@ -188,9 +198,11 @@ export class Selection {
 
       return undefined
     } catch (error) {
-      if (!this._isPermissionDenied({ stderr: this._stderrFrom(error) })) {
-        return undefined
+      const stderr = this._stderrFrom(error)
+      if (this._isPermissionDenied({ stderr })) {
+        return MacPermission.AUTOMATION
       }
+      logger().warn(`Automation probe failed for an unknown reason: ${stderr}`)
 
       return MacPermission.AUTOMATION
     }

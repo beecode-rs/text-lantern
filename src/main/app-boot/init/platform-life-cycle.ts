@@ -1,7 +1,8 @@
 import { LifeCycle } from '@beecode/msh-app-boot'
-import { app, nativeImage, systemPreferences } from 'electron'
+import { app, nativeImage } from 'electron'
 
-import { Selection } from '#src/main/lib/selection'
+import { permissionServiceSingleton } from '#src/main/business/service/permission-service'
+import { logger } from '#src/main/util/logger'
 import { pathUtil } from '#src/main/util/path-util'
 
 export class PlatformLifeCycle extends LifeCycle {
@@ -10,12 +11,11 @@ export class PlatformLifeCycle extends LifeCycle {
   }
 
   protected _createFn(): Promise<void> {
-    if (process.platform === 'darwin') {
-      void systemPreferences.isTrustedAccessibilityClient(true)
-      void new Selection().warmUp().catch(() => {
-        return undefined
+    void permissionServiceSingleton()
+      .requestMacPermissionsOnLaunch()
+      .catch((error: unknown) => {
+        logger().warn('Requesting macOS permissions on launch failed:', error)
       })
-    }
     this._applyDockIcon()
 
     return Promise.resolve()

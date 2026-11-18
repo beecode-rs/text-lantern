@@ -84,8 +84,11 @@ export const constant = singletonPattern(() => {
     macPermissions: {
       accessibilitySettingsUrl:
         'x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Accessibility',
+      accessibilityTccService: 'Accessibility',
       automationSettingsUrl:
         'x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Automation',
+      automationTccService: 'AppleEvents',
+      fallbackBundleId: 'com.text-lantern.app',
     },
     mainWindow: {
       darkBackground: '#12131C',

@@ -85,6 +85,16 @@ export enum MacPermission {
   AUTOMATION = 'AUTOMATION',
 }
 
+export interface MacPermissionReport {
+  isDevBuild: boolean
+  missingMacPermissions: MacPermission[]
+}
+
+export interface MacPermissionResetResult {
+  errorMessage: string | null
+  success: boolean
+}
+
 export enum TtsState {
   IDLE = 'IDLE',
   LISTENING = 'LISTENING',
@@ -241,6 +251,8 @@ export interface TtsApi {
   reregisterShortcuts(): Promise<boolean>
   showSettings(): Promise<void>
   openMacSettingsPane(pane: MacPermission): Promise<boolean>
+  checkMacPermissions(): Promise<MacPermissionReport>
+  resetMacPermissions(): Promise<MacPermissionResetResult>
 
   exportConfig(): Promise<boolean>
   importConfig(): Promise<ConfigImportResult>

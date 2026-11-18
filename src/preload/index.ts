@@ -7,6 +7,9 @@ const api: TtsApi = {
   checkForUpdate: () => {
     return ipcRenderer.invoke('update:check')
   },
+  checkMacPermissions: () => {
+    return ipcRenderer.invoke('permissions:checkMac')
+  },
   clearHistory: () => {
     return ipcRenderer.invoke('history:clear')
   },
@@ -105,6 +108,9 @@ const api: TtsApi = {
   },
   reregisterShortcuts: () => {
     return ipcRenderer.invoke('shortcuts:reregister')
+  },
+  resetMacPermissions: () => {
+    return ipcRenderer.invoke('permissions:resetMac')
   },
   restartUpdate: () => {
     return ipcRenderer.invoke('update:restart')

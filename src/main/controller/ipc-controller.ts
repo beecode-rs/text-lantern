@@ -3,6 +3,7 @@ import fs from 'node:fs'
 
 import { configBackupServiceSingleton } from '#src/main/business/service/config-backup-service'
 import { grammarServiceSingleton } from '#src/main/business/service/grammar-service'
+import { permissionServiceSingleton } from '#src/main/business/service/permission-service'
 import { ttsServiceSingleton } from '#src/main/business/service/tts-service'
 import { updateServiceSingleton } from '#src/main/business/service/update-service'
 import { historyDalSingleton } from '#src/main/dal/history-dal'
@@ -55,6 +56,8 @@ const handledChannels = [
   'shortcuts:reregister',
   'app:showSettings',
   'permissions:openMacSettingsPane',
+  'permissions:checkMac',
+  'permissions:resetMac',
   'update:getStatus',
   'update:check',
   'update:download',
@@ -169,6 +172,13 @@ export const ipcController = {
       await shell.openExternal(paneUrls[pane])
 
       return true
+    })
+
+    ipcMain.handle('permissions:checkMac', () => {
+      return permissionServiceSingleton().checkMacPermissions()
+    })
+    ipcMain.handle('permissions:resetMac', () => {
+      return permissionServiceSingleton().resetMacPermissions()
     })
 
     ipcMain.handle('tts:getStatus', () => {

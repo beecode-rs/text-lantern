@@ -24,7 +24,15 @@ asarUnpack:
   - '**/node_modules/onnxruntime-node/**'
 mac:
   category: public.app-category.utilities
-  identity: null
+  # Ad-hoc sign ("-") so the bundle gets a real code identity
+  # (com.text-lantern.app, Info.plist bound, resources sealed). With no signature
+  # macOS sees the process as "Electron" and never matches the Accessibility
+  # grant made in System Settings. Hardened runtime is off because it is only
+  # needed for notarization and breaks library validation under ad-hoc signing.
+  identity: '-'
+  hardenedRuntime: false
+  extendInfo:
+    NSAppleEventsUsageDescription: Text Lantern uses System Events to copy the selected text so it can read it aloud.
   x64ArchFiles: '**/node_modules/onnxruntime-node/**'
   artifactName: Text-Lantern-${version}-${arch}.dmg
   target:

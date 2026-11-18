@@ -1,23 +1,27 @@
-import { AppWindow, DatabaseBackup, SpellCheck, Volume2 } from 'lucide-react'
+import { AppWindow, DatabaseBackup, ShieldCheck, SpellCheck, Volume2 } from 'lucide-react'
 
 import { GeneralTabBackup } from '#src/renderer/src/component/settings/general-tab-backup'
 import { GeneralTabGrammar } from '#src/renderer/src/component/settings/general-tab-grammar'
+import { GeneralTabPermissions } from '#src/renderer/src/component/settings/general-tab-permissions'
 import { GeneralTabSpeech } from '#src/renderer/src/component/settings/general-tab-speech'
 import { GeneralTabWindow } from '#src/renderer/src/component/settings/general-tab-window'
 import { SettingsPage } from '#src/renderer/src/component/ui/settings-page'
 import { TabBar, type TabItem } from '#src/renderer/src/component/ui/tab-bar'
+import { platformSingleton } from '#src/renderer/src/lib/platform'
 import { GeneralTab, usePageTabsStore } from '#src/renderer/src/store/page-tabs'
 
 const TABS: TabItem<GeneralTab>[] = [
   { icon: AppWindow, id: GeneralTab.WINDOW, label: 'Window' },
   { icon: Volume2, id: GeneralTab.SPEECH, label: 'Speech' },
   { icon: SpellCheck, id: GeneralTab.GRAMMAR, label: 'Grammar' },
+  { icon: ShieldCheck, id: GeneralTab.PERMISSIONS, label: 'Permissions' },
   { icon: DatabaseBackup, id: GeneralTab.BACKUP, label: 'Backup' },
 ]
 
 export function GeneralSettings(): React.JSX.Element {
   const activeTab = usePageTabsStore((s) => s.generalTab)
   const setActiveTab = usePageTabsStore((s) => s.setGeneralTab)
+  const tabs = platformSingleton().isMac() ? TABS : TABS.filter((t) => t.id !== GeneralTab.PERMISSIONS)
 
   return (
     <SettingsPage>
@@ -26,7 +30,7 @@ export function GeneralSettings(): React.JSX.Element {
         <p className="text-sm text-text/55 mt-1">Appearance, window behavior, speech, grammar and backups.</p>
       </header>
 
-      <TabBar tabs={TABS} activeId={activeTab} onChange={setActiveTab} />
+      <TabBar tabs={tabs} activeId={activeTab} onChange={setActiveTab} />
 
       {getActiveTabPanel({ activeTab })}
     </SettingsPage>
@@ -42,6 +46,9 @@ export function GeneralSettings(): React.JSX.Element {
       }
       case GeneralTab.GRAMMAR: {
         return <GeneralTabGrammar />
+      }
+      case GeneralTab.PERMISSIONS: {
+        return <GeneralTabPermissions />
       }
       case GeneralTab.BACKUP: {
         return <GeneralTabBackup />
