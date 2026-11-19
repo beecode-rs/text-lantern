@@ -18,6 +18,7 @@ export interface Settings {
   fallbackLang: string
   autoShortcut: string
   stopShortcut: string
+  isGrammarEnabled: boolean
   grammarShortcut: string
   grammarLlmProvider: LlmProviderId
   grammarLlmBaseUrl: string

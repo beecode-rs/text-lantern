@@ -40,7 +40,7 @@ export class Shortcuts {
         label: 'stop',
       })
     }
-    if (settings.grammarShortcut) {
+    if (settings.isGrammarEnabled && settings.grammarShortcut) {
       this._registerShortcut({
         accel: settings.grammarShortcut,
         action: () => {

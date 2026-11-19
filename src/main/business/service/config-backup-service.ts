@@ -227,6 +227,9 @@ export class ConfigBackupService {
     if (this._isString(params.settings.grammarShortcut)) {
       patch.grammarShortcut = params.settings.grammarShortcut
     }
+    if (this._isBoolean(params.settings.isGrammarEnabled)) {
+      patch.isGrammarEnabled = params.settings.isGrammarEnabled
+    }
     if (this._isLlmProvider(params.settings.grammarLlmProvider)) {
       patch.grammarLlmProvider = params.settings.grammarLlmProvider
     }

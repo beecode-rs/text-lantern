@@ -30,6 +30,7 @@ const defaultSettings: Settings = {
   grammarPromptSr: '',
   grammarShortcut: 'CommandOrControl+Shift+G',
   historyLimit: 5,
+  isGrammarEnabled: true,
   languageBindings: [],
   maxChars: 6000,
   playbackStartDelayMs: 500,
@@ -75,6 +76,7 @@ describe('SettingsDal._buildSettings grammar settings', () => {
     const built = new TestSettingsDal().buildSettingsForTest({ defaults: defaultSettings, parsed: legacyParsed })
 
     expect(built.grammarShortcut).toBe('CommandOrControl+Shift+G')
+    expect(built.isGrammarEnabled).toBe(true)
     expect(built.grammarLlmProvider).toBe(LlmProvider.ANTHROPIC)
     expect(built.grammarLlmBaseUrl).toBe('')
     expect(built.grammarLlmApiKey).toBe('')
@@ -100,11 +102,13 @@ describe('SettingsDal._buildSettings grammar settings', () => {
       grammarPromptEn: 'EN override prompt',
       grammarPromptSr: 'SR override prompt',
       grammarShortcut: 'Alt+G',
+      isGrammarEnabled: false,
       shouldFixSerbianDiacritics: false,
     }
     const built = new TestSettingsDal().buildSettingsForTest({ defaults: defaultSettings, parsed })
 
     expect(built.grammarShortcut).toBe('Alt+G')
+    expect(built.isGrammarEnabled).toBe(false)
     expect(built.grammarLlmProvider).toBe(LlmProvider.OLLAMA)
     expect(built.grammarLlmBaseUrl).toBe('http://localhost:11434')
     expect(built.grammarLlmApiKey).toBe('sk-test-key')

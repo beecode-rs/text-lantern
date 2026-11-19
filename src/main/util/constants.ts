@@ -35,6 +35,7 @@ export const constant = singletonPattern(() => {
     grammarPromptSr: '',
     grammarShortcut: 'CommandOrControl+Shift+G',
     historyLimit: defaultHistoryEntryLimit,
+    isGrammarEnabled: true,
     languageBindings: [],
     maxChars: 6000,
     playbackStartDelayMs: 500,

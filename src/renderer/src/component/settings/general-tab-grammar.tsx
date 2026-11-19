@@ -59,139 +59,167 @@ export function GeneralTabGrammar(): React.JSX.Element {
 
   return (
     <>
-      <SettingsGroup title="Shortcut" description="Grab the selected text and review the corrections in a popup.">
-        <Row title="Check selection shortcut" description="Opens the grammar popup with the checked selection.">
-          <ShortcutInput
-            value={settings.grammarShortcut}
-            hasConflict={hasConflictFor(settings.grammarShortcut)}
-            onChange={(accel) => {
-              void update({ grammarShortcut: accel })
-            }}
-          />
-        </Row>
-      </SettingsGroup>
-
       <SettingsGroup
-        title="Language model"
-        description="Grammar checks run through a large language model you configure."
+        title="Grammar checks"
+        description="Turn off to unregister the global shortcut and ignore every grammar setting below."
       >
-        <Row title="Provider" description="Anthropic needs an API key; Ollama runs on your machine.">
-          <Select
-            value={settings.grammarLlmProvider}
-            options={PROVIDER_OPTIONS}
-            onChange={(v) => {
-              void update({ grammarLlmProvider: v })
-            }}
-            ariaLabel="Grammar provider"
-          />
-        </Row>
-        <Row title="API URL" description="Leave empty to use the provider default.">
-          <input
-            type="text"
-            value={settings.grammarLlmBaseUrl}
-            placeholder={getBaseUrlPlaceholder({ provider: settings.grammarLlmProvider })}
-            onChange={(e) => {
-              void update({ grammarLlmBaseUrl: e.target.value })
-            }}
-            className={`w-64 ${INPUT_CLASS_NAME}`}
-          />
-        </Row>
-        <Row title="API key" description="Stored locally in settings.json. Ollama usually needs none.">
-          <div className="flex items-center gap-1.5">
-            <input
-              type={getApiKeyInputType({ isVisible: isApiKeyVisible })}
-              value={settings.grammarLlmApiKey}
-              onChange={(e) => {
-                void update({ grammarLlmApiKey: e.target.value })
-              }}
-              className={`w-56 ${INPUT_CLASS_NAME}`}
-            />
-            <button
-              type="button"
-              title={getApiKeyToggleTitle({ isVisible: isApiKeyVisible })}
-              onClick={() => {
-                setIsApiKeyVisible((v) => {
-                  return !v
-                })
-              }}
-              className="p-1.5 rounded-md text-text/60 hover:text-text hover:bg-mid-gray/20 transition-colors"
-            >
-              {getApiKeyToggleIcon({ isVisible: isApiKeyVisible })}
-            </button>
-          </div>
-        </Row>
         <Row
-          title="Model"
-          description="Used for every check. Refresh after changing the provider, URL or key."
-          isStacked
-        >
-          <div className="flex flex-col gap-2">
-            {modelsError !== null && (
-              <p className="text-xs text-amber-700 dark:text-amber-400 break-words">{modelsError}</p>
-            )}
-            <div className="flex items-center gap-2">
-              {getModelControl({ settings })}
-              <button
-                type="button"
-                disabled={isModelsLoading}
-                title="Refresh model list"
-                onClick={() => {
-                  void refreshModels()
-                }}
-                className="p-1.5 rounded-md text-text/60 hover:text-text hover:bg-mid-gray/20 transition-colors disabled:cursor-not-allowed"
-              >
-                {getRefreshIcon({ isModelsLoading })}
-              </button>
-            </div>
-          </div>
-        </Row>
-      </SettingsGroup>
-
-      <SettingsGroup title="Serbian diacritics">
-        <Row
-          title="Fix Serbian diacritics (Milos → Miloš)"
-          description="When off, ASCII spellings (s/c/z/dj) are kept and not flagged."
+          title="Enable grammar checks"
+          description="When off, the check-selection shortcut is not registered and no text is sent for checking."
         >
           <Toggle
-            checked={settings.shouldFixSerbianDiacritics}
+            checked={settings.isGrammarEnabled}
             onChange={(v) => {
-              void update({ shouldFixSerbianDiacritics: v })
+              void update({ isGrammarEnabled: v })
             }}
-            ariaLabel="Fix Serbian diacritics"
+            ariaLabel="Enable grammar checks"
           />
         </Row>
       </SettingsGroup>
 
-      <SettingsGroup
-        title="Prompts"
-        description="Leave empty to use the built-in prompt. Your prompt fully replaces the built-in one; the Serbian
+      <div className={getConfigurableSettingsClassName({ isGrammarEnabled: settings.isGrammarEnabled })}>
+        <SettingsGroup title="Shortcut" description="Grab the selected text and review the corrections in a popup.">
+          <Row title="Check selection shortcut" description="Opens the grammar popup with the checked selection.">
+            <ShortcutInput
+              value={settings.grammarShortcut}
+              hasConflict={hasConflictFor(settings.grammarShortcut)}
+              onChange={(accel) => {
+                void update({ grammarShortcut: accel })
+              }}
+            />
+          </Row>
+        </SettingsGroup>
+
+        <SettingsGroup
+          title="Language model"
+          description="Grammar checks run through a large language model you configure."
+        >
+          <Row title="Provider" description="Anthropic needs an API key; Ollama runs on your machine.">
+            <Select
+              value={settings.grammarLlmProvider}
+              options={PROVIDER_OPTIONS}
+              onChange={(v) => {
+                void update({ grammarLlmProvider: v })
+              }}
+              ariaLabel="Grammar provider"
+            />
+          </Row>
+          <Row title="API URL" description="Leave empty to use the provider default.">
+            <input
+              type="text"
+              value={settings.grammarLlmBaseUrl}
+              placeholder={getBaseUrlPlaceholder({ provider: settings.grammarLlmProvider })}
+              onChange={(e) => {
+                void update({ grammarLlmBaseUrl: e.target.value })
+              }}
+              className={`w-64 ${INPUT_CLASS_NAME}`}
+            />
+          </Row>
+          <Row title="API key" description="Stored locally in settings.json. Ollama usually needs none.">
+            <div className="flex items-center gap-1.5">
+              <input
+                type={getApiKeyInputType({ isVisible: isApiKeyVisible })}
+                value={settings.grammarLlmApiKey}
+                onChange={(e) => {
+                  void update({ grammarLlmApiKey: e.target.value })
+                }}
+                className={`w-56 ${INPUT_CLASS_NAME}`}
+              />
+              <button
+                type="button"
+                title={getApiKeyToggleTitle({ isVisible: isApiKeyVisible })}
+                onClick={() => {
+                  setIsApiKeyVisible((v) => {
+                    return !v
+                  })
+                }}
+                className="p-1.5 rounded-md text-text/60 hover:text-text hover:bg-mid-gray/20 transition-colors"
+              >
+                {getApiKeyToggleIcon({ isVisible: isApiKeyVisible })}
+              </button>
+            </div>
+          </Row>
+          <Row
+            title="Model"
+            description="Used for every check. Refresh after changing the provider, URL or key."
+            isStacked
+          >
+            <div className="flex flex-col gap-2">
+              {modelsError !== null && (
+                <p className="text-xs text-amber-700 dark:text-amber-400 break-words">{modelsError}</p>
+              )}
+              <div className="flex items-center gap-2">
+                {getModelControl({ settings })}
+                <button
+                  type="button"
+                  disabled={isModelsLoading}
+                  title="Refresh model list"
+                  onClick={() => {
+                    void refreshModels()
+                  }}
+                  className="p-1.5 rounded-md text-text/60 hover:text-text hover:bg-mid-gray/20 transition-colors disabled:cursor-not-allowed"
+                >
+                  {getRefreshIcon({ isModelsLoading })}
+                </button>
+              </div>
+            </div>
+          </Row>
+        </SettingsGroup>
+
+        <SettingsGroup title="Serbian diacritics">
+          <Row
+            title="Fix Serbian diacritics (Milos → Miloš)"
+            description="When off, ASCII spellings (s/c/z/dj) are kept and not flagged."
+          >
+            <Toggle
+              checked={settings.shouldFixSerbianDiacritics}
+              onChange={(v) => {
+                void update({ shouldFixSerbianDiacritics: v })
+              }}
+              ariaLabel="Fix Serbian diacritics"
+            />
+          </Row>
+        </SettingsGroup>
+
+        <SettingsGroup
+          title="Prompts"
+          description="Leave empty to use the built-in prompt. Your prompt fully replaces the built-in one; the Serbian
         diacritics setting is always appended for Serbian."
-      >
-        {getPromptRow({
-          label: 'English system prompt',
-          onChange: (value) => {
-            void update({ grammarPromptEn: value })
-          },
-          onReset: () => {
-            void update({ grammarPromptEn: '' })
-          },
-          placeholder: DEFAULT_GRAMMAR_PROMPT_EN,
-          value: settings.grammarPromptEn,
-        })}
-        {getPromptRow({
-          label: 'Serbian system prompt',
-          onChange: (value) => {
-            void update({ grammarPromptSr: value })
-          },
-          onReset: () => {
-            void update({ grammarPromptSr: '' })
-          },
-          placeholder: DEFAULT_GRAMMAR_PROMPT_SR,
-          value: settings.grammarPromptSr,
-        })}
-      </SettingsGroup>
+        >
+          {getPromptRow({
+            label: 'English system prompt',
+            onChange: (value) => {
+              void update({ grammarPromptEn: value })
+            },
+            onReset: () => {
+              void update({ grammarPromptEn: '' })
+            },
+            placeholder: DEFAULT_GRAMMAR_PROMPT_EN,
+            value: settings.grammarPromptEn,
+          })}
+          {getPromptRow({
+            label: 'Serbian system prompt',
+            onChange: (value) => {
+              void update({ grammarPromptSr: value })
+            },
+            onReset: () => {
+              void update({ grammarPromptSr: '' })
+            },
+            placeholder: DEFAULT_GRAMMAR_PROMPT_SR,
+            value: settings.grammarPromptSr,
+          })}
+        </SettingsGroup>
+      </div>
     </>
   )
+
+  function getConfigurableSettingsClassName(params: { isGrammarEnabled: boolean }): string {
+    if (params.isGrammarEnabled) {
+      return 'flex flex-col gap-5'
+    }
+
+    return 'flex flex-col gap-5 opacity-50 pointer-events-none'
+  }
 
   async function refreshModels(): Promise<void> {
     setIsModelsLoading(true)

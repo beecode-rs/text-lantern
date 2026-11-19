@@ -198,6 +198,7 @@ export class SettingsDal {
       grammarPromptSr: parsed.grammarPromptSr ?? defaults.grammarPromptSr,
       grammarShortcut: parsed.grammarShortcut ?? defaults.grammarShortcut,
       historyLimit: parsed.historyLimit ?? defaults.historyLimit,
+      isGrammarEnabled: parsed.isGrammarEnabled ?? defaults.isGrammarEnabled,
       languageBindings: bindings,
       maxChars: parsed.maxChars ?? defaults.maxChars,
       playbackStartDelayMs: parsed.playbackStartDelayMs ?? defaults.playbackStartDelayMs,
